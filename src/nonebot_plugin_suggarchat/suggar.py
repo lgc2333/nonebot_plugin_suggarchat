@@ -649,7 +649,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
     if event.get_message():
      try:
         if isinstance(event,GroupMessageEvent):
-            
+                if not config["enable_group_chat"]:matcher.skip()
                 datag = Group_Data
                 if datag["id"] == event.group_id:
                     if not datag["enable"]:
@@ -785,7 +785,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
             
                     write_memory_data(event,datag) 
         else:
-         
+                if not config["enable_private_chat"]:matcher.skip()
                 data = Private_Data
                 if data["id"] == event.user_id:
                     content = ""

@@ -28,9 +28,7 @@ Plugin for the Suggar chat framework compatible with Nonebot2.
 
 <hr />
 
-传入LLM的信息格式如下，请自行在**提示词**内做好处理
-~~（跟大模型讲中文没这么难吧）~~
-便于LLM理解：
+传入LLM的信息格式如下，请自行在**提示词**内做好处理，便于LLM理解（这里我提供了use_base_prompt选项，如果启用了可以忽略，这个选项将自动在你的prompt前插入内容，对消息段作出解释）：
 
 
 ~~不会写就来QQ群问群主吧（~~
@@ -183,23 +181,24 @@ while True:
 
 | 配置项                         | 类型                | 默认值        | 解释                                                         |  
 |------------------------------|-------------------|--------------|------------------------------------------------------------|  
-| `memory_length_limit`          | int               | 50           | 允许存储的最大消息数量                                       |  
-| `enable`                       | bool               | True         | 是否启用聊天机器人                                          |  
-| `poke_reply`                   | bool               | True         | 是否启用戳回复功能                                          |  
-| `private_train`                | dict               | { "role": "system", "content": "" } | 私聊训练的系统角色和内容                                     |  
-| `group_train`                  | dict               | { "role": "system", "content": "" } | 群聊训练的系统角色和内容                                     |  
-| `enable_group_chat`            | bool               | True         | 是否启用群聊功能                                            |  
-| `enable_private_chat`          | bool               | True         | 是否启用私聊功能                                            |  
-| `allow_custom_prompt`          | bool               | True         | 是否允许自定义提示                                          |  
-| `allow_send_to_admin`          | bool               | True         | 是否允许向管理员发送消息                                    |  
+| `memory_length_limit`          | int               | 50           | 单会话允许存储的最大消息数（**如果您不知道这是什么意思，请不要修改**）                                       |  
+| `enable`                       | bool               | **false**         | 是否启用聊天机器人（即该插件）                                          |  
+| `poke_reply`                   | bool               | true         | 是否启用戳一戳回复功能                                          |  
+| `private_train`                | dict               | { "role": "system", "content": "`<请修改这里的内容>`" } | 私聊的系统提示词                                     |  
+| `group_train`                  | dict               | { "role": "system", "content": "`<请修改这里的内容>`" } | 群聊训的系统提示词                                     |  
+| `enable_group_chat`            | bool               | true         | 是否启用群聊功能                                            |  
+| `enable_private_chat`          | bool               | true         | 是否启用私聊功能                                            |  
+| `allow_custom_prompt`          | bool               | true         | 是否允许自定义提示                                          |  
+| `allow_send_to_admin`          | bool               | true         | 是否允许向管理员发送消息                                    |  
 | `admin_group`                  | int               | 0            | 管理员群组的ID                                             |  
 | `admins`                       | list[int]               | []           | 管理员用户的列表                                            |  
 | `open_ai_base_url`             | string             | ""           | OpenAI协议 API URL                                        |  
 | `open_ai_api_key`              | string             | ""           | OpenAI协议 API 密钥                                            |  
-| `say_after_self_msg_be_deleted` | bool               | True         | 自己的消息被删除后是否回复                                  |  
+| `say_after_self_msg_be_deleted` | bool               | true         | 自己的消息被删除后是否回复                                  |  
 | `group_added_msg`              | string             | "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”" | 加入群组时发送的欢迎消息                                     |  
-| `send_msg_after_be_invited`    | bool               | True         | 被邀请进群后是否发送消息                                        |  
+| `send_msg_after_be_invited`    | bool               | true         | 被邀请进群后是否发送消息                                        |  
 | `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
+| `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
 
 </details>
 

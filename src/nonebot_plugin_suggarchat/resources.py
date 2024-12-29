@@ -6,10 +6,12 @@ from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent
 import math
 from .conf import private_memory,group_memory,current_directory,main_config,config_dir
+__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复。"""
+__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！"""
 __default_config__ = {
     
     "memory_lenth_limit":50,
-    "enable":True,
+    "enable":False,
     "poke_reply":True,
     "private_train":{ "role": "system", "content": ""},
     "group_train":{ "role": "system", "content": ""},
@@ -17,6 +19,7 @@ __default_config__ = {
     "enable_private_chat":True,
     "allow_custom_prompt":True,
     "allow_send_to_admin":True,
+    "use_base_prompt":True,
     "admin_group":0,
     "admins":[],
     "open_ai_base_url":"",
@@ -48,7 +51,15 @@ def save_config(conf:dict):
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
+    if not Path(config_dir).exists():
+        Path.mkdir(config_dir)
+        with open(str(main_config),"w",encoding="utf-8") as f:
+            json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"w",encoding="utf-8") as f:
+        for i in __default_config__:
+               if i not in conf:
+                   conf[i] = __default_config__[i]
+       
         json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config()->dict:
     f"""
@@ -66,7 +77,13 @@ def get_config()->dict:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"r",encoding="utf-8") as f:
            conf = json.load(f)
-           return conf
+    for i in __default_config__:
+               if i not in conf:
+                   conf[i] = __default_config__[i]
+    if conf["use_base_prompt"]:
+        conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
+        conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]
+    return conf
 def get_memory_data(event:MessageEvent)->dict:
     """
     根据消息事件获取记忆数据，如果用户或群组的记忆数据不存在，则创建初始数据结构
