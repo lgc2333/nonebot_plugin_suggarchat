@@ -95,6 +95,11 @@ at+文字：
 
 ~~警告！本插件源码可能含有以下内容~~
  
+<details><summary>
+
+~~点我开始赤史~~
+</summary>
+
 《三角形具有稳定性》
 ```python
 if:
@@ -122,7 +127,7 @@ while True:
     todo()
     break
 ```
-
+</details>
 
 ## 特性（不是bug那个）
 
@@ -139,6 +144,64 @@ while True:
 - 向超控（特定聊群）推送插件的错误日志
 - 自定义Bot消息被撤回时缓解尴尬的推送
 - 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式）
+
+## 安装方式
+
+1. **通过pip安装**
+   - 确保已安装Python（版本>=3.9）。
+   - 打开命令行工具，执行以下命令来安装插件：
+     ```bash
+     pip install nonebot-plugin-suggarchat
+     ```
+
+2. **通过PDM安装**
+    ```bash
+    pdm add nonebot-plugin-suggarchat
+    ```
+
+3. **通过nb-cli安装（推荐）**
+    ```bash
+    nb plugin install nonebot-plugin-suggarchat
+    ```
+
+3. **从源码安装**
+   - 克隆仓库到本地：
+     ```bash
+     git clone https://github.com/JohnRichard4096/nonebot_plugin_suggarchat.git
+     ```
+   - 进入项目目录并安装依赖：
+     ```bash
+     cd nonebot_plugin_suggarchat
+     pip install -r requirements.txt
+     ```
+
+## 配置文件
+
+- **配置文件路径**：通常位于项目的运行目录的config目录下，文件名为`config.json`。
+### **配置项说明**
+<details><summary>点此展开</summary>
+
+| 配置项                         | 类型                | 默认值        | 解释                                                         |  
+|------------------------------|-------------------|--------------|------------------------------------------------------------|  
+| `memory_length_limit`          | int               | 50           | 允许存储的最大消息数量                                       |  
+| `enable`                       | bool               | True         | 是否启用聊天机器人                                          |  
+| `poke_reply`                   | bool               | True         | 是否启用戳回复功能                                          |  
+| `private_train`                | dict               | { "role": "system", "content": "" } | 私聊训练的系统角色和内容                                     |  
+| `group_train`                  | dict               | { "role": "system", "content": "" } | 群聊训练的系统角色和内容                                     |  
+| `enable_group_chat`            | bool               | True         | 是否启用群聊功能                                            |  
+| `enable_private_chat`          | bool               | True         | 是否启用私聊功能                                            |  
+| `allow_custom_prompt`          | bool               | True         | 是否允许自定义提示                                          |  
+| `allow_send_to_admin`          | bool               | True         | 是否允许向管理员发送消息                                    |  
+| `admin_group`                  | int               | 0            | 管理员群组的ID                                             |  
+| `admins`                       | list[int]               | []           | 管理员用户的列表                                            |  
+| `open_ai_base_url`             | string             | ""           | OpenAI协议 API URL                                        |  
+| `open_ai_api_key`              | string             | ""           | OpenAI协议 API 密钥                                            |  
+| `say_after_self_msg_be_deleted` | bool               | True         | 自己的消息被删除后是否回复                                  |  
+| `group_added_msg`              | string             | "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”" | 加入群组时发送的欢迎消息                                     |  
+| `send_msg_after_be_invited`    | bool               | True         | 被邀请进群后是否发送消息                                        |  
+| `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
+
+</details>
 
 ## 讨论
 

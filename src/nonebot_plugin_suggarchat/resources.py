@@ -22,6 +22,8 @@ __default_config__ = {
     "open_ai_base_url":"",
     "open_ai_api_key":"",
     "say_after_self_msg_be_deleted":True,
+    "group_added_msg":"你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
+    "send_msg_after_be_invited":True,
     "after_deleted_say_what":[ 
     "Suggar说错什么话了吗～下次我会注意的呢～",  
     "抱歉啦，不小心说错啦～",  
