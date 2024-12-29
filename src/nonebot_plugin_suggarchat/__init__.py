@@ -17,6 +17,7 @@ __plugin_meta__ = PluginMetadata(
     type="application",
     author="JohnRichard4096",
     version=__KERNEL_VERSION__,
+    supported_adapters={"~onebot.v11"}
 )
 
 config = get_plugin_config(Config)
