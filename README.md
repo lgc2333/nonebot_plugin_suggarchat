@@ -147,29 +147,28 @@ while True:
 
 1. **通过pip安装**
    - 确保已安装Python（版本>=3.9）。
-   - 打开命令行工具，执行以下命令来安装插件：
+    打开命令行工具，执行以下命令来安装插件：
      ```bash
      pip install nonebot-plugin-suggarchat
      ```
      
      
 
-2. **通过PDM安装（不推荐）**
+2. **通过PDM安装**
     ```bash
     pdm add nonebot-plugin-suggarchat
     ```
+    
+以上方法需要在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
+```toml
+plugins=["nonebot_plugin_suggarchat"]
+#添加"nonebot_plugin_suggarchat"
+```
 
 3. **通过nb-cli安装**
     ```bash
     nb plugin install nonebot-plugin-suggarchat
     ```
-之后在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
-
-     ```toml
-     plugins=["nonebot_plugin_suggarchat"]
-     #添加"nonebot_plugin_suggarchat"
-     ```
-
 ## 配置文件
 
 - **配置文件路径**：通常位于项目的运行目录的config目录下，文件名为`config.json`。
