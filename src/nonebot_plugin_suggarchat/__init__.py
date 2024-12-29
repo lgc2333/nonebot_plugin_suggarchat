@@ -15,7 +15,6 @@ __plugin_meta__ = PluginMetadata(
     config=Config,
     homepage="https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/",
     type="application",
-    version=__KERNEL_VERSION__,
     supported_adapters={"~onebot.v11"}
 )
 
