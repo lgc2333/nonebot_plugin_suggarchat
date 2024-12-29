@@ -39,6 +39,15 @@ __default_config__ = {
     "希望我能继续为你提供帮助，不要太在意我的小错误哦！",  
     ]  
 }
+def save_config(conf:dict):
+    """
+    保存配置文件
+
+    参数:
+    conf: dict - 配置文件，包含以下键值对{__default_config__}
+    """
+    with open(str(main_config),"w",encoding="utf-8") as f:
+        json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config()->dict:
     f"""
     获取配置文件
