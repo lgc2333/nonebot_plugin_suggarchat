@@ -3,7 +3,8 @@ import nonebot.adapters
 from nonebot.rule import to_me
 from nonebot.adapters import Message,Event
 from nonebot.params import CommandArg
-from .resources import get_current_datetime_timestamp,\
+from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config
+from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data
 from .import resources
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
@@ -610,13 +611,22 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
 async def Startup():
     memory_private = []
     memory_group = []
+    logger.info(f"""
+NONEBOT PLUGIN SUGGARCHAT
+{__KERNEL_VERSION__}
+""")
     from .conf import group_memory,private_memory
     from pathlib import Path
-    if not Path(group_memory).exists() and not Path(group_memory).is_dir():
-        Path.mkdir(group_memory)
-    if not Path(private_memory).exists() and not Path(private_memory).is_dir():
-        Path.mkdir(private_memory)
+    # 打印当前工作目录  
+    logger.info("当前工作目录:"+ current_directory)
+    logger.info(f"配置文件目录：{config_dir}") 
+    logger.info(f"主配置文件：{main_config}")
+    logger.info(f"群记忆文件目录：{group_memory}")
+    logger.info(f"私聊记忆文件目录：{private_memory}")
+    logger.info(f"当前配置文件：{get_config()}")
+    
     logger.info("启动成功")
+    
 
 
 @chat.handle()

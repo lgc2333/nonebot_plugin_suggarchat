@@ -151,26 +151,23 @@ while True:
      ```bash
      pip install nonebot-plugin-suggarchat
      ```
+     
+     
 
-2. **通过PDM安装**
+2. **通过PDM安装（不推荐）**
     ```bash
     pdm add nonebot-plugin-suggarchat
     ```
 
-3. **通过nb-cli安装（推荐）**
+3. **通过nb-cli安装**
     ```bash
     nb plugin install nonebot-plugin-suggarchat
     ```
+之后在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
 
-3. **从源码安装**
-   - 克隆仓库到本地：
-     ```bash
-     git clone https://github.com/JohnRichard4096/nonebot_plugin_suggarchat.git
-     ```
-   - 进入项目目录并安装依赖：
-     ```bash
-     cd nonebot_plugin_suggarchat
-     pip install -r requirements.txt
+     ```toml
+     plugins=["nonebot_plugin_suggarchat"]
+     #添加"nonebot_plugin_suggarchat"
      ```
 
 ## 配置文件

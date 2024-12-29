@@ -52,7 +52,9 @@ def save_config(conf:dict):
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
     if not Path(config_dir).exists():
-        Path.mkdir(config_dir)
+        try:
+            Path.mkdir(config_dir)
+        except:pass
         with open(str(main_config),"w",encoding="utf-8") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"w",encoding="utf-8") as f:
@@ -71,11 +73,14 @@ def get_config()->dict:
 
     """
 
-    if not Path(config_dir).exists():
-        Path.mkdir(config_dir)
-        with open(str(main_config),"w",encoding="utf-8") as f:
+    if (not Path(config_dir).exists() or not Path(config_dir).is_dir()) or not Path(main_config).exists() or not Path(main_config).is_file():
+        logger.info("配置文件不存在，已创建默认配置文件")
+        try:
+            Path.mkdir(config_dir)
+        except:pass
+        with open(str(main_config),"w") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
-    with open(str(main_config),"r",encoding="utf-8") as f:
+    with open(str(main_config),"r") as f:
            conf = json.load(f)
     for i in __default_config__:
                if i not in conf:
@@ -83,6 +88,10 @@ def get_config()->dict:
     if conf["use_base_prompt"]:
         conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
         conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]
+    if conf["enable"]:
+        if conf["open_ai_api_key"] == "" or conf["open_ai_base_url"] == "":
+            logger.error("配置文件不完整，请检查配置文件")
+            raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
     return conf
 def get_memory_data(event:MessageEvent)->dict:
     """
