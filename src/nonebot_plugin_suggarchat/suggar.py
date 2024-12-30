@@ -3,7 +3,7 @@ import nonebot.adapters
 from nonebot.rule import to_me
 from nonebot.adapters import Message,Event
 from nonebot.params import CommandArg
-from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config
+from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data
 from .import resources
@@ -52,7 +52,8 @@ async def is_member(event: GroupMessageEvent,bot:Bot):
 admins = config["admins"]
 
 async def get_chat(messages:list)->str:
-     completion = await client.chat.completions.create(model="auto", messages=messages,max_tokens=250,stream=True)
+     global config
+     completion = await client.chat.completions.create(model=config["model"], messages=messages,max_tokens=250,stream=True)
      response = ""
      async for chunk in completion:
                               try:
@@ -402,26 +403,11 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 ]
                 
                 # 初始化响应内容和调试信息
-                response = ""
-                debug_response = []
-                
-                # 创建聊天完成对象
-                completion = await client.chat.completions.create(model="auto", messages=send_messages,max_tokens=250,stream=True) 
-                
-                # 异步处理聊天响应
-                async for chunk in completion:
-                    try:
-                        response += chunk.choices[0].delta.content
-                        print(chunk.choices[0].delta.content)
-                    except IndexError:
-                        break
-                debug_response.append(response)
+                response = await get_chat(send_messages)
                 
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
                     await send_to_admin(f"POKEMSG{event.group_id}/{event.user_id}\n {send_messages}") 
-                    await send_to_admin(f"RESPONSE:\n{completion},raw:\n{debug_response}")
-                
                 # 构建最终消息并发送
                 message = MessageSegment.at(user_id=event.user_id) +" "+ MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
@@ -440,22 +426,10 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                     {"role": "user", "content": f" \(戳一戳消息\) {name}(QQ:{event.user_id}) 戳了戳你"}
                 ]
                 
-                completion = await client.chat.completions.create(model="auto", messages=send_messages,max_tokens=250,stream=True)
-                response = ""
-                debug_response = []        
-                print(type(completion))
-                
-                async for chunk in completion:
-                    try:
-                        response += chunk.choices[0].delta.content
-                        print(chunk.choices[0].delta.content)
-                    except IndexError:
-                        break
-                    debug_response.append(chunk)
-                
+                response = await get_chat(send_messages)
                 if debug:
                     await send_to_admin(f"POKEMSG {send_messages}") 
-                    await send_to_admin(f"RESPONSE:\n{completion}\nraw:{debug_response}")
+                    
                 
                 message = MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
@@ -470,17 +444,6 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
         import traceback  
         await send_to_admin(f"出错了！{exc_value},\n{str(exc_type)}")
         await send_to_admin(f"{traceback.format_exc()}")
-        
-        if isinstance(e,AttributeError):
-            await send_to_admin(f"{completion}")
-        
-        try:
-            if debug:
-                warn = completion
-                await send_to_admin(f"ERROR:{warn}")
-        except:
-            logger.error("无法的得到接口返回报错信息！")
-            await send_to_admin(f"无法的得到接口返回报错信息！")
         
         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")       
 
@@ -623,8 +586,7 @@ NONEBOT PLUGIN SUGGARCHAT
     logger.info(f"主配置文件：{main_config}")
     logger.info(f"群记忆文件目录：{group_memory}")
     logger.info(f"私聊记忆文件目录：{private_memory}")
-    logger.info(f"当前配置文件：{get_config()}")
-    
+    #logger.info(f"多模型目录：{custom_models_dir}")
     logger.info("启动成功")
     
 
@@ -747,18 +709,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                     send_messages.insert(0,train)
                     try:    
                             
-                            completion = await client.chat.completions.create(model="auto", messages=send_messages,max_tokens=250,stream=True)
-                            response = ""
-                            debug_response = []
-                            
-                            async for chunk in completion:
-                              try:
-                                   response += chunk.choices[0].delta.content
-                                   print(chunk.choices[0].delta.content)
-                              except IndexError:
-                                   break
-                              debug_response .append(chunk)
-   
+                            response = await get_chat(send_messages)
+                            debug_response = response
                             message = MessageSegment.at(user_id=user_id) + MessageSegment.text(response) 
                            
                             if debug:
@@ -781,15 +733,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                         import traceback  
                         await send_to_admin(f"出错了！{exc_value},\n{str(exc_type)}")
                         await send_to_admin(f"{traceback.format_exc()}")
-                        if isinstance(e,AttributeError):
-                             await send_to_admin(f"{completion}")
-                        try:
-                             if debug:
-                                warn = completion
-                                await send_to_admin(f"ERROR:{warn}")
-                        except:
-                            logger.error("无法的得到接口返回报错信息！")
-                            await send_to_admin(f"无法的得到接口返回报错信息！")
+                        
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")      
  
             
@@ -845,21 +789,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                     send_messages = data["memory"]["messages"].copy()
                     send_messages.insert(0,private_train)
                     try:    
-                            response = ""
-                            completion = await client.chat.completions.create(model="auto", messages=send_messages,max_tokens=250,stream=True)
-                            
-                            
-                            async for chunk in completion:
-                              try:
-                                   response += chunk.choices[0].delta.content
-                                   print(chunk.choices[0].delta.content)
-                              except IndexError:
-                                   break
-                              debug_response = []
-                            
-                              debug_response .append(chunk)
-
-           
+                            response = await get_chat(send_messages)
+                            debug_response = response
                             if debug:
                                  if debug:
                                     await send_to_admin(f"{event.user_id}\n{type(event)}\n{event.message.extract_plain_text()}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
@@ -887,15 +818,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                         import traceback  
                         await send_to_admin(f"出错了！{exc_value},\n{str(exc_type)}")
                         await send_to_admin(f"{traceback.format_exc()} ")
-                        if isinstance(e,AttributeError):
-                             await send_to_admin(f"{completion}")
-                        try:
-                             if debug:
-                                warn = completion
-                                await send_to_admin(f"ERROR:{warn}")
-                        except:
-                             logger.error("无法的得到接口返回报错信息！")
-                             await send_to_admin(f"无法的得到接口返回报错信息！")
+                       
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")      
               
                         write_memory_data(event,data)      
@@ -908,15 +831,6 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                         import traceback  
                         await send_to_admin(f"出错了！{exc_value},\n{str(exc_type)}")
                         await send_to_admin(f"{traceback.format_exc()}")
-                        if isinstance(e,AttributeError):
-                             await send_to_admin(f"{completion}")
-                        try:
-                             if debug:
-                                warn = completion
-                                await send_to_admin(f"ERROR:{warn}")
-                        except:
-                             logger.error("无法的得到接口返回报错信息！")
-                             await send_to_admin(f"无法的得到接口返回报错信息！")
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")    
     else:pass
     write_memory_data(event,data)

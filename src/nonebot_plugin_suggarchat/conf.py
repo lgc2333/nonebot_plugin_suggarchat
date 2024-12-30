@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-__KERNEL_VERSION__:str = "V0.1.4.2.1-Public-Dev"
+__KERNEL_VERSION__:str = "V0.1.4.3-Public-Dev"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
 config_dir = Path.cwd()/"config"
@@ -13,3 +13,4 @@ private_memory = Path.cwd()/"private"
 if not private_memory.exists():
     private_memory.mkdir()
 main_config = config_dir/"config.json"
+custom_models_dir = config_dir/"models"

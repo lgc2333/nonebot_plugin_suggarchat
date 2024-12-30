@@ -5,7 +5,31 @@ import nonebot
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent
 import math
-from .conf import private_memory,group_memory,current_directory,main_config,config_dir
+from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir
+__default_model_conf__={
+    "base_url":"",
+    "api_key":""
+}
+def get_models()->list:
+    models = []
+    
+    for file in Path(custom_models_dir).glob("*.json"):
+        with open(file,"r") as f:
+            model =json.load(f)
+            update_dict(__default_model_conf__, model)
+            models.append(model)
+    return models
+def update_dict(default:dict, to_update:dict):
+    """
+    递归地更新默认字典，将to_update中的键值对更新到默认字典中
+    参数:
+    default: dict - 默认字典
+    to_update: dict - 要更新的字典
+    无返回值
+    """
+    for key, value in default.items():
+        if key not in to_update:
+            to_update[key] = value
 __base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复。"""
 __base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！"""
 __default_config__ = {
@@ -24,6 +48,7 @@ __default_config__ = {
     "admins":[],
     "open_ai_base_url":"",
     "open_ai_api_key":"",
+    "model":"auto",
     "say_after_self_msg_be_deleted":True,
     "group_added_msg":"你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
     "send_msg_after_be_invited":True,
@@ -58,9 +83,7 @@ def save_config(conf:dict):
         with open(str(main_config),"w",encoding="utf-8") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"w",encoding="utf-8") as f:
-        for i in __default_config__:
-               if i not in conf:
-                   conf[i] = __default_config__[i]
+        update_dict(__default_config__,conf)
        
         json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config()->dict:
@@ -82,9 +105,7 @@ def get_config()->dict:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"r") as f:
            conf = json.load(f)
-    for i in __default_config__:
-               if i not in conf:
-                   conf[i] = __default_config__[i]
+    update_dict(__default_config__, conf)
     if conf["use_base_prompt"]:
         conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
         conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]
