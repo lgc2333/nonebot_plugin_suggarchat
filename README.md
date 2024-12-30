@@ -167,7 +167,7 @@ plugins=["nonebot_plugin_suggarchat"]
 
 3. **通过nb-cli安装**
     ```bash
-    nb plugin install nonebot-plugin-suggarchat
+    nb plugin install nonebot_plugin_suggarchat
     ```
 ## 配置文件
 
