@@ -19,10 +19,10 @@ def get_models()->list:
     for file in Path(custom_models_dir).glob("*.json"):
         with open(file,"r") as f:
             model =json.load(f)
-            update_dict(__default_model_conf__, model)
+            model = update_dict(__default_model_conf__, model)
             models.append(model)
     return models
-def update_dict(default:dict, to_update:dict):
+def update_dict(default:dict, to_update:dict) ->dict:
     """
     递归地更新默认字典，将to_update中的键值对更新到默认字典中
     参数:
@@ -33,6 +33,7 @@ def update_dict(default:dict, to_update:dict):
     for key, value in default.items():
         if key not in to_update:
             to_update[key] = value
+    return to_update
 __base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复。"""
 __base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！"""
 __default_config__ = {
@@ -88,7 +89,7 @@ def save_config(conf:dict):
         with open(str(main_config),"w",encoding="utf-8") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"w",encoding="utf-8") as f:
-        update_dict(__default_config__,conf)
+        conf = update_dict(__default_config__,conf)
        
         json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config()->dict:
@@ -110,7 +111,7 @@ def get_config()->dict:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"r") as f:
            conf = json.load(f)
-    update_dict(__default_config__, conf)
+    conf = update_dict(__default_config__, conf)
     if conf["use_base_prompt"] and conf["parse_segments"]:
         conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
         conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]

@@ -21,7 +21,7 @@ import openai
 import random
 import os
 from datetime import datetime  
-
+from httpx import AsyncClient
 config = get_config()
 ifenable = config["enable"]
 async def send_to_admin(msg:str)-> None:
@@ -76,16 +76,20 @@ async def get_chat(messages:list)->str:
              model = config["model"]
              base_url = config["open_ai_base_url"]
              save_config(config)
-     
-     client = openai.AsyncOpenAI(base_url=base_url,api_key=key)
-     completion = await client.chat.completions.create(model=model, messages=messages,max_tokens=max_tokens,stream=True)
-     response = ""
-     async for chunk in completion:
-                              try:
-                                   response += chunk.choices[0].delta.content
-                                   print(chunk.choices[0].delta.content)
-                              except IndexError:
-                                   break
+     logger.debug(f"开始获取对话，模型：{model}")
+     logger.debug(f"预设：{config["preset"]}")
+     logger.debug(f"密钥：{key[:10]}...")
+     logger.debug(f"API base_url：{base_url}")
+     async with AsyncClient(base_url=base_url) as aclient:
+        client = openai.AsyncOpenAI(http_client=aclient,base_url=base_url,api_key=key)
+        completion = await client.chat.completions.create(model=model, messages=messages,max_tokens=max_tokens,stream=True)
+        response = ""
+        async for chunk in completion:
+            try:
+                response += chunk.choices[0].delta.content
+            except IndexError:
+                break
+        print(response)
 
      return response
 
@@ -308,11 +312,11 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
         if segment.type == "text":
             content = content + segment.data["text"]
         elif segment.type == "at":
-            content += f"\(at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+            content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
             forward = await bot.get_forward_msg(message_id=segment.data['id'])
             logger.debug(type(forward))
-            content +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+            content +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
     
     # 处理引用的消息内容，并记录相关信息
     bot = nonebot.get_bot()
@@ -327,11 +331,11 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
             if msg.type == "text":
                 reply += msg.data["text"]
             elif msg.type == "at":
-                reply += f"\(at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
+                reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
             elif msg.type == "forward":
                 forward = await bot.get_forward_msg(message_id=msg.data["id"])
                 logger.debug(forward)
-                reply +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
     
     # 发送调试信息给管理员，并记录发送的消息内容
     await send_to_admin(f"{type} {user_id} {content}\nReply:{reply}\n{data}")
@@ -436,7 +440,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 # 构建发送的消息内容
                 send_messages = [
                     {"role": "system", "content": f"{group_train}"},
-                    {"role": "user", "content": f"\(戳一戳消息\){user_name} (QQ:{event.user_id}) 戳了戳你"}
+                    {"role": "user", "content": f"\\（戳一戳消息\\){user_name} (QQ:{event.user_id}) 戳了戳你"}
                 ]
                 
                 # 初始化响应内容和调试信息
@@ -460,7 +464,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 name = get_friend_info(event.user_id)
                 send_messages = [
                     {"role": "system", "content": f"{private_train}"},
-                    {"role": "user", "content": f" \(戳一戳消息\) {name}(QQ:{event.user_id}) 戳了戳你"}
+                    {"role": "user", "content": f" \\（戳一戳消息\\) {name}(QQ:{event.user_id}) 戳了戳你"}
                 ]
                 
                 response = await get_chat(send_messages)
@@ -624,6 +628,7 @@ NONEBOT PLUGIN SUGGARCHAT
     logger.info(f"群记忆文件目录：{group_memory}")
     logger.info(f"私聊记忆文件目录：{private_memory}")
     logger.info(f"预设目录：{custom_models_dir}")
+    save_config(get_config())
     logger.info("启动成功")
     
 
@@ -648,9 +653,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
     if event.message.extract_plain_text().startswith("菜单"):
          await matcher.finish(menu_msg)
          return
-    dataDir =os.path.dirname(os.path.abspath(__file__))+ "\speak_module"
-    savePath = os.path.join(dataDir, "res", f"temp{random.randint(1,1023)}.mp3")
-    logger.debug (savePath)
+
+   
     Group_Data = get_memory_data(event)
     Private_Data = get_memory_data(event)
 
@@ -675,12 +679,12 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             content = content + segment.data["text"]
 
                         elif segment.type == "at":
-                             content += f"\(at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+                             content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
                         elif segment.type == "forward":
                             
                             forward = await bot.get_forward_msg(message_id=segment.data['id'])
                             logger.debug(forward)
-                            content +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                            content +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                     if content.strip() == "":
                          content = ""
                     role = await bot.get_group_member_info(group_id=group_id, user_id=user_id)
@@ -721,14 +725,14 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                   reply += msg.data["text"]
         
                              elif msg.type == "at":
-                                 reply += f"\(at: @{msg.data['name']}(QQ:{msg.data['qq']}))\\"
+                                 reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']})）\\"
                              elif msg.type == "forward":
                                 
                                 forward = await bot.get_forward_msg(message_id=msg.data["id"])
                                 logger.debug(forward)
-                                reply +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                              elif msg.type == "markdown":
-                                  reply += "\\(Markdown消息 暂不支持)\\"
+                                  reply += "\\（Markdown消息 暂不支持）\\"
                          content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                          logger.debug(f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}")
@@ -762,7 +766,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             await chat.send(message)
                     
                     except Exception as e:
-                        await chat.send(f"Suggar出错了呢～稍后试试吧～（错误已反馈") 
+                        await chat.send(f"出错了，稍后试试（错误已反馈") 
                         
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         logger.error(f"Exception type: {exc_type.__name__}")  
@@ -786,12 +790,12 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             content = content + segment.data["text"]
 
                         elif segment.type == "at":
-                             content += f"\(at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+                             content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
                         elif segment.type == "forward":
                             logger.debug(segment)
                             forward = await bot.get_forward_msg(message_id=segment.data["id"])
                             logger.debug(type(forward))
-                            content+="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                            content+=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                     if content.strip() == "":
                          content = ""
                     logger.debug(f"{content}")
@@ -809,12 +813,12 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                   reply += msg.data["text"]
               
                              elif segment.type == "at":
-                                reply += f"\(at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
+                                reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
                              elif msg.type == "forward":
                               
                                 forward = await bot.get_forward_msg(message_id=msg.data["id"])
                                 logger.debug(type(forward))
-                                reply +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                          content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                      
@@ -849,7 +853,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
-                        await chat.send(f"Suggar出错了呢～稍后试试吧～（错误已反馈")
+                        await chat.send(f"出错了稍后试试（错误已反馈")
                         logger.error(f"Exception type: {exc_type.__name__}")  
                         logger.error(f"Exception message: {str(exc_value)}")  
                         import traceback  
@@ -860,7 +864,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
               
                         write_memory_data(event,data)      
      except Exception as e:
-                        await chat.send(f"Suggar出错了呢～稍后试试吧～（错误已反馈 ") 
+                        await chat.send(f"出错了稍后试试吧（错误已反馈 ") 
                         
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         logger.error(f"Exception type: {exc_type.__name__}")  
