@@ -743,7 +743,6 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             del datag["memory"]["messages"][0]
                     send_messages = []
                     send_messages = datag["memory"]['messages'].copy()
-                    group_train = resources.group_train.copy()
                     train = group_train.copy()
                     
                     train["content"] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt','无')}"
@@ -874,5 +873,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                         await send_to_admin(f"{traceback.format_exc()}")
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")    
     else:pass
-    write_memory_data(event,data)
+    if isinstance(event, GroupMessageEvent):
+        write_memory_data(event,datag)
+    else:write_memory_data(event,data)
     
