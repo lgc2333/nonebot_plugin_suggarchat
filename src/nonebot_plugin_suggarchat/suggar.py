@@ -1,11 +1,13 @@
 from nonebot import on_command,on_notice,on_message,get_driver,on_request
 import nonebot.adapters
 from nonebot.rule import to_me
+from nonebot.exception import FinishedException,SkippedException
 from nonebot.adapters import Message,Event
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
-     get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data
+     get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
+     ,get_models,save_config
 from .import resources
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
@@ -20,8 +22,8 @@ import random
 import os
 from datetime import datetime  
 
-config = resources.get_config()
-
+config = get_config()
+ifenable = config["enable"]
 async def send_to_admin(msg:str)-> None:
      global config
      if not config["allow_send_to_admin"]:return
@@ -41,7 +43,6 @@ debug = False
 
 custom_menu = []
 
-client = openai.AsyncOpenAI(base_url=config["open_ai_base_url"],api_key=config["open_ai_api_key"])
 group_train = config["group_train"]
 private_train = config["private_train"]
 async def is_member(event: GroupMessageEvent,bot:Bot):
@@ -52,8 +53,32 @@ async def is_member(event: GroupMessageEvent,bot:Bot):
 admins = config["admins"]
 
 async def get_chat(messages:list)->str:
-     global config
-     completion = await client.chat.completions.create(model=config["model"], messages=messages,max_tokens=250,stream=True)
+     global config,ifenable
+     max_tokens = config["max_tokens"]
+     
+     if config["preset"] == "__main__":
+         base_url = config["open_ai_base_url"]
+         key = config["open_ai_api_key"]
+         model = config["model"]
+     else:
+         models = get_models()
+         for i in models:
+             if i["name"] == config["preset"]:
+                 base_url = i["base_url"]
+                 key = i["api_key"]
+                 model = i["model"]
+                 break
+         else:
+             logger.error(f"未找到预设{config["preset"]}")
+             logger.info("已重置预设为：主配置文件，模型："+config["model"])
+             config["preset"] = "__main__"
+             key = config["open_ai_api_key"]
+             model = config["model"]
+             base_url = config["open_ai_base_url"]
+             save_config(config)
+     
+     client = openai.AsyncOpenAI(base_url=base_url,api_key=key)
+     completion = await client.chat.completions.create(model=model, messages=messages,max_tokens=max_tokens,stream=True)
      response = ""
      async for chunk in completion:
                               try:
@@ -76,8 +101,40 @@ debug_switch = on_command("debug",priority=10,block=True)
 debug_handle = on_message(rule=to_me(),priority=10,block=False)
 recall = on_notice()
 prompt = on_command("prompt",priority=10,block=True)
+presets = on_command("presets",priority=10,block=True)
+set_preset = on_command("set_preset",aliases={"设置预设","设置模型预设"},priority=10,block=True)
 
-
+@set_preset.handle()
+async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
+    global admins,config,ifenable
+    if not ifenable:set_preset.skip()
+    if not event.user_id in admins:
+        await set_preset.finish("只有管理员才能设置预设。")
+    arg = args.extract_plain_text().strip()
+    if not arg == "":
+        models = get_models()
+        for i in models:
+            if i["name"] == arg:
+                config["preset"] = i["name"]
+                save_config(config)
+                await set_preset.finish(f"已设置预设为：{i['name']}，模型：{i['model']}")
+                break
+        else:set_preset.finish("未找到预设，请输入/presets查看预设列表。")
+    else:
+        config["preset"] = "__main__"
+        save_config(config)
+        await set_preset.finish("已重置预设为：主配置文件，模型："+config["model"])
+@presets.handle()
+async def _(bot: Bot, event: MessageEvent):
+    global admins,config,ifenable
+    if not ifenable:presets.skip()
+    if not event.user_id in admins:
+        await presets.finish("只有管理员才能查看模型预设。")
+    models = get_models()
+    msg = f"模型预设:\n当前：{'主配置文件' if config["preset"] == "__main__" else config["preset"]}\n主配置文件：{config['model']}"
+    for i in models:
+        msg += f"\n预设名称：{i['name']}，模型：{i['model']}"
+    await presets.finish(msg)
 
 @prompt.handle()
 async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
@@ -250,16 +307,6 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
     for segment in event.get_message():
         if segment.type == "text":
             content = content + segment.data["text"]
-        elif segment.type == "image":
-            content += "\（图片：url='" +segment.data["url"].replace("https://multimedia.nt.qq.com.cn","https://micro-wave.cc:60017")+ "'）\\\n"
-        elif segment.type == "json":
-            content += "\（json：" +segment.data["data"]+ "）\\\n"
-        elif segment.type == "node":
-            content += "\（转发：" +str(segment.data["data"])+ "）\\\n"
-        elif segment.type == "share":
-            content += "\（分享：" +str(segment.data["url"])+ "）\\\n"
-        elif segment.type =="xml":
-            content += "\（xml：" +str(segment.data["data"])+ "）\\\n"
         elif segment.type == "at":
             content += f"\(at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
@@ -279,16 +326,6 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
         for msg in event.reply.message:
             if msg.type == "text":
                 reply += msg.data["text"]
-            elif msg.type == "image":
-                reply += "(图片：url='"+msg.data["url"].replace("https://multimedia.nt.qq.com.cn","https://micro-wave.cc:60017")+"'\\)\n"
-            elif msg.type == "json":
-                reply += "(json："+msg.data["data"]+")\n"
-            elif msg.type == "node":
-                reply += "(转发："+str(msg.data["data"])+")\n"
-            elif msg.type == "share":
-                reply += "(分享："+msg.data["url"]+")\n"
-            elif msg.type =="xml":
-                reply += "(xml："+msg.data["data"]+")\n"
             elif msg.type == "at":
                 reply += f"\(at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
             elif msg.type == "forward":
@@ -586,7 +623,7 @@ NONEBOT PLUGIN SUGGARCHAT
     logger.info(f"主配置文件：{main_config}")
     logger.info(f"群记忆文件目录：{group_memory}")
     logger.info(f"私聊记忆文件目录：{private_memory}")
-    #logger.info(f"多模型目录：{custom_models_dir}")
+    logger.info(f"预设目录：{custom_models_dir}")
     logger.info("启动成功")
     
 
@@ -692,11 +729,11 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 reply +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                              elif msg.type == "markdown":
                                   reply += "\\(Markdown消息 暂不支持)\\"
-                         content += str(reply)
+                         content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                          logger.debug(f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}")
     
-                    datag["memory"]["messages"].append({"role":"user","content":f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"})
+                    datag["memory"]["messages"].append({"role":"user","content":f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}" if config["parse_segments"] else event.message.extract_plain_text()})
                     if len(datag["memory"]["messages"]) >memory_lenth_limit:
                         while len(datag["memory"]["messages"])>memory_lenth_limit:
                             del datag["memory"]["messages"][0]
@@ -778,10 +815,10 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 forward = await bot.get_forward_msg(message_id=msg.data["id"])
                                 logger.debug(type(forward))
                                 reply +="\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-                         content += str(reply)
+                         content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                      
-                    data["memory"]["messages"].append({"role":"user","content":f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)}"})
+                    data["memory"]["messages"].append({"role":"user","content":f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)}" if config["parse_segments"] else event.message.extract_plain_text()})
                     if len(data["memory"]["messages"]) >memory_lenth_limit:
                         while len(data["memory"]["messages"])>memory_lenth_limit:
                             del data["memory"]["messages"][0]

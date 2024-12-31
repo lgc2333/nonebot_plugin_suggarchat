@@ -7,12 +7,15 @@ from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,Me
 import math
 from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir
 __default_model_conf__={
+    "model":"auto",
+    "name":"",
     "base_url":"",
     "api_key":""
 }
 def get_models()->list:
     models = []
-    
+    if not Path(custom_models_dir).exists() or not Path(custom_models_dir).is_dir():
+        Path.mkdir(custom_models_dir)
     for file in Path(custom_models_dir).glob("*.json"):
         with open(file,"r") as f:
             model =json.load(f)
@@ -33,7 +36,7 @@ def update_dict(default:dict, to_update:dict):
 __base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复。"""
 __base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！"""
 __default_config__ = {
-    
+    "preset":"__main__",
     "memory_lenth_limit":50,
     "enable":False,
     "poke_reply":True,
@@ -48,6 +51,7 @@ __default_config__ = {
     "admins":[],
     "open_ai_base_url":"",
     "open_ai_api_key":"",
+    "max_tokens":100,
     "model":"auto",
     "say_after_self_msg_be_deleted":True,
     "group_added_msg":"你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
@@ -67,7 +71,8 @@ __default_config__ = {
     "Suggar苯苯的，偶尔说错话很正常嘛！",    
     "哎呀，我也有尴尬的时候呢~",  
     "希望我能继续为你提供帮助，不要太在意我的小错误哦！",  
-    ]  
+    ],  
+    "parse_segments":True
 }
 def save_config(conf:dict):
     """
@@ -106,7 +111,7 @@ def get_config()->dict:
     with open(str(main_config),"r") as f:
            conf = json.load(f)
     update_dict(__default_config__, conf)
-    if conf["use_base_prompt"]:
+    if conf["use_base_prompt"] and conf["parse_segments"]:
         conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
         conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]
     if conf["enable"]:
