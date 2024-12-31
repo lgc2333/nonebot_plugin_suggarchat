@@ -873,7 +873,3 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                         await send_to_admin(f"{traceback.format_exc()}")
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")    
     else:pass
-    if isinstance(event, GroupMessageEvent):
-        write_memory_data(event,datag)
-    else:write_memory_data(event,data)
-    

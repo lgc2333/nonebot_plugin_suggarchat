@@ -121,6 +121,7 @@ def get_config()->dict:
             raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
     return conf
 def get_memory_data(event:MessageEvent)->dict:
+    logger.info(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
     根据消息事件获取记忆数据，如果用户或群组的记忆数据不存在，则创建初始数据结构
 
@@ -147,7 +148,7 @@ def get_memory_data(event:MessageEvent)->dict:
         if not conf_path.exists():
             with open(str(conf_path), "w", encoding="utf-8") as f:
                 json.dump({"id": user_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
-    else:
+    elif isinstance(event, GroupMessageEvent):
         # 处理群聊事件
         group_id = event.group_id
         conf_path = Path(group_memory/f"{group_id}.json")
@@ -159,8 +160,11 @@ def get_memory_data(event:MessageEvent)->dict:
     # 读取并返回记忆数据
     with open(str(conf_path), "r", encoding="utf-8") as f:
         conf = json.load(f)
+        logger
         return conf
 def write_memory_data(event: MessageEvent, data: dict) -> None:
+    logger.debug(f"写入记忆数据{data}")
+    logger.debug(f"事件：{type(event)}")
     """
     根据事件类型将数据写入到特定的记忆数据文件中。
     
@@ -178,7 +182,7 @@ def write_memory_data(event: MessageEvent, data: dict) -> None:
     if isinstance(event, GroupMessageEvent):
         # 获取群组ID，并根据群组ID构造配置文件路径
         group_id = event.group_id
-        conf_path = Path(private_memory/f"{group_id}.json")
+        conf_path = Path(group_memory/f"{group_id}.json")
     else:
         # 获取用户ID，并根据用户ID构造配置文件路径
         user_id = event.user_id

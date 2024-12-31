@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-__KERNEL_VERSION__:str = "V0.1.5.2-Public-Dev"
+__KERNEL_VERSION__:str = "V0.1.5.3-Public-Dev"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
 config_dir = Path.cwd()/"config"
