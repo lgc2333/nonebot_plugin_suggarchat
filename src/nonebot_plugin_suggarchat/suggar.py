@@ -1,25 +1,21 @@
-from nonebot import on_command,on_notice,on_message,get_driver,on_request
+from nonebot import on_command,on_notice,on_message,get_driver
 import nonebot.adapters
 from nonebot.rule import to_me
-from nonebot.exception import FinishedException,SkippedException
-from nonebot.adapters import Message,Event
+from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
      ,get_models,save_config
-from .import resources
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
     , MessageEvent
 from nonebot import logger
 from nonebot.matcher import Matcher
-import yaml
 import sys
 import openai
 import random
-import os
 from datetime import datetime  
 from httpx import AsyncClient
 config = get_config()
@@ -89,7 +85,7 @@ async def get_chat(messages:list)->str:
                 response += chunk.choices[0].delta.content
             except IndexError:
                 break
-        print(response)
+        logger.debug(response)
 
      return response
 

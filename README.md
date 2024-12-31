@@ -144,7 +144,20 @@ while True:
 - 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式）
 
 ## 安装方式
-
+0. **前提条件**
+    - 确保安装nonebot-plugin-localstore
+    ```bash
+        pip install nonebot-plugin-localstore
+    ```
+    并在你的`pyproject.toml`中添加如下内容：
+    ```toml
+    plugins=["nonebot_plugin_localstore"]
+    #添加"nonebot_plugin_localstore"
+    ```
+    或直接使用nb-cli:
+    ```bash
+    nb plugin install nonebot-plugin-localstore
+    ```
 1. **通过pip安装**
    - 确保已安装Python（版本>=3.9）。
     打开命令行工具，执行以下命令来安装插件：
@@ -168,6 +181,7 @@ plugins=["nonebot_plugin_suggarchat"]
 3. **通过nb-cli安装**
     ```bash
     nb plugin install nonebot-plugin-suggarchat
+    # 此方法不需要再单独安装localstore
     ```
 ## 配置文件
 
@@ -195,7 +209,7 @@ plugins=["nonebot_plugin_suggarchat"]
 | `send_msg_after_be_invited`    | bool               | true         | 被邀请进群后是否发送消息                                        |  
 | `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
 | `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
-| `preset`       | string               | __main__ | 是否使用预设（在工作目录的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
+| `preset`       | string               | __main__ | 是否使用预设（在插件控制台打印的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
 | `max_tokens`       | int               | 100 | 在单次时，LLM最多可以回复多少个token（即字数，如果你的模型提供商支持                                   |
 | `model`       | str               | auto | 使用什么模型（具体看你的API提供商                                   |
 | `parse_segments` | bool               | true | 是否解析消息段，此权重覆盖`use_base_prompt`（即at/合并转发等）                                   |
@@ -203,7 +217,7 @@ plugins=["nonebot_plugin_suggarchat"]
 </details>
 
 ## 预设
-预设文件位于工作目录的models文件夹下，预设文件为json格式，具体格式如下：
+预设文件位于插件控制台打印的models文件夹下，预设文件为json格式，具体格式如下：
 
 ```json
     {
@@ -219,7 +233,7 @@ plugins=["nonebot_plugin_suggarchat"]
 - `base_url`: OpenAI协议 API URL，默认为空。
 - `api_key`: OpenAI协议 API 密钥，默认为空。
 ## 预设使用方法
-1. 在工作目录的models文件夹下，创建一个json文件，文件名必须与预设的名字一致。
+1. 在插件控制台打印的models文件夹下，创建一个json文件，文件名必须与预设的名字一致。
 2. 在json文件中，填写预设的内容。
 3. 在插件配置文件中，将`preset`的值设置为预设的名字（我们更推荐你使用**指令**来切换而不是直接修改配置文件）。
 ## 指令使用方法
