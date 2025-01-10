@@ -3,7 +3,7 @@ from nonebot.log import logger
 import json
 import nonebot
 from pathlib import Path
-from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent
+from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent
 import math
 from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir
 __default_model_conf__={
@@ -160,7 +160,19 @@ def get_memory_data(event:MessageEvent)->dict:
         if not conf_path.exists():
             with open(str(conf_path), "w", encoding="utf-8") as f:
                 json.dump({"id": group_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
-    
+    elif isinstance(event,PokeNotifyEvent):
+        if event.group_id:
+            group_id = event.group_id
+            conf_path = Path(group_memory/f"{group_id}.json")
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump({"id": group_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
+        else:
+            user_id = event.user_id
+            conf_path = Path(private_memory/f"{user_id}.json")
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump({"id": user_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
     # 读取并返回记忆数据
     with open(str(conf_path), "r", encoding="utf-8") as f:
         conf = json.load(f)
@@ -187,11 +199,23 @@ def write_memory_data(event: MessageEvent, data: dict) -> None:
         # 获取群组ID，并根据群组ID构造配置文件路径
         group_id = event.group_id
         conf_path = Path(group_memory/f"{group_id}.json")
-    else:
+    elif isinstance(event, PrivateMessageEvent):
         # 获取用户ID，并根据用户ID构造配置文件路径
         user_id = event.user_id
         conf_path = Path(private_memory/f"{user_id}.json")
-    
+    elif isinstance(event,PokeNotifyEvent):
+        if event.group_id:
+            group_id = event.group_id
+            conf_path = Path(group_memory/f"{group_id}.json")
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump({"id": group_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
+        else:
+            user_id = event.user_id
+            conf_path = Path(private_memory/f"{user_id}.json")
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump({"id": user_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
     # 打开配置文件路径对应的文件，以写入模式，并确保文件以UTF-8编码
     with open(str(conf_path), "w", encoding="utf-8") as f:
         # 将数据写入到文件中，确保ASCII字符以外的字符也能被正确处理
