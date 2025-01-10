@@ -3,7 +3,7 @@ def init():
     global SuggarMatcher
     from .matcher import SuggarMatcher as Matcher
     SuggarMatcher = Matcher
-init()
+
 class EventType:
     
     __CHAT = "chat"
