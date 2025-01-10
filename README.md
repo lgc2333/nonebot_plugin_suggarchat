@@ -144,20 +144,6 @@ while True:
 - 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式）
 
 ## 安装方式
-0. **前提条件**
-    - 确保安装nonebot-plugin-localstore
-    ```bash
-        pip install nonebot-plugin-localstore
-    ```
-    并在你的`pyproject.toml`中添加如下内容：
-    ```toml
-    plugins=["nonebot_plugin_localstore"]
-    #添加"nonebot_plugin_localstore"
-    ```
-    或直接使用nb-cli:
-    ```bash
-    nb plugin install nonebot-plugin-localstore
-    ```
 1. **通过pip安装**
    - 确保已安装Python（版本>=3.9）。
     打开命令行工具，执行以下命令来安装插件：
@@ -177,12 +163,6 @@ while True:
 plugins=["nonebot_plugin_suggarchat"]
 #添加"nonebot_plugin_suggarchat"
 ```
-
-3. **通过nb-cli安装**
-    ```bash
-    nb plugin install nonebot-plugin-suggarchat
-    # 此方法不需要再单独安装localstore
-    ```
 ## 配置文件
 
 - **配置文件路径**：通常位于项目的运行目录的config目录下，文件名为`config.json`。
@@ -259,7 +239,23 @@ plugins=["nonebot_plugin_suggarchat"]
 | **/debug** | 无 | 显示调试信息并推送 |
 
 
-</datials>
+</details>
+
+## 插件中间件事件处理写法(实验,需要在配置文件json中把`enable_lab_function`改为`true`)
+
+
+```py
+
+from nonebot.plugin import require
+require("nonebot_plugin_suggarchat")
+from nonebot_plugin_suggarchat.on_event import on_chat
+from nonebot_plugin_suggarchat.event import ChatEvent
+@on_chat().handle()
+async def your_def(event:SuggarEvent):
+    print("Hello,World")
+
+
+```
 
 ## 讨论
 

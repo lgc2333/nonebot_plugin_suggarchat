@@ -46,7 +46,7 @@ __default_config__ = {
     "enable_group_chat":True,
     "enable_private_chat":True,
     "allow_custom_prompt":True,
-    "allow_send_to_admin":True,
+    "allow_send_to_admin":False,
     "use_base_prompt":True,
     "admin_group":0,
     "admins":[],
@@ -73,7 +73,8 @@ __default_config__ = {
     "哎呀，我也有尴尬的时候呢~",  
     "希望我能继续为你提供帮助，不要太在意我的小错误哦！",  
     ],  
-    "parse_segments":True
+    "parse_segments":True,
+    "enable_lab_function":False,
 }
 def save_config(conf:dict):
     """
@@ -112,11 +113,11 @@ def get_config()->dict:
     with open(str(main_config),"r") as f:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
-    if conf["use_base_prompt"] and conf["parse_segments"]:
-        conf["group_train"]["content"] = __base_group_prompt__ + conf["group_train"]["content"]
-        conf["private_train"]["content"] = __base_private_prompt__ + conf["private_train"]["content"]
-    if conf["enable"]:
-        if conf["open_ai_api_key"] == "" or conf["open_ai_base_url"] == "":
+    if conf['use_base_prompt'] and conf['parse_segments']:
+        conf['group_train']['content'] = __base_group_prompt__ + conf['group_train']['content']
+        conf['private_train']['content'] = __base_private_prompt__ + conf['private_train']['content']
+    if conf['enable']:
+        if conf['open_ai_api_key'] == "" or conf['open_ai_base_url'] == "":
             logger.error("配置文件不完整，请检查配置文件")
             raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
     return conf

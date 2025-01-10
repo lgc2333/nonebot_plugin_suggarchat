@@ -1,6 +1,7 @@
 from nonebot import on_command,on_notice,on_message,get_driver
 import nonebot.adapters
 from nonebot.rule import to_me
+from .event import ChatEvent,PokeEvent
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
@@ -16,64 +17,66 @@ from nonebot.matcher import Matcher
 import sys
 import openai
 import random
+from .matcher import SuggarMatcher
 from datetime import datetime  
 from httpx import AsyncClient
 config = get_config()
-ifenable = config["enable"]
+_matcher = SuggarMatcher()
+ifenable = config['enable']
 async def send_to_admin(msg:str)-> None:
      global config
-     if not config["allow_send_to_admin"]:return
-     if config["admin_group"] == 0:
+     if not config['allow_send_to_admin']:return
+     if config['admin_group'] == 0:
           try:
                raise RuntimeWarning("未配置管理聊群QQ号，但是这被触发了，请配置admin_group。")
           except Exception:
                logger.warning(f"未配置管理聊群QQ号，但是这被触发了，\"{msg}\"将不会被发送！")
                exc_type,exc_vaule,exc_tb = sys.exc_info()
                logger.exception(f"{exc_type}:{exc_vaule}")
-
+               return
      bot:Bot = nonebot.get_bot()
-     await bot.send_group_msg(group_id=config["admin_group"],message=msg)
+     await bot.send_group_msg(group_id=config['admin_group'],message=msg)
 
 debug = False
 
 
 custom_menu = []
 
-group_train = config["group_train"]
-private_train = config["private_train"]
+group_train = config['group_train']
+private_train = config['private_train']
 async def is_member(event: GroupMessageEvent,bot:Bot):
      user_role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
      user_role = user_role.get("role")
      if user_role == "member":return True
      return False
-admins = config["admins"]
+admins = config['admins']
 
 async def get_chat(messages:list)->str:
      global config,ifenable
-     max_tokens = config["max_tokens"]
+     max_tokens = config['max_tokens']
      
-     if config["preset"] == "__main__":
-         base_url = config["open_ai_base_url"]
-         key = config["open_ai_api_key"]
-         model = config["model"]
+     if config['preset'] == "__main__":
+         base_url = config['open_ai_base_url']
+         key = config['open_ai_api_key']
+         model = config['model']
      else:
          models = get_models()
          for i in models:
-             if i["name"] == config["preset"]:
-                 base_url = i["base_url"]
-                 key = i["api_key"]
-                 model = i["model"]
+             if i['name'] == config['preset']:
+                 base_url = i['base_url']
+                 key = i['api_key']
+                 model = i['model']
                  break
          else:
-             logger.error(f"未找到预设{config["preset"]}")
-             logger.info("已重置预设为：主配置文件，模型："+config["model"])
-             config["preset"] = "__main__"
-             key = config["open_ai_api_key"]
-             model = config["model"]
-             base_url = config["open_ai_base_url"]
+             logger.error(f"未找到预设{config['preset']}")
+             logger.info("已重置预设为：主配置文件，模型："+config['model'])
+             config['preset'] = "__main__"
+             key = config['open_ai_api_key']
+             model = config['model']
+             base_url = config['open_ai_base_url']
              save_config(config)
      logger.debug(f"开始获取对话，模型：{model}")
-     logger.debug(f"预设：{config["preset"]}")
+     logger.debug(f"预设：{config['preset']}")
      logger.debug(f"密钥：{key[:10]}...")
      logger.debug(f"API base_url：{base_url}")
      async with AsyncClient(base_url=base_url) as aclient:
@@ -114,16 +117,16 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     if not arg == "":
         models = get_models()
         for i in models:
-            if i["name"] == arg:
-                config["preset"] = i["name"]
+            if i['name'] == arg:
+                config['preset'] = i['name']
                 save_config(config)
                 await set_preset.finish(f"已设置预设为：{i['name']}，模型：{i['model']}")
                 break
         else:set_preset.finish("未找到预设，请输入/presets查看预设列表。")
     else:
-        config["preset"] = "__main__"
+        config['preset'] = "__main__"
         save_config(config)
-        await set_preset.finish("已重置预设为：主配置文件，模型："+config["model"])
+        await set_preset.finish("已重置预设为：主配置文件，模型："+config['model'])
 @presets.handle()
 async def _(bot: Bot, event: MessageEvent):
     global admins,config,ifenable
@@ -131,7 +134,7 @@ async def _(bot: Bot, event: MessageEvent):
     if not event.user_id in admins:
         await presets.finish("只有管理员才能查看模型预设。")
     models = get_models()
-    msg = f"模型预设:\n当前：{'主配置文件' if config["preset"] == "__main__" else config["preset"]}\n主配置文件：{config['model']}"
+    msg = f"模型预设:\n当前：{'主配置文件' if config['preset'] == "__main__" else config['preset']}\n主配置文件：{config['model']}"
     for i in models:
         msg += f"\n预设名称：{i['name']}，模型：{i['model']}"
     await presets.finish(msg)
@@ -151,10 +154,10 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     """
     global config
     # 检查是否启用prompt功能，未启用则跳过处理
-    if not config["enable"]:
+    if not config['enable']:
         prompt.skip()
     # 检查是否允许自定义prompt，不允许则结束处理
-    if not config["allow_custom_prompt"]:
+    if not config['allow_custom_prompt']:
         await prompt.finish("当前不允许自定义prompt。")
     
     global admins
@@ -181,11 +184,11 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
         await prompt.send(f"Prompt:\n{data.get('prompt','未设置prompt')}")
         return
     elif arg.startswith("--(clear)"):
-        data["prompt"] = ""
+        data['prompt'] = ""
         await prompt.send("prompt已清空。")
     elif arg.startswith("--(set)"):
         arg = arg.replace("--(set)","").strip()
-        data["prompt"] = arg
+        data['prompt'] = arg
         await prompt.send(f"prompt已设置为：\n{arg}")
     else:
         await prompt.send("请输入prompt或参数（--(show) 展示当前提示词，--(clear) 清空当前prompt，--(set) [文字]则设置提示词，e.g.:/prompt --(show)）,/prompt --(set) [text]。")
@@ -212,15 +215,15 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
     """
     global config
     # 检查全局配置，如果未启用，则跳过处理
-    if not config["enable"]:
+    if not config['enable']:
         add_notice.skip()
     # 检查配置，如果不发送被邀请后的消息，则直接返回
-    if not config["send_msg_after_be_invited"]:
+    if not config['send_msg_after_be_invited']:
         return
     # 如果事件的用户ID与机器人自身ID相同，表示机器人被邀请加入群聊
     if event.user_id == event.self_id:
         # 发送配置中的群聊添加消息
-        await add_notice.send(config["group_added_msg"])
+        await add_notice.send(config['group_added_msg'])
         return
 
 # 处理调试模式开关的函数
@@ -238,7 +241,7 @@ async def _ (bot:Bot,event:MessageEvent,matcher:Matcher):
     """
     global admins,config
     # 如果配置中未启用调试模式，跳过后续处理
-    if not config["enable"]:matcher.skip()
+    if not config['enable']:matcher.skip()
     # 如果不是管理员用户，直接返回
     if not event.user_id in admins:
         return
@@ -266,7 +269,7 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
     """
     global debug,group_train,private_train,config
     # 如果配置中未启用调试模式，跳过后续处理
-    if not config["enable"]:matcher.skip()
+    if not config['enable']:matcher.skip()
     # 如果调试模式未开启，直接返回
     if not debug:
         return
@@ -306,7 +309,7 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
     # 处理消息内容，根据消息类型记录相关信息
     for segment in event.get_message():
         if segment.type == "text":
-            content = content + segment.data["text"]
+            content = content + segment.data['text']
         elif segment.type == "at":
             content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
@@ -325,11 +328,11 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
         reply += DT
         for msg in event.reply.message:
             if msg.type == "text":
-                reply += msg.data["text"]
+                reply += msg.data['text']
             elif msg.type == "at":
                 reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
             elif msg.type == "forward":
-                forward = await bot.get_forward_msg(message_id=msg.data["id"])
+                forward = await bot.get_forward_msg(message_id=msg.data['id'])
                 logger.debug(forward)
                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
     
@@ -345,14 +348,14 @@ async def _(bot:Bot,event:GroupRecallNoticeEvent,matcher:Matcher):
     # 声明全局变量config，用于访问配置信息
     global config
     # 检查是否启用了插件功能，未启用则跳过后续处理
-    if not config["enable"]:matcher.skip()
+    if not config['enable']:matcher.skip()
     # 通过随机数决定是否响应，增加趣味性和减少响应频率
     if not random.randint(1,3) == 2:
         return
     # 检查配置中是否允许在删除自己的消息后发言，不允许则直接返回
-    if not config["say_after_self_msg_be_deleted"]:return
+    if not config['say_after_self_msg_be_deleted']:return
     # 从配置中获取删除消息后可能的回复内容
-    recallmsg = config["after_deleted_say_what"]
+    recallmsg = config['after_deleted_say_what']
     # 判断事件是否为机器人自己删除了自己的消息
     if event.user_id == event.self_id:
         # 如果是机器人自己删除了自己的消息，并且操作者也是机器人自己，则不进行回复
@@ -376,7 +379,7 @@ async def _(event:MessageEvent,matcher:Matcher):
     global custom_menu,menu_msg,config
     
     # 检查聊天功能是否已启用，未启用则跳过处理
-    if not config["enable"]:
+    if not config['enable']:
         matcher.skip()
     
     # 初始化消息内容为默认菜单消息
@@ -409,11 +412,11 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
     global debug,config
     
     # 检查配置，如果机器人未启用，则跳过处理
-    if not config["enable"]:
+    if not config['enable']:
         matcher.skip()
     
     # 如果配置中未开启戳一戳回复，则直接返回
-    if not config["poke_reply"]:
+    if not config['poke_reply']:
         poke.skip()
         return
     
@@ -451,6 +454,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 
                 # 更新群聊数据
                 write_memory_data(event,i)
+                if config["enable_lab_function"]:
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                 await poke.send(message)
         
         else:
@@ -471,6 +476,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 message = MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
+                if config["enable_lab_function"]:
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                 await poke.send(message)
                 
     except Exception as e:
@@ -504,14 +511,14 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     """
     global admins, config
     # 检查全局配置是否启用，如果未启用则跳过后续处理
-    if not config["enable"]:
+    if not config['enable']:
         matcher.skip()
     
     # 获取发送消息的成员信息
     member = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
     
     # 检查成员是否为普通成员且不在管理员列表中，如果是则发送提示消息并返回
-    if member["role"] == "member" and event.user_id not in admins:
+    if member['role'] == "member" and event.user_id not in admins:
         await disable.send("你没有这样的力量呢～（管理员/管理员+）")
         return
     
@@ -521,7 +528,7 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     # 获取并更新记忆中的数据结构
     datag = get_memory_data(event)
     if True:
-        if datag["id"] == event.group_id:
+        if datag['id'] == event.group_id:
             if not datag['enable']:
                 await disable.send("聊天禁用")
             else:
@@ -548,13 +555,13 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     """
     global admins, config
     # 检查全局配置，如果未启用则跳过后续处理
-    if not config["enable"]:
+    if not config['enable']:
         matcher.skip()
 
     # 获取发送命令的用户在群中的角色信息
     member = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
     # 如果用户是普通成员且不在管理员列表中，则发送提示信息并返回
-    if member["role"] == "member" and event.user_id not in admins:
+    if member['role'] == "member" and event.user_id not in admins:
         await enable.send("你没有这样的力量呢～（管理员/管理员+）")
         return
 
@@ -564,7 +571,7 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     datag = get_memory_data(event)
     # 检查记忆数据是否与当前群组相关
     if True:
-        if datag["id"] == event.group_id:
+        if datag['id'] == event.group_id:
             # 如果聊天功能已启用，则发送提示信息
             if datag['enable']:
                 await enable.send("聊天启用")
@@ -580,17 +587,17 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
 async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
     
     global admins,config
-    if not config["enable"]:matcher.skip()
+    if not config['enable']:matcher.skip()
     if isinstance(event,GroupMessageEvent):
         member = await bot.get_group_member_info(group_id=event.group_id,user_id=event.user_id)
         
         
-        if  member["role"] == "member" and not event.user_id in admins:
+        if  member['role'] == "member" and not event.user_id in admins:
                 await del_memory.send("你没有这样的力量（管理员/管理员+）")
                 return
         GData = get_memory_data(event)
         if True:
-            if GData["id"] == event.group_id:
+            if GData['id'] == event.group_id:
                 GData['memory']['messages'] = []
                 await del_memory.send("上下文已清除")
                 write_memory_data(event,GData)
@@ -600,8 +607,8 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
       
     else:
             FData = get_memory_data(event)
-            if FData["id"] == event.user_id:
-                FData["memory"]["messages"] = []
+            if FData['id'] == event.user_id:
+                FData['memory']['messages'] = []
                 await del_memory.send("上下文已清除")
                 logger.debug(f"{event.user_id}Memory deleted")
                 write_memory_data(event,FData)
@@ -631,9 +638,9 @@ NONEBOT PLUGIN SUGGARCHAT
 
 @chat.handle()
 async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
-    global debug,config
-    if not config["enable"]:matcher.skip()
-    memory_lenth_limit = config["memory_lenth_limit"]
+    global debug,config,_matcher
+    if not config['enable']:matcher.skip()
+    memory_lenth_limit = config['memory_lenth_limit']
  
 
     Date = get_current_datetime_timestamp()
@@ -658,10 +665,10 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
     if event.get_message():
      try:
         if isinstance(event,GroupMessageEvent):
-                if not config["enable_group_chat"]:matcher.skip()
+                if not config['enable_group_chat']:matcher.skip()
                 datag = Group_Data
-                if datag["id"] == event.group_id:
-                    if not datag["enable"]:
+                if datag['id'] == event.group_id:
+                    if not datag['enable']:
                         await chat.send( "聊天没有启用，快去找管理员吧！")
                         chat.skip()
                         return
@@ -672,7 +679,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                     user_name = (await bot.get_group_member_info(group_id=group_id, user_id=user_id))['card'] or (await bot.get_stranger_info(user_id=user_id))['nickname']
                     for segment in event.get_message():
                         if segment.type == "text":
-                            content = content + segment.data["text"]
+                            content = content + segment.data['text']
 
                         elif segment.type == "at":
                              content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
@@ -718,30 +725,30 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                          reply += DT
                          for msg in event.reply.message:
                              if msg.type == "text":
-                                  reply += msg.data["text"]
+                                  reply += msg.data['text']
         
                              elif msg.type == "at":
                                  reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']})）\\"
                              elif msg.type == "forward":
                                 
-                                forward = await bot.get_forward_msg(message_id=msg.data["id"])
+                                forward = await bot.get_forward_msg(message_id=msg.data['id'])
                                 logger.debug(forward)
                                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                              elif msg.type == "markdown":
                                   reply += "\\（Markdown消息 暂不支持）\\"
-                         content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
+                         content += [str(reply) if config['parse_segments'] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                          logger.debug(f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}")
     
-                    datag["memory"]["messages"].append({"role":"user","content":f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}" if config["parse_segments"] else event.message.extract_plain_text()})
-                    if len(datag["memory"]["messages"]) >memory_lenth_limit:
-                        while len(datag["memory"]["messages"])>memory_lenth_limit:
-                            del datag["memory"]["messages"][0]
+                    datag['memory']['messages'].append({"role":"user","content":f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config['parse_segments'] else event.message.extract_plain_text()}" })
+                    if len(datag['memory']['messages']) >memory_lenth_limit:
+                        while len(datag['memory']['messages'])>memory_lenth_limit:
+                            del datag['memory']['messages'][0]
                     send_messages = []
-                    send_messages = datag["memory"]['messages'].copy()
+                    send_messages = datag['memory']['messages'].copy()
                     train = group_train.copy()
                     
-                    train["content"] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt','无')}"
+                    train['content'] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt','无')}"
                     send_messages.insert(0,train)
                     try:    
                             
@@ -752,12 +759,13 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             if debug:
                                  await send_to_admin(f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
                             if debug:
-                                 logger.debug(datag["memory"]["messages"])
+                                 logger.debug(datag['memory']['messages'])
                                  logger.debug(str(response))
                                  await send_to_admin(f"response:{response}")
                                  
-                            datag["memory"]["messages"].append({"role":"assistant","content":str(response)})
-                   
+                            datag['memory']['messages'].append({"role":"assistant","content":str(response)})
+                            if config["enable_lab_function"]:
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                             await chat.send(message)
                     
                     except Exception as e:
@@ -775,20 +783,20 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
             
                     write_memory_data(event,datag) 
         else:
-                if not config["enable_private_chat"]:matcher.skip()
+                if not config['enable_private_chat']:matcher.skip()
                 data = Private_Data
-                if data["id"] == event.user_id:
+                if data['id'] == event.user_id:
                     content = ""
                     rl = ""
                     for segment in event.get_message():
                         if segment.type == "text":
-                            content = content + segment.data["text"]
+                            content = content + segment.data['text']
 
                         elif segment.type == "at":
                              content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
                         elif segment.type == "forward":
                             logger.debug(segment)
-                            forward = await bot.get_forward_msg(message_id=segment.data["id"])
+                            forward = await bot.get_forward_msg(message_id=segment.data['id'])
                             logger.debug(type(forward))
                             content+=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                     if content.strip() == "":
@@ -805,24 +813,24 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                          reply += DT
                          for msg in event.reply.message:
                              if msg.type == "text":
-                                  reply += msg.data["text"]
+                                  reply += msg.data['text']
               
                              elif segment.type == "at":
                                 reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
                              elif msg.type == "forward":
                               
-                                forward = await bot.get_forward_msg(message_id=msg.data["id"])
+                                forward = await bot.get_forward_msg(message_id=msg.data['id'])
                                 logger.debug(type(forward))
                                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-                         content += [str(reply) if config["parse_segments"] else event.reply.message.extract_plain_text()]
+                         content += [str(reply) if config['parse_segments'] else event.reply.message.extract_plain_text()]
                          logger.debug(reply)
                      
-                    data["memory"]["messages"].append({"role":"user","content":f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)}" if config["parse_segments"] else event.message.extract_plain_text()})
-                    if len(data["memory"]["messages"]) >memory_lenth_limit:
-                        while len(data["memory"]["messages"])>memory_lenth_limit:
-                            del data["memory"]["messages"][0]
+                    data['memory']['messages'].append({"role":"user","content":f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)if config['parse_segments'] else event.message.extract_plain_text()}" })
+                    if len(data['memory']['messages']) >memory_lenth_limit:
+                        while len(data['memory']['messages'])>memory_lenth_limit:
+                            del data['memory']['messages'][0]
                     send_messages = []
-                    send_messages = data["memory"]["messages"].copy()
+                    send_messages = data['memory']['messages'].copy()
                     send_messages.insert(0,private_train)
                     try:    
                             response = await get_chat(send_messages)
@@ -835,13 +843,14 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             
                             
                             if debug:
-                                 logger.debug(data["memory"]["messages"])
+                                 logger.debug(data['memory']['messages'])
                                  logger.debug(str(response))
                
                                  await send_to_admin(f"response:{response}")
                                  
-                            data["memory"]["messages"].append({"role":"assistant","content":str(response)})
-                          
+                            data['memory']['messages'].append({"role":"assistant","content":str(response)})
+                            if config["enable_lab_function"]:
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                             await chat.send(message)
                            
                             

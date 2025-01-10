@@ -81,7 +81,7 @@ class Admin:
         返回:
         - bool: 用户是否是管理员。
         """
-        return user_id in config["admins"]
+        return user_id in config['admins']
     
     def add_admin(self, user_id: int):
         config = self.config
@@ -94,7 +94,7 @@ class Admin:
         返回:
         - Admin: 返回Admin实例，支持链式调用。
         """
-        config["admins"].append(user_id)
+        config['admins'].append(user_id)
         save_config(config)
         self.config = get_config()
         return self
@@ -110,7 +110,7 @@ class Admin:
         返回:
         - Admin: 返回Admin实例，支持链式调用。
         """
-        config["admin_group"] = group_id
+        config['admin_group'] = group_id
         save_config(config)
         self.config = get_config()
         return self
@@ -142,7 +142,7 @@ class Chat:
         返回:
         - Chat: 返回Chat实例，支持链式调用。
         """
-        config["private_train"] = prompt
+        config['private_train'] = prompt
         save_config(config)
         self.config = get_config()
         return self
@@ -159,7 +159,7 @@ class Chat:
         返回:
         - Chat: 返回Chat实例，支持链式调用。
         """
-        config["group_train"] = prompt
+        config['group_train'] = prompt
         save_config(config)
         self.config = get_config()
         return self
