@@ -74,7 +74,7 @@ class SuggarMatcher:
             except ProcessException as e:
                 raise e
             except Exception as e:
-                logger.error(f"Error running suggar at file {inspect.getfile(handler)} line {inspect.getlineno(handler)}")
+                logger.error(f"Error running suggar at file {inspect.getfile(handler)}")
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 logger.error(f"Exception type: {exc_type.__name__}")
                 logger.error(f"Exception message: {str(exc_value)}")
@@ -84,7 +84,7 @@ class SuggarMatcher:
                 
                 logger.debug(f"matcher on {handler.__name__} is running......")
                 logger.debug(f"Running suggar event: {event_type}")
-                logger.info(f"matcher running at file {inspect.getfile(handler)} line {inspect.getlineno(handler)}")
+                logger.info(f"matcher running at file {inspect.getfile(handler)} ")
                 self.running_tasks.append(self.task)
                 self.task.add_done_callback(self.running_tasks.remove)
                 
