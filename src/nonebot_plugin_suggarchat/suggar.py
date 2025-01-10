@@ -631,7 +631,9 @@ NONEBOT PLUGIN SUGGARCHAT
     logger.info(f"群记忆文件目录：{group_memory}")
     logger.info(f"私聊记忆文件目录：{private_memory}")
     logger.info(f"预设目录：{custom_models_dir}")
-    save_config(get_config())
+    save_config(get_config(no_base_prompt=True))
+    from .on_event import init
+    init()
     logger.info("启动成功")
     
 

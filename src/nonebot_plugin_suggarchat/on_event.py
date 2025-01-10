@@ -1,4 +1,8 @@
-from .matcher import SuggarMatcher
+SuggarMatcher = None
+def init():
+    global SuggarMatcher
+    from .matcher import SuggarMatcher as Matcher
+    SuggarMatcher = Matcher
 class EventType:
     __CHAT = "chat"
     __None = ""
@@ -12,10 +16,10 @@ class EventType:
         return self.__None
     def poke(self):
         return self.__POKE
-def on_chat()-> SuggarMatcher:
+def on_chat():
     return SuggarMatcher(event_type=EventType().chat())
 
-def on_poke() -> SuggarMatcher:
+def on_poke():
     return SuggarMatcher(event_type=EventType().poke())
 
 

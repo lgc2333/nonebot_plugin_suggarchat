@@ -91,9 +91,12 @@ def save_config(conf:dict):
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     with open(str(main_config),"w",encoding="utf-8") as f:
         conf = update_dict(__default_config__,conf)
-       
+        if __base_private_prompt__ in conf["private_train"]:
+            conf["private_prompt"].remove(__base_private_prompt__)
+        if __base_group_prompt__ in conf["group_train"]:
+            conf["group_prompt"].remove(__base_group_prompt__)
         json.dump(conf,f,ensure_ascii=False,indent=4)
-def get_config()->dict:
+def get_config(no_base_prompt:bool=False)->dict:
     f"""
     获取配置文件
 
@@ -113,7 +116,7 @@ def get_config()->dict:
     with open(str(main_config),"r") as f:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
-    if conf['use_base_prompt'] and conf['parse_segments']:
+    if conf['use_base_prompt'] and conf['parse_segments'] and not no_base_prompt:
         conf['group_train']['content'] = __base_group_prompt__ + conf['group_train']['content']
         conf['private_train']['content'] = __base_private_prompt__ + conf['private_train']['content']
     if conf['enable']:
