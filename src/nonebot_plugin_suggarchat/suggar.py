@@ -738,7 +738,10 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
                              elif msg.type == "markdown":
                                   reply += "\\（Markdown消息 暂不支持）\\"
-                         content += [str(reply) if config['parse_segments'] else event.reply.message.extract_plain_text()]
+                         if config['parse_segments']:
+                                content += str(reply)
+                         else:
+                                content += event.reply.message.extract_plain_text()
                          logger.debug(reply)
                          logger.debug(f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}")
     
@@ -824,7 +827,10 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 forward = await bot.get_forward_msg(message_id=msg.data['id'])
                                 logger.debug(type(forward))
                                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-                         content += [str(reply) if config['parse_segments'] else event.reply.message.extract_plain_text()]
+                         if config['parse_segments']:
+                            content += str(reply)
+                         else:
+                            content += event.reply.message.extract_plain_text()
                          logger.debug(reply)
                      
                     data['memory']['messages'].append({"role":"user","content":f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)if config['parse_segments'] else event.message.extract_plain_text()}" })
