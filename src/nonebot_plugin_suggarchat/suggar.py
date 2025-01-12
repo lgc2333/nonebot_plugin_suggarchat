@@ -7,7 +7,7 @@ from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
-     ,get_models,save_config
+     ,get_models,save_config,get_group_prompt,get_private_prompt
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
@@ -42,8 +42,8 @@ debug = False
 
 custom_menu = []
 
-group_train = config['group_train']
-private_train = config['private_train']
+private_train = get_private_prompt()
+group_train = get_group_prompt()
 async def is_member(event: GroupMessageEvent,bot:Bot):
      user_role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
      user_role = user_role.get("role")
@@ -386,8 +386,8 @@ async def _(event:MessageEvent,matcher:Matcher):
     msg = menu_msg
     
     # 遍历自定义菜单项，添加到消息内容中
-    for menu in custom_menu:
-        msg += f"\n{menu['cmd']} {menu['describe']}"
+    for menus in custom_menu:
+        msg += f"\n{menus['cmd']} {menus['describe']}"
     
     # 根据配置信息，添加群聊或私聊聊天可用性的提示信息
     msg += f"\n{'群内可以at我与我聊天，' if config['enable_group_chat'] else '未启用群内聊天，'}{'在私聊可以直接聊天。' if config['enable_private_chat'] else '未启用私聊聊天'}\nPowered by Suggar chat plugin"
@@ -454,7 +454,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 
                 # 更新群聊数据
                 write_memory_data(event,i)
-                if config["enable_lab_function"]:
+                if config['enable_lab_function']:
                     returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                     message = returning.message
                 await poke.send(message)
@@ -477,7 +477,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 message = MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
-                if config["enable_lab_function"]:
+                if config['enable_lab_function']:
                     returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                     message = returning.message
                 await poke.send(message)
@@ -771,7 +771,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config["enable_lab_function"]:
+                            if config['enable_lab_function']:
                                 returning:ChatEvent = await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                                 message = returning.message
                             await chat.send(message)
@@ -860,7 +860,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config["enable_lab_function"]:
+                            if config['enable_lab_function']:
                                 returning:ChatEvent =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
                                 message = returning.message
                             await chat.send(message)

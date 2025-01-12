@@ -5,7 +5,7 @@ import nonebot
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent
 import math
-from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir
+from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
 __default_model_conf__={
     "model":"auto",
     "name":"",
@@ -41,8 +41,8 @@ __default_config__ = {
     "memory_lenth_limit":50,
     "enable":False,
     "poke_reply":True,
-    "private_train":{ "role": "system", "content": ""},
-    "group_train":{ "role": "system", "content": ""},
+    #"private_train":{ "role": "system", "content": ""},
+    #"group_train":{ "role": "system", "content": ""},
     "enable_group_chat":True,
     "enable_private_chat":True,
     "allow_custom_prompt":True,
@@ -76,6 +76,7 @@ __default_config__ = {
     "parse_segments":True,
     "enable_lab_function":False,
 }
+
 def save_config(conf:dict):
     """
     保存配置文件
@@ -87,14 +88,10 @@ def save_config(conf:dict):
         try:
             Path.mkdir(config_dir)
         except:pass
-        with open(str(main_config),"w",encoding="utf-8") as f:
+        with open(str(main_config),"w") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
-    with open(str(main_config),"w",encoding="utf-8") as f:
+    with open(str(main_config),"w") as f:
         conf = update_dict(__default_config__,conf)
-        if __base_private_prompt__ in conf["private_train"]:
-            conf["private_prompt"].remove(__base_private_prompt__)
-        if __base_group_prompt__ in conf["group_train"]:
-            conf["group_prompt"].remove(__base_group_prompt__)
         json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config(no_base_prompt:bool=False)->dict:
     f"""
@@ -116,14 +113,35 @@ def get_config(no_base_prompt:bool=False)->dict:
     with open(str(main_config),"r") as f:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
-    if conf['use_base_prompt'] and conf['parse_segments'] and not no_base_prompt:
-        conf['group_train']['content'] = __base_group_prompt__ + conf['group_train']['content']
-        conf['private_train']['content'] = __base_private_prompt__ + conf['private_train']['content']
     if conf['enable']:
         if conf['open_ai_api_key'] == "" or conf['open_ai_base_url'] == "":
             logger.error("配置文件不完整，请检查配置文件")
             raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
     return conf
+def get_group_prompt()->dict:
+    config = get_config()
+    if config.get("group_train")!=None:
+        logger.warning(f"配置文件的group_train字段已经弃用，请将其存放在配置文件同级目录的{group_prompt}文件中，我们已自动为您迁移。")
+        del config['group_train']
+        save_config(config)
+    if not Path(group_prompt).exists() or not Path(group_prompt).is_file():
+        with open(str(group_prompt),"w") as f:
+            f.write(config['group_prompt'])
+    with open (str(group_prompt),"r") as f:
+        prompt = f.read()
+    return {"role": "system", "content": prompt}
+def get_private_prompt()->dict:
+    config = get_config()
+    if config.get("private_train")!=None:
+        logger.warning(f"配置文件的private_train字段已经弃用，请将其存放在{private_prompt}中，我们已自动为您迁移。")
+        del config['private_train']
+        save_config(config)
+    if not Path(private_prompt).exists() or not Path(private_prompt).is_file():
+        with open(str(private_prompt),"w") as f:
+            f.write(config['private_train'])
+    with open (str(private_prompt),"r") as f:
+        prompt = f.read()
+    return {"role": "system", "content": prompt}
 def get_memory_data(event:MessageEvent)->dict:
     logger.info(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
