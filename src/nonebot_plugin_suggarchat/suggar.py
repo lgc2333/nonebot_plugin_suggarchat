@@ -311,7 +311,7 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
         if segment.type == "text":
             content = content + segment.data['text']
         elif segment.type == "at":
-            content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+            content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
             forward = await bot.get_forward_msg(message_id=segment.data['id'])
             logger.debug(type(forward))
@@ -330,7 +330,7 @@ async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
             if msg.type == "text":
                 reply += msg.data['text']
             elif msg.type == "at":
-                reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
+                reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']}))"
             elif msg.type == "forward":
                 forward = await bot.get_forward_msg(message_id=msg.data['id'])
                 logger.debug(forward)
@@ -684,7 +684,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             content = content + segment.data['text']
 
                         elif segment.type == "at":
-                             content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+                             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
                         elif segment.type == "forward":
                             
                             forward = await bot.get_forward_msg(message_id=segment.data['id'])
@@ -730,7 +730,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                   reply += msg.data['text']
         
                              elif msg.type == "at":
-                                 reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']})）\\"
+                                 reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']})）\\"
                              elif msg.type == "forward":
                                 
                                 forward = await bot.get_forward_msg(message_id=msg.data['id'])
@@ -798,7 +798,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                             content = content + segment.data['text']
 
                         elif segment.type == "at":
-                             content += f"\\（at: @{segment.data['name']}(QQ:{segment.data['qq']}))"
+                             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
                         elif segment.type == "forward":
                             logger.debug(segment)
                             forward = await bot.get_forward_msg(message_id=segment.data['id'])
@@ -821,7 +821,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                   reply += msg.data['text']
               
                              elif segment.type == "at":
-                                reply += f"\\（at: @{msg.data['name']}(QQ:{msg.data['qq']}))"
+                                reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']}))"
                              elif msg.type == "forward":
                               
                                 forward = await bot.get_forward_msg(message_id=msg.data['id'])
