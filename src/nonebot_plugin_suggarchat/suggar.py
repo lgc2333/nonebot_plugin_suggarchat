@@ -455,7 +455,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 # 更新群聊数据
                 write_memory_data(event,i)
                 if config["enable_lab_function"]:
-                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    message = returning.message
                 await poke.send(message)
         
         else:
@@ -477,7 +478,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
                 if config["enable_lab_function"]:
-                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    message = returning.message
                 await poke.send(message)
                 
     except Exception as e:
@@ -770,7 +772,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config["enable_lab_function"]:
-                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                returning:ChatEvent = await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                message = returning.message
                             await chat.send(message)
                     
                     except Exception as e:
@@ -858,7 +861,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config["enable_lab_function"]:
-                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                returning:ChatEvent =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                message = returning.message
                             await chat.send(message)
                            
                             

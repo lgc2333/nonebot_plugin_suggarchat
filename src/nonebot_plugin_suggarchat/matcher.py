@@ -2,7 +2,7 @@ from typing import Callable, List, Awaitable, Optional,override
 import asyncio
 import inspect
 from nonebot import logger
-from nonebot.exception import ProcessException
+from nonebot.exception import ProcessException,FinishedException,StopPropagation
 from .event import SuggarEvent
 import sys
 """
@@ -11,7 +11,9 @@ suggar matcher
 """
 event_handlers = {}
 running_tasks = []
-
+async def handle_and_return_event(handler, event, **args):
+        await handler(event, **args)
+        return event
 class SuggarMatcher:
   def __init__(self, event_type: str = ""):
         # 存储事件处理函数的字典
@@ -43,7 +45,11 @@ class SuggarMatcher:
             import traceback
             logger.error(traceback.format_tb(exc_traceback))
     self.running_tasks.clear()
-  async def trigger_event(self, event: SuggarEvent, **kwargs):
+  def cancel(self):
+      raise FinishedException()
+  def cancel_nonebot_process(self):
+      raise StopPropagation()
+  async def trigger_event(self, event: SuggarEvent, **kwargs)->SuggarEvent:
     
     """
     触发特定类型的事件，并调用该类型的所有注册事件处理程序。
@@ -70,7 +76,7 @@ class SuggarMatcher:
             # 调用处理程序
             try:
                 logger.debug(f"start running suggar event: {event_type}")
-                self.task = asyncio.create_task(handler(event, **args))
+                self.task = asyncio.create_task(handle_and_return_event(handler, event, **args))
             except ProcessException as e:
                 raise e
             except Exception as e:
@@ -87,4 +93,5 @@ class SuggarMatcher:
                 logger.info(f"matcher running at file {inspect.getfile(handler)} ")
                 self.running_tasks.append(self.task)
                 self.task.add_done_callback(self.running_tasks.remove)
+                
                 
