@@ -123,7 +123,7 @@ def get_group_prompt()->dict:
     prompt_old = ""
     if config.get("group_train")!=None:
         logger.warning(f"配置文件的group_train字段已经弃用，请将其存放在配置文件同级目录的{group_prompt}文件中，我们已自动为您迁移。")
-        prompt_old = config['group_train']
+        prompt_old = config['group_train']["content"]
         del config['group_train']
         save_config(config)
     if not Path(group_prompt).exists() or not Path(group_prompt).is_file():
@@ -137,7 +137,7 @@ def get_private_prompt()->dict:
     prompt_old = ""
     if config.get("private_train")!=None:
         logger.warning(f"配置文件的private_train字段已经弃用，请将其存放在{private_prompt}中，我们已自动为您迁移。")
-        prompt_old = config['private_train']
+        prompt_old = config['private_train']["content"]
         del config['private_train']
         save_config(config)
     if not Path(private_prompt).exists() or not Path(private_prompt).is_file():
