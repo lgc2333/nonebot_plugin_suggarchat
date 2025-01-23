@@ -19,7 +19,7 @@ async def run_handle(handler, event, **args):
         
 class SuggarMatcher:
   event:SuggarEvent
-  __processing_message:MessageSegment
+  _processing_message:MessageSegment
 
   def __init__(self, event_type: str = ""):
         # 存储事件处理函数的字典
@@ -86,14 +86,14 @@ class SuggarMatcher:
 
         :param message: 要追加的消息内容
         """
-        self.__processing_message += message
+        self._processing_message += message
   def set_message(self, value: MessageSegment) -> None:
         """
         设置消息内容
 
         :param value: 新的消息内容
         """
-        self.__processing_message = value
+        self._processing_message = value
 
   def apphead_message(self, value: MessageSegment) -> None:
         """
@@ -101,7 +101,7 @@ class SuggarMatcher:
 
         :param value: 要添加的消息内容
         """
-        self.__processing_message = value + self.__processing_message
+        self._processing_message = value + self.__processing_message
   async def trigger_event(self, event: SuggarEvent, **kwargs)->SuggarEvent:
     
     """
@@ -154,7 +154,10 @@ class SuggarMatcher:
                 logger.error(f"Exception type: {exc_type.__name__}")
                 logger.error(f"Exception message: {str(exc_value)}")
                 import traceback
-                logger.error(traceback.format_tb(exc_traceback))
+                back=""
+                for i in traceback.format_tb(exc_traceback):
+                    back+=i
+                logger.error(back)
                 continue
             finally:
                 
