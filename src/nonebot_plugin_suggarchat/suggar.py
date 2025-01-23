@@ -16,6 +16,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEve
 from nonebot import logger
 from nonebot.matcher import Matcher
 import sys
+from . import on_event
 import openai
 import random
 from .matcher import SuggarMatcher
@@ -30,8 +31,8 @@ admins = config['admins']
 custom_menu = []
 private_train = get_private_prompt()
 group_train = get_group_prompt()
-
-
+running_messages = {}
+running_messages_poke = {}
 
 async def send_to_admin(msg:str)-> None:
     """
@@ -571,6 +572,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 write_memory_data(event,i)
                 if config['enable_lab_function']:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
+                    running_messages_poke[str(event.dict())] = message
                     returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                     message = returning.message
                 await poke.send(message)
@@ -595,6 +597,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 write_memory_data(event,i)
                 if config['enable_lab_function']:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
+                    running_messages_poke[str(event.dict())] = message
                     returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                     message = returning.message
                 await poke.send(message)
@@ -781,6 +784,7 @@ NONEBOT PLUGIN SUGGARCHAT
 
 @chat.handle()
 async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
+    global running_messages
     """
     处理聊天事件的主函数。
     
@@ -923,6 +927,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['enable_lab_function']:
                                 _matcher:SuggarMatcher = SuggarMatcher(event_type=EventType().chat())
+                                running_messages[event.message_id] = message
                                 returning:FinalObject= await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                                 message = returning.message
                             await chat.send(message)
@@ -1012,6 +1017,8 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['enable_lab_function']:
+                                _matcher:SuggarMatcher = SuggarMatcher(event_type=EventType().chat())
+                                running_messages[event.message_id] = message
                                 returning:FinalObject =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                                 message = returning.message
                             await chat.send(message)

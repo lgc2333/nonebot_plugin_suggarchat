@@ -175,3 +175,4 @@ cython_debug/
 config/
 group/
 private/
+bot.py

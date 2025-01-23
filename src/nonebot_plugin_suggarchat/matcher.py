@@ -4,8 +4,9 @@ import inspect
 from nonebot import logger
 from nonebot.exception import ProcessException,FinishedException,StopPropagation
 from .event import SuggarEvent,FinalObject
+from . import suggar
 import sys
-from nonebot.adapters.onebot.v11 import MessageSegment
+from nonebot.adapters.onebot.v11 import MessageSegment,MessageEvent,PokeNotifyEvent
 from .exception import BlockException,PassException,CancelException
 """
 suggar matcher
@@ -14,13 +15,12 @@ suggar matcher
 event_handlers = {}
 running_tasks = []
 handler_infos = {}
+matchers_data = {}
 async def run_handle(handler, event, **args):
         await handler(event, **args)
         
 class SuggarMatcher:
-  event:SuggarEvent
-  _processing_message:MessageSegment
-
+  
   def __init__(self, event_type: str = ""):
         # 存储事件处理函数的字典
         global event_handlers,running_tasks
@@ -28,7 +28,9 @@ class SuggarMatcher:
         self.handler_infos = handler_infos
         self.running_tasks = running_tasks
         self.event_type = event_type
-  
+        self.event:SuggarEvent
+        self.processing_message:MessageSegment
+
   def handle(self, event_type = None):
     if event_type==None and self.event_type != "":
         event_type = self.event_type
@@ -80,28 +82,41 @@ class SuggarMatcher:
       忽略当前处理器，继续处理下一个。
       """
       raise PassException()
-  def append_message(self, message: MessageSegment) -> None:
-        """
+  """  def append_message(self, message: MessageSegment) -> None:
+        \"""
         在消息末尾追加内容
 
         :param message: 要追加的消息内容
-        """
-        self._processing_message += message
+        \"""
+        nbevent = self.event.get_nonebot_event()
+        if isinstance(nbevent,MessageEvent):
+            suggar.running_messages[nbevent.message_id]+=message
+        elif isinstance(nbevent,PokeNotifyEvent):
+            suggar.running_messages_poke[str(nbevent.dict())]+=message
+
   def set_message(self, value: MessageSegment) -> None:
-        """
+        \"""
         设置消息内容
 
         :param value: 新的消息内容
-        """
-        self._processing_message = value
+        \"""
+        nbevent = self.event.get_nonebot_event()
+        if isinstance(nbevent,MessageEvent):
+            suggar.running_messages[nbevent.message_id] = value
+        elif isinstance(nbevent,PokeNotifyEvent):
+            suggar.running_messages_poke[str(nbevent.dict())] = value
 
   def apphead_message(self, value: MessageSegment) -> None:
-        """
+        \"""
         在消息开头添加内容
 
         :param value: 要添加的消息内容
-        """
-        self._processing_message = value + self.__processing_message
+        \"""
+        nbevent = self.event.get_nonebot_event()
+        if isinstance(nbevent,MessageEvent):
+            suggar.running_messages[nbevent.message_id] = value+suggar.running_messages[nbevent.message_id]
+        elif isinstance(nbevent,PokeNotifyEvent):
+            suggar.running_messages_poke[str(nbevent.dict())] = value+suggar.running_messages_poke[str(nbevent.dict())]"""
   async def trigger_event(self, event: SuggarEvent, **kwargs)->SuggarEvent:
     
     """
@@ -113,7 +128,7 @@ class SuggarMatcher:
     """
     event_type = event.get_event_type()  # 获取事件类型
     self.event = event
-    self.__processing_message = event.message
+    self.processing_message = event.message
     logger.info(f"Start running suggar event: {event_type}")
     # 检查是否有处理该事件类型的处理程序
     if event_type in self.event_handlers:
@@ -165,4 +180,4 @@ class SuggarMatcher:
                 logger.info(f"matcher running done file {inspect.getfile(handler)} ")
         
     else:logger.info(f"No handler for event type: {event_type},skipped this event")
-    return FinalObject(self.__processing_message)       
+    return FinalObject(self.processing_message)       
