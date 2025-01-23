@@ -174,8 +174,6 @@ plugins=["nonebot_plugin_suggarchat"]
 | `memory_length_limit`          | int               | 50           | 单会话允许存储的最大消息数（**如果您不知道这是什么意思，请不要修改**）                                       |  
 | `enable`                       | bool               | **false**         | 是否启用聊天机器人（即该插件）                                          |  
 | `poke_reply`                   | bool               | true         | 是否启用戳一戳回复功能                                          |  
-| `private_train`                | dict               | { "role": "system", "content": "`<请修改这里的内容>`" } | 私聊的系统提示词                                     |  
-| `group_train`                  | dict               | { "role": "system", "content": "`<请修改这里的内容>`" } | 群聊训的系统提示词                                     |  
 | `enable_group_chat`            | bool               | true         | 是否启用群聊功能                                            |  
 | `enable_private_chat`          | bool               | true         | 是否启用私聊功能                                            |  
 | `allow_custom_prompt`          | bool               | true         | 是否允许自定义提示                                          |  
@@ -196,7 +194,10 @@ plugins=["nonebot_plugin_suggarchat"]
 
 </details>
 
-## 预设
+## 提示词
+提示词位于工作目录的config文件夹，分别`为prompt_group.txt`与`prompt_private.txt`，分别对应群聊和私聊的提示词。
+
+## 模型预设
 预设文件位于工作目录的models文件夹下，预设文件为json格式，具体格式如下：
 
 ```json
@@ -244,18 +245,35 @@ plugins=["nonebot_plugin_suggarchat"]
 ## 插件中间件事件处理写法(实验,需要在配置文件json中把`enable_lab_function`改为`true`)
 
 
+<details><summary>示例插件</summary>
+
 ```py
 
 from nonebot.plugin import require
 require("nonebot_plugin_suggarchat")
-from nonebot_plugin_suggarchat.on_event import on_chat
+#先require再作导入！！！！
+from nonebot import logger
+from nonebot_plugin_suggarchat.on_event import on_chat,on_poke
 from nonebot_plugin_suggarchat.event import ChatEvent
+from nonebot_plugin_suggarchat.matcher import SuggarMatcher
+from nonebot.adapters.onebot.v11 import MessageSegment
+
 @on_chat().handle()
-async def your_def(event:SuggarEvent):
-    print("Hello,World")
+async def chat_logic(event:ChatEvent,matcher:SuggarMatcher):
+    logger.info("收到消息事件")
+    logger.info(f"{event.get_event_type()}")
+    matcher.append_message(MessageSegment.text("\n测试插件"))
+
+@on_poke().handle()
+async def poke_logic(event:ChatEvent,matcher:SuggarMatcher):
+    logger.info("收到戳一戳事件")
+    logger.info(f"{event.get_event_type()}")
+    matcher.append_message(MessageSegment.text("\n测试插件"))
 
 
 ```
+</details>
+
 
 ## 讨论
 

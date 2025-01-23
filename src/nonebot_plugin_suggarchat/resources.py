@@ -147,7 +147,7 @@ def get_private_prompt()->dict:
         prompt = f.read()
     return {"role": "system", "content": prompt}
 def get_memory_data(event:MessageEvent)->dict:
-    logger.info(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
+    logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
     根据消息事件获取记忆数据，如果用户或群组的记忆数据不存在，则创建初始数据结构
 
@@ -279,18 +279,7 @@ def split_list(lst:list, threshold:int) -> list:
     
     return result
 
-def get_love_level(exp: int) -> int:
-    a = 0.3  # 常数 a 
-    if exp < 0:
-        exp = str(exp).lstrip("-")
-        level = int(math.sqrt(abs(int(exp)) / a))
-        return -level
-    level = int(math.sqrt(exp / a))
-    return level
-def get_level(exp: int) -> int:
-    a = 10  # 常数 a 
-    level = int(math.sqrt(exp / a))
-    return level
+
 async def get_group_member_qq_numbers(group_id: int) -> list[int]:
     """
     获取指定群组的所有成员QQ号列表
@@ -313,7 +302,6 @@ async def is_same_day(timestamp1:int, timestamp2:int) -> bool:
     # 比较两个日期是否相同
     return date1 == date2
 async def synthesize_forward_message(forward_msg:dict) -> str:
-    forw_msg = {'messages': [{'content': [{'type': 'text', 'data': {'text': 'Prompt:\n这里是Leaves的社区群。leaves是什么？Leaves 是基于 Paper 的 Minecraft 服务端，旨在修复被破坏的原版特性。为什么选择 Leaves？\n速度快得离谱\nLeaves 包含大量改进和优化，从而显著提高了性能。这包括异步区块加载，以及对光照引擎、漏斗、实体等的重要改进。\n扩展应用程序接口\nLeaves 扩展并改进了 Bukkit、Spigot 和 Paper 应用程序接口，使您和开发者可以随心所欲地使用更多特性和功能，Leaves服务端不能安装模组！。\n你需要为群友解决问题，这里是Leaves文档的链接：https://docs.leavesmc.org/leaves/guides/getting-started\nLeaves与Leaf服务端是两个不同的服务端'}}], 'sender':{'nickname': 'Suggar', 'user_id': 2516251531}, 'time': 1729994618, 'message_format': 'array', 'message_type': 'group'}]}
     forw_msg = forward_msg
     # 初始化最终字符串
     result = ""

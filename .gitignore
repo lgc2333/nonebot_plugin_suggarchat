@@ -135,7 +135,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-pdm.lock
 Pipfile
 
 # Spyder project settings
@@ -171,3 +170,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+#Suggar files
+config/
+group/
+private/

@@ -1,10 +1,11 @@
 from nonebot import on_command,on_notice,on_message,get_driver
 import nonebot.adapters
 from nonebot.rule import to_me
-from .event import ChatEvent,PokeEvent
+from .event import FinalObject,PokeEvent,ChatEvent
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
+from .event import EventType
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
      ,get_models,save_config,get_group_prompt,get_private_prompt
@@ -20,77 +21,141 @@ import random
 from .matcher import SuggarMatcher
 from datetime import datetime  
 from httpx import AsyncClient
+
+
 config = get_config()
-_matcher = SuggarMatcher()
 ifenable = config['enable']
-async def send_to_admin(msg:str)-> None:
-     global config
-     if not config['allow_send_to_admin']:return
-     if config['admin_group'] == 0:
-          try:
-               raise RuntimeWarning("未配置管理聊群QQ号，但是这被触发了，请配置admin_group。")
-          except Exception:
-               logger.warning(f"未配置管理聊群QQ号，但是这被触发了，\"{msg}\"将不会被发送！")
-               exc_type,exc_vaule,exc_tb = sys.exc_info()
-               logger.exception(f"{exc_type}:{exc_vaule}")
-               return
-     bot:Bot = nonebot.get_bot()
-     await bot.send_group_msg(group_id=config['admin_group'],message=msg)
-
 debug = False
-
-
+admins = config['admins']
 custom_menu = []
-
 private_train = get_private_prompt()
 group_train = get_group_prompt()
-async def is_member(event: GroupMessageEvent,bot:Bot):
-     user_role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
-     user_role = user_role.get("role")
-     if user_role == "member":return True
-     return False
-admins = config['admins']
+
+
+
+async def send_to_admin(msg:str)-> None:
+    """
+    异步发送消息给管理员。
+
+    该函数会检查配置文件是否允许发送消息给管理员，以及是否配置了管理员群号。
+    如果满足条件，则发送消息；否则，将记录警告日志。
+
+    参数:
+    msg (str): 要发送给管理员的消息。
+
+    返回:
+    无返回值。
+    """
+    global config
+    # 检查是否允许发送消息给管理员
+    if not config['allow_send_to_admin']: return
+    # 检查管理员群号是否已配置
+    if config['admin_group'] == 0:
+        try:
+            # 如果未配置管理员群号但尝试发送消息，抛出警告
+            raise RuntimeWarning("Error!Admin group not set!")
+        except Exception:
+            # 记录警告日志并捕获异常信息
+            logger.warning(f"Admin group hasn't set yet!So warning message\"{msg}\"wont be sent to admin group!")
+            exc_type, exc_vaule, exc_tb = sys.exc_info()
+            logger.exception(f"{exc_type}:{exc_vaule}")
+        return
+    # 获取bot实例并发送消息到管理员群
+    bot: Bot = nonebot.get_bot()
+    await bot.send_group_msg(group_id=config['admin_group'], message=msg)
+
+async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
+    """
+    判断事件触发者是否为群组普通成员。
+
+    本函数通过调用机器人API获取事件触发者在群组中的角色信息，以确定其是否为普通成员。
+
+    参数:
+    - event: GroupMessageEvent - 群组消息事件，包含事件相关数据如群组ID和用户ID。
+    - bot: Bot - 机器人实例，用于调用API获取群组成员信息。
+
+    返回:
+    - bool: 如果事件触发者是群组普通成员，则返回True，否则返回False。
+    """
+    # 获取群组成员信息
+    user_role = await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id)
+    # 提取成员在群组中的角色
+    user_role = user_role.get("role")
+    # 判断成员角色是否为"member"（普通成员）
+    if user_role == "member":
+        return True
+    return False
+
 
 async def get_chat(messages:list)->str:
-     global config,ifenable
-     max_tokens = config['max_tokens']
-     
-     if config['preset'] == "__main__":
-         base_url = config['open_ai_base_url']
-         key = config['open_ai_api_key']
-         model = config['model']
-     else:
-         models = get_models()
-         for i in models:
-             if i['name'] == config['preset']:
-                 base_url = i['base_url']
-                 key = i['api_key']
-                 model = i['model']
-                 break
-         else:
-             logger.error(f"未找到预设{config['preset']}")
-             logger.info("已重置预设为：主配置文件，模型："+config['model'])
-             config['preset'] = "__main__"
-             key = config['open_ai_api_key']
-             model = config['model']
-             base_url = config['open_ai_base_url']
-             save_config(config)
-     logger.debug(f"开始获取对话，模型：{model}")
-     logger.debug(f"预设：{config['preset']}")
-     logger.debug(f"密钥：{key[:10]}...")
-     logger.debug(f"API base_url：{base_url}")
-     async with AsyncClient(base_url=base_url) as aclient:
-        client = openai.AsyncOpenAI(http_client=aclient,base_url=base_url,api_key=key)
-        completion = await client.chat.completions.create(model=model, messages=messages,max_tokens=max_tokens,stream=True)
+    """
+异步获取聊天响应函数
+
+本函数根据输入的消息列表生成聊天响应文本它根据配置文件中的设置，
+选择适当的API密钥、基础URL和模型进行聊天生成支持流式生成响应文本，
+并处理配置中预设的加载和错误情况下的配置重置
+
+参数:
+- messages (list): 包含聊天消息的列表，每个消息是一个字典
+
+返回:
+- str: 生成的聊天响应文本
+"""
+
+    # 声明全局变量，用于访问配置和判断是否启用
+    global config, ifenable
+    # 从配置中获取最大token数量
+    max_tokens = config['max_tokens']
+    
+    # 根据配置中的预设值，选择不同的API密钥和基础URL
+    if config['preset'] == "__main__":
+        # 如果是主配置，直接使用配置文件中的设置
+        base_url = config['open_ai_base_url']
+        key = config['open_ai_api_key']
+        model = config['model']
+    else:
+        # 如果是其他预设，从模型列表中查找匹配的设置
+        models = get_models()
+        for i in models:
+            if i['name'] == config['preset']:
+                base_url = i['base_url']
+                key = i['api_key']
+                model = i['model']
+                break
+        else:
+            # 如果未找到匹配的预设，记录错误并重置预设为主配置文件
+            logger.error(f"Preset {config['preset']} not found")
+            logger.info("Found：Main config，Model："+config['model'])
+            config['preset'] = "__main__"
+            key = config['open_ai_api_key']
+            model = config['model']
+            base_url = config['open_ai_base_url']
+            # 保存更新后的配置
+            save_config(config)
+    
+    # 记录日志，开始获取对话
+    logger.debug(f"Start to get response with model {model}")
+    logger.debug(f"Preset：{config['preset']}")
+    logger.debug(f"Key：{key[:10]}...")
+    logger.debug(f"API base_url：{base_url}")
+    
+    # 使用异步客户端发起请求
+    async with AsyncClient(base_url=base_url) as aclient:
+        # 初始化OpenAI异步客户端
+        client = openai.AsyncOpenAI(http_client=aclient, base_url=base_url, api_key=key)
+        # 创建聊天完成请求
+        completion = await client.chat.completions.create(model=model, messages=messages, max_tokens=max_tokens, stream=True)
         response = ""
+        # 流式接收响应并构建最终的聊天文本
         async for chunk in completion:
             try:
                 response += chunk.choices[0].delta.content
             except IndexError:
                 break
+        # 记录生成的响应日志
         logger.debug(response)
-
-     return response
+    
+    return response
 
 #创建响应器实例
 add_notice = on_notice(block=False)
@@ -107,36 +172,86 @@ prompt = on_command("prompt",priority=10,block=True)
 presets = on_command("presets",priority=10,block=True)
 set_preset = on_command("set_preset",aliases={"设置预设","设置模型预设"},priority=10,block=True)
 
+# 处理设置预设的函数
 @set_preset.handle()
 async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
+    # 声明全局变量
     global admins,config,ifenable
-    if not ifenable:set_preset.skip()
+    
+    # 检查插件是否启用
+    if not ifenable:
+        set_preset.skip()
+    
+    # 检查用户是否为管理员
     if not event.user_id in admins:
         await set_preset.finish("只有管理员才能设置预设。")
+    
+    # 提取命令参数
     arg = args.extract_plain_text().strip()
+    
+    # 如果参数不为空
     if not arg == "":
+        # 获取模型列表
         models = get_models()
+        
+        # 遍历模型列表
         for i in models:
+            # 如果模型名称与参数匹配
             if i['name'] == arg:
+                # 设置预设并保存配置
                 config['preset'] = i['name']
                 save_config(config)
+                # 回复设置成功
                 await set_preset.finish(f"已设置预设为：{i['name']}，模型：{i['model']}")
                 break
-        else:set_preset.finish("未找到预设，请输入/presets查看预设列表。")
+        else:
+            # 如果未找到预设，提示用户
+            set_preset.finish("未找到预设，请输入/presets查看预设列表。")
     else:
+        # 如果参数为空，重置预设为默认
         config['preset'] = "__main__"
         save_config(config)
+        # 回复重置成功
         await set_preset.finish("已重置预设为：主配置文件，模型："+config['model'])
 @presets.handle()
 async def _(bot: Bot, event: MessageEvent):
-    global admins,config,ifenable
-    if not ifenable:presets.skip()
+    """
+    处理预设命令的异步函数。
+    
+    该函数响应预设命令，检查用户是否为管理员，然后返回当前模型预设的信息。
+    
+    参数:
+    - bot: Bot对象，用于与平台交互。
+    - event: MessageEvent对象，包含事件相关的信息。
+    
+    使用的全局变量:
+    - admins: 包含管理员用户ID的列表。
+    - config: 包含配置信息的字典。
+    - ifenable: 布尔值，指示功能是否已启用。
+    
+    """
+    # 声明全局变量
+    global admins, config, ifenable
+    
+    # 检查功能是否已启用，未启用则跳过处理
+    if not ifenable:
+        presets.skip()
+    
+    # 检查用户是否为管理员，非管理员则发送消息并结束处理
     if not event.user_id in admins:
         await presets.finish("只有管理员才能查看模型预设。")
+    
+    # 获取模型列表
     models = get_models()
+    
+    # 构建消息字符串，包含当前模型预设信息
     msg = f"模型预设:\n当前：{'主配置文件' if config['preset'] == "__main__" else config['preset']}\n主配置文件：{config['model']}"
+    
+    # 遍历模型列表，添加每个预设的名称和模型到消息字符串
     for i in models:
         msg += f"\n预设名称：{i['name']}，模型：{i['model']}"
+    
+    # 发送消息给用户并结束处理
     await presets.finish(msg)
 
 @prompt.handle()
@@ -455,7 +570,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 # 更新群聊数据
                 write_memory_data(event,i)
                 if config['enable_lab_function']:
-                    returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    _matcher = SuggarMatcher(event_type=EventType().poke())
+                    returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                     message = returning.message
                 await poke.send(message)
         
@@ -478,7 +594,8 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
                 if config['enable_lab_function']:
-                    returning:PokeEvent = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                    _matcher = SuggarMatcher(event_type=EventType().poke())
+                    returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                     message = returning.message
                 await poke.send(message)
                 
@@ -587,17 +704,38 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
    
 @del_memory.handle()
 async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
+    """
+    处理删除记忆指令的异步函数。
     
+    参数:
+    - bot: Bot对象，用于与机器人交互。
+    - event: MessageEvent对象，包含事件的所有信息。
+    - matcher: Matcher对象，用于控制事件的处理流程。
+    
+    此函数主要用于处理来自群聊或私聊的消息事件，根据用户权限删除机器人记忆中的上下文信息。
+    """
+    
+    # 声明全局变量
     global admins,config
-    if not config['enable']:matcher.skip()
+    
+    # 检查配置以确定是否启用功能
+    if not config['enable']:
+        matcher.skip()
+    
+    # 判断事件是否来自群聊
     if isinstance(event,GroupMessageEvent):
+        # 获取群成员信息
         member = await bot.get_group_member_info(group_id=event.group_id,user_id=event.user_id)
         
+        # 检查用户权限，非管理员且不在管理员列表中的用户将被拒绝
+        if member['role'] == "member" and not event.user_id in admins:
+            await del_memory.send("你没有这样的力量（管理员/管理员+）")
+            return
         
-        if  member['role'] == "member" and not event.user_id in admins:
-                await del_memory.send("你没有这样的力量（管理员/管理员+）")
-                return
+        # 获取群聊记忆数据
         GData = get_memory_data(event)
+        
+        # 清除群聊上下文
         if True:
             if GData['id'] == event.group_id:
                 GData['memory']['messages'] = []
@@ -605,19 +743,20 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
                 write_memory_data(event,GData)
                 logger.debug(f"{event.group_id}Memory deleted")
                 
-                
-      
     else:
-            FData = get_memory_data(event)
-            if FData['id'] == event.user_id:
-                FData['memory']['messages'] = []
-                await del_memory.send("上下文已清除")
-                logger.debug(f"{event.user_id}Memory deleted")
-                write_memory_data(event,FData)
+        # 获取私聊记忆数据
+        FData = get_memory_data(event)
+        
+        # 清除私聊上下文
+        if FData['id'] == event.user_id:
+            FData['memory']['messages'] = []
+            await del_memory.send("上下文已清除")
+            logger.debug(f"{event.user_id}Memory deleted")
+            write_memory_data(event,FData)
        
           
 @get_driver().on_startup
-async def Startup():
+async def onEnable():
     memory_private = []
     memory_group = []
     logger.info(f"""
@@ -627,45 +766,57 @@ NONEBOT PLUGIN SUGGARCHAT
     from .conf import group_memory,private_memory
     from pathlib import Path
     # 打印当前工作目录  
-    logger.info("当前工作目录:"+ current_directory)
-    logger.info(f"配置文件目录：{config_dir}") 
-    logger.info(f"主配置文件：{main_config}")
-    logger.info(f"群记忆文件目录：{group_memory}")
-    logger.info(f"私聊记忆文件目录：{private_memory}")
-    logger.info(f"预设目录：{custom_models_dir}")
+    logger.info("CWD:"+ current_directory)
+    logger.info(f"Config dir：{config_dir}") 
+    logger.info(f"Main config location：{main_config}")
+    logger.info(f"Group memory data location：{group_memory}")
+    logger.info(f"Private memory data location：{private_memory}")
+    logger.info(f"Model presets dir：{custom_models_dir}")
     save_config(get_config(no_base_prompt=True))
-    from .on_event import init
-    init()
-    logger.info("启动成功")
+    
+ 
+    logger.info("Start successfully!")
     
 
 
 @chat.handle()
-async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
-    global debug,config,_matcher
-    if not config['enable']:matcher.skip()
+async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
+    """
+    处理聊天事件的主函数。
+    
+    参数:
+    - event: MessageEvent - 消息事件对象，包含消息的相关信息。
+    - matcher: Matcher - 用于控制事件处理流程的对象。
+    - bot: Bot - 机器人对象，用于调用机器人相关API。
+    
+    此函数负责根据配置和消息类型处理不同的聊天消息，包括群聊和私聊消息的处理。
+    """
+    global debug, config
+    # 检查配置，如果未启用则跳过处理
+    if not config['enable']:
+        matcher.skip()
+    
     memory_lenth_limit = config['memory_lenth_limit']
- 
-
     Date = get_current_datetime_timestamp()
     bot = nonebot.get_bot()
-    global group_train,private_train
+    global group_train, private_train
     
     content = ""
     logger.info(event.get_message())
+    # 如果消息以“/”开头，则跳过处理
     if event.message.extract_plain_text().strip().startswith("/"):
-         matcher.skip()
-         return
-
+        matcher.skip()
+        return
+    
+    # 如果消息为“菜单”，则发送菜单消息并结束处理
     if event.message.extract_plain_text().startswith("菜单"):
-         await matcher.finish(menu_msg)
-         return
-
-   
+        await matcher.finish(menu_msg)
+        return
+    
     Group_Data = get_memory_data(event)
     Private_Data = get_memory_data(event)
-
-        
+    
+    # 根据消息类型处理消息      
     if event.get_message():
      try:
         if isinstance(event,GroupMessageEvent):
@@ -738,8 +889,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                 forward = await bot.get_forward_msg(message_id=msg.data['id'])
                                 logger.debug(forward)
                                 reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-                             elif msg.type == "markdown":
-                                  reply += "\\（Markdown消息 暂不支持）\\"
+
                          if config['parse_segments']:
                                 content += str(reply)
                          else:
@@ -772,7 +922,8 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['enable_lab_function']:
-                                returning:ChatEvent = await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                _matcher:SuggarMatcher = SuggarMatcher(event_type=EventType().chat())
+                                returning:FinalObject= await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                                 message = returning.message
                             await chat.send(message)
                     
@@ -861,7 +1012,7 @@ async def _(event:MessageEvent,matcher:Matcher,bot:Bot):
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['enable_lab_function']:
-                                returning:ChatEvent =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id))
+                                returning:FinalObject =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
                                 message = returning.message
                             await chat.send(message)
                            
