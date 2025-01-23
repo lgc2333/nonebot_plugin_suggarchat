@@ -263,13 +263,11 @@ poke = on_poke()
 async def chat_logic(event:ChatEvent):
     logger.info("收到消息事件")
     logger.info(f"{event.get_event_type()}")
-    chat.append_message(MessageSegment.text("\n测试插件"))
 
 @poke.handle()
 async def poke_logic(event:ChatEvent):
     logger.info("收到戳一戳事件")
     logger.info(f"{event.get_event_type()}")
-    poke.append_message(MessageSegment.text("\n测试插件"))
 
 
 
