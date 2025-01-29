@@ -9,7 +9,6 @@ from .conf import *
 from .resources import *
 from .suggar import *
 from .API import *
-from .  import *
 __plugin_meta__ = PluginMetadata(
     name="SuggarChat OpenAI协议聊天插件" ,
     description="强大的插件，支持OpenAI协议，多模型切换，完全的上下文支持，智能化的聊天。适配Nonebot2-Onebot-V11适配器",

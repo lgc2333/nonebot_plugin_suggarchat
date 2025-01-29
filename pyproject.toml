@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_suggarchat"
-version = "1.8.4"
+version = "1.9.0"
 description = "Plugin for the Suggar chat framework compatible with Nonebot2."
 authors = [{ name = "JohnRichard4096", email = "windowserror@163.com" }]
 dependencies = [
@@ -26,10 +26,3 @@ distribution = true
 "Homepage" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat"
 "Source" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat"
 "Issue Tracker" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/issues"
-
-#for-test
-[tool.nonebot]
-adapters = [
-    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
-]
-plugins = ["nonebot_plugin_suggarchat","nonebot_plugin_localstore"]
