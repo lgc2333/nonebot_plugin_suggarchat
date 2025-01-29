@@ -1,15 +1,16 @@
 import os
 from pathlib import Path
-__KERNEL_VERSION__:str = "V1.8.3-Public-Dev"
+import nonebot_plugin_localstore as store
+__KERNEL_VERSION__:str = "V1.8.4-Public-Dev"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
-config_dir = Path.cwd()/"config"
+config_dir = store.get_plugin_config_dir()
 if not config_dir.exists():
     config_dir.mkdir()
-group_memory = Path.cwd()/"group"
+group_memory = store.get_plugin_data_dir()/"group"
 if not group_memory.exists():
     group_memory.mkdir()
-private_memory = Path.cwd()/"private"
+private_memory = store.get_plugin_data_dir()/"private"
 if not private_memory.exists():
     private_memory.mkdir()
 main_config = config_dir/"config.json"

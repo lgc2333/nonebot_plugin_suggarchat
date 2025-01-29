@@ -14,7 +14,6 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEve
 from nonebot import logger
 from nonebot.matcher import Matcher
 import sys
-from . import on_event
 import openai
 import random
 from datetime import datetime  

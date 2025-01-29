@@ -5,7 +5,7 @@ import nonebot
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent
 import math
-from .conf import private_memory,group_memory,current_directory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
+from .conf import private_memory,group_memory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
 __default_model_conf__={
     "model":"auto",
     "name":"",
