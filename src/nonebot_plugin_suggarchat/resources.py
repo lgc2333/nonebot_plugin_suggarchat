@@ -52,6 +52,7 @@ __default_config__ = {
     "admins":[],
     "open_ai_base_url":"",
     "open_ai_api_key":"",
+    "stream":False,
     "max_tokens":100,
     "model":"auto",
     "say_after_self_msg_be_deleted":True,

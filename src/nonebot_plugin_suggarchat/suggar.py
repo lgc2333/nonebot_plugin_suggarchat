@@ -100,7 +100,7 @@ async def get_chat(messages:list)->str:
 """
 
     # 声明全局变量，用于访问配置和判断是否启用
-    global config, ifenable
+    global config, ifenable,debug
     # 从配置中获取最大token数量
     max_tokens = config['max_tokens']
     
@@ -135,23 +135,25 @@ async def get_chat(messages:list)->str:
     logger.debug(f"Preset：{config['preset']}")
     logger.debug(f"Key：{key[:10]}...")
     logger.debug(f"API base_url：{base_url}")
-    
-    # 使用异步客户端发起请求
-    async with AsyncClient(base_url=base_url) as aclient:
-        # 初始化OpenAI异步客户端
-        client = openai.AsyncOpenAI(http_client=aclient, base_url=base_url, api_key=key)
+
+    client = openai.AsyncOpenAI( base_url=base_url, api_key=key)
         # 创建聊天完成请求
-        completion = await client.chat.completions.create(model=model, messages=messages, max_tokens=max_tokens, stream=True)
-        response = ""
+    completion = await client.chat.completions.create(model=model, messages=messages, max_tokens=max_tokens, stream=config['stream'])
+    response = ""
+    if config['stream']:
         # 流式接收响应并构建最终的聊天文本
         async for chunk in completion:
             try:
                 response += chunk.choices[0].delta.content
+                if debug:
+                    logger.debug(chunk.choices[0].delta.content)
             except IndexError:
                 break
         # 记录生成的响应日志
-        logger.debug(response)
-    
+    else:
+        if debug:
+            logger.debug(response)
+        response = completion.choices[0].message.content
     return response
 
 #创建响应器实例
@@ -366,93 +368,6 @@ async def _ (bot:Bot,event:MessageEvent,matcher:Matcher):
         debug = True
         await debug_switch.finish("已开启调试模式（该模式适用于开发者，如果你作为普通用户使用，请关闭调试模式）")
 
-# 处理调试信息的函数
-@debug_handle.handle()
-async def _(event:MessageEvent,bot:Bot,matcher:Matcher):
-    """
-    在调试模式下记录消息事件的相关信息，并处理用户消息。
-    
-    参数:
-    - event: 消息事件对象，包含消息相关信息
-    - bot: Bot对象，用于调用API
-    - matcher: Matcher对象，用于控制事件处理流程
-    
-    返回值: 无
-    """
-    global debug,group_train,private_train,config
-    # 如果配置中未启用调试模式，跳过后续处理
-    if not config['enable']:matcher.skip()
-    # 如果调试模式未开启，直接返回
-    if not debug:
-        return
-    # 获取群聊和私聊数据，并写入日志文件
-    Group_Data = get_memory_data(event)
-    with open ("debug_group_log.log",'w',encoding='utf-8') as fi:
-            fi.write(str(Group_Data))
-    Private_Data = get_memory_data(event)
-    with open ("debug_private_log.log",'w',encoding='utf-8') as fi:
-            fi.write(str(Private_Data))
-    user_id = event.user_id
-    content = ""
-    # 根据事件类型处理消息，并记录到相应的日志文件
-    if isinstance(event,GroupMessageEvent):
-        types = ""
-        types += "\nGroupMessageEvent"
-        train = group_train
-        for data in Group_Data:
-            if data['id'] == event.group_id:
-                break
-        else:
-            data = {False}
-        with open (f"debug_group_{event.group_id}.log" ,'w',encoding='utf-8') as fi:
-            fi.write(str(data.get("memory").get("messages")))
-    else:
-        train = private_train
-        for data in Private_Data:
-            if data['id'] == event.user_id:
-                break
-        else:
-            data = {False}
-        types = ""
-        types += "\nPrivateMessageEvent"
-        with open (f"debug_private_{event.user_id}.log" ,'w',encoding='utf-8') as fi:
-            fi.write(str(data.get("memory").get("messages")))
-    
-    # 处理消息内容，根据消息类型记录相关信息
-    for segment in event.get_message():
-        if segment.type == "text":
-            content = content + segment.data['text']
-        elif segment.type == "at":
-            content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
-        elif segment.type == "forward":
-            forward = await bot.get_forward_msg(message_id=segment.data['id'])
-            logger.debug(type(forward))
-            content +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-    
-    # 处理引用的消息内容，并记录相关信息
-    bot = nonebot.get_bot()
-    reply = "（（（引用的消息）））：\n"
-    if event.reply:
-        dt_object = datetime.fromtimestamp(event.reply.time)  
-        weekday = dt_object.strftime('%A')  
-        formatted_time = dt_object.strftime('%Y-%m-%d %I:%M:%S %p') 
-        DT = f"{formatted_time} {weekday}{event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说：" 
-        reply += DT
-        for msg in event.reply.message:
-            if msg.type == "text":
-                reply += msg.data['text']
-            elif msg.type == "at":
-                reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']}))"
-            elif msg.type == "forward":
-                forward = await bot.get_forward_msg(message_id=msg.data['id'])
-                logger.debug(forward)
-                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-    
-    # 发送调试信息给管理员，并记录发送的消息内容
-    await send_to_admin(f"{type} {user_id} {content}\nReply:{reply}\n{data}")
-    sdmsg = data.get("memory").get("messages").copy()
-    sdmsg.insert(0,train)
-    await send_to_admin(f"SendMSG:\n{sdmsg[:500]}...")
 
 # 当有消息撤回时触发处理函数
 @recall.handle()

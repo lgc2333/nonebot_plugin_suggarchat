@@ -176,3 +176,4 @@ config/
 group/
 private/
 bot.py
+.env.dev
