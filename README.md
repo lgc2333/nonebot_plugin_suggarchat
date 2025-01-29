@@ -242,37 +242,6 @@ plugins=["nonebot_plugin_suggarchat"]
 
 </details>
 
-## 插件中间件事件处理写法(实验,需要在配置文件json中把`enable_lab_function`改为`true`)
-
-
-<details><summary>示例插件</summary>
-
-```py
-
-from nonebot.plugin import require
-require("nonebot_plugin_suggarchat")
-#先require再作导入！！！！
-from nonebot import logger
-from nonebot_plugin_suggarchat.on_event import on_chat,on_poke
-from nonebot_plugin_suggarchat.event import ChatEvent
-from nonebot_plugin_suggarchat.matcher import SuggarMatcher
-from nonebot.adapters.onebot.v11 import MessageSegment
-chat = on_chat()
-poke = on_poke()
-@chat.handle()
-async def chat_logic(event:ChatEvent):
-    logger.info("收到消息事件")
-    logger.info(f"{event.get_event_type()}")
-
-@poke.handle()
-async def poke_logic(event:ChatEvent):
-    logger.info("收到戳一戳事件")
-    logger.info(f"{event.get_event_type()}")
-
-
-
-```
-</details>
 
 
 ## 讨论
