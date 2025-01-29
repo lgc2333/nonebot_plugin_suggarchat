@@ -74,7 +74,6 @@ __default_config__ = {
     "希望我能继续为你提供帮助，不要太在意我的小错误哦！",  
     ],  
     "parse_segments":True,
-    "enable_lab_function":False,
 }
 
 def save_config(conf:dict):

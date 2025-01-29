@@ -7,9 +7,6 @@ from .conf import *
 from .resources import *
 from .suggar import *
 from .API import *
-from .event import *
-from .matcher import *
-from.on_event import *
 from .  import *
 __plugin_meta__ = PluginMetadata(
     name="SuggarChat OpenAI协议聊天插件" ,

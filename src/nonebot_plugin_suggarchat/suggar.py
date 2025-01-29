@@ -1,11 +1,9 @@
 from nonebot import on_command,on_notice,on_message,get_driver
 import nonebot.adapters
 from nonebot.rule import to_me
-from .event import FinalObject,PokeEvent,ChatEvent
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
-from .event import EventType
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
      ,get_models,save_config,get_group_prompt,get_private_prompt
@@ -19,7 +17,6 @@ import sys
 from . import on_event
 import openai
 import random
-from .matcher import SuggarMatcher
 from datetime import datetime  
 from httpx import AsyncClient
 
@@ -570,11 +567,6 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 
                 # 更新群聊数据
                 write_memory_data(event,i)
-                if config['enable_lab_function']:
-                    _matcher = SuggarMatcher(event_type=EventType().poke())
-                    running_messages_poke[str(event.dict())] = message
-                    returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
-                    message = returning.message
                 await poke.send(message)
         
         else:
@@ -595,11 +587,6 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 message = MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
-                if config['enable_lab_function']:
-                    _matcher = SuggarMatcher(event_type=EventType().poke())
-                    running_messages_poke[str(event.dict())] = message
-                    returning:FinalObject = await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
-                    message = returning.message
                 await poke.send(message)
                 
     except Exception as e:
@@ -925,11 +912,6 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config['enable_lab_function']:
-                                _matcher:SuggarMatcher = SuggarMatcher(event_type=EventType().chat())
-                                running_messages[event.message_id] = message
-                                returning:FinalObject= await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
-                                message = returning.message
                             await chat.send(message)
                     
                     except Exception as e:
@@ -1016,11 +998,6 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config['enable_lab_function']:
-                                _matcher:SuggarMatcher = SuggarMatcher(event_type=EventType().chat())
-                                running_messages[event.message_id] = message
-                                returning:FinalObject =  await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),matcher=_matcher)
-                                message = returning.message
                             await chat.send(message)
                            
                             
