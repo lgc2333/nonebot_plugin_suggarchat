@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import nonebot_plugin_localstore as store
-__KERNEL_VERSION__:str = "V1.9.0-Public-Dev"
+__KERNEL_VERSION__:str = "V1.9.1-Public-Dev"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
 config_dir = store.get_plugin_config_dir()
