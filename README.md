@@ -127,7 +127,7 @@ while True:
 ```
 </details>
 
-## 特性（不是bug那个）
+## 特性
 
 - OpenAI API 支持
 - QQ群组聊天支持

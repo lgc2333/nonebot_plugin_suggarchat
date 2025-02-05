@@ -17,8 +17,7 @@ import sys
 import openai
 import random
 from datetime import datetime  
-from httpx import AsyncClient
-
+#import aiohttp
 
 config = get_config()
 ifenable = config['enable']
@@ -663,7 +662,7 @@ async def onConnect():
     from .conf import group_memory,private_memory
     from pathlib import Path
     from .conf import init
-    init()
+    init(nonebot.get_bot())
     logger.info(f"Config dir：{config_dir}") 
     logger.info(f"Main config location：{main_config}")
     logger.info(f"Group memory data location：{group_memory}")
