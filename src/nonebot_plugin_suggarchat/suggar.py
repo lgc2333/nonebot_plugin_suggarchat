@@ -244,7 +244,7 @@ async def _(bot: Bot, event: MessageEvent):
     models = get_models()
     
     # 构建消息字符串，包含当前模型预设信息
-    msg = f"模型预设:\n当前：{'主配置文件' if config['preset'] == "__main__" else config['preset']}\n主配置文件：{config['model']}"
+    msg = f"模型预设:\n当前：{'主配置文件' if config['preset'] == '__main__' else config['preset']}\n主配置文件：{config['model']}"
     
     # 遍历模型列表，添加每个预设的名称和模型到消息字符串
     for i in models:
@@ -658,19 +658,12 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
             logger.debug(f"{event.user_id}Memory deleted")
             write_memory_data(event,FData)
        
-          
-@get_driver().on_startup
-async def onEnable():
-    memory_private = []
-    memory_group = []
-    logger.info(f"""
-NONEBOT PLUGIN SUGGARCHAT
-{__KERNEL_VERSION__}
-""")
+@get_driver().on_bot_connect
+async def onConnect():
     from .conf import group_memory,private_memory
     from pathlib import Path
-    # 打印当前工作目录  
-    logger.info("CWD:"+ current_directory)
+    from .conf import init
+    init()
     logger.info(f"Config dir：{config_dir}") 
     logger.info(f"Main config location：{main_config}")
     logger.info(f"Group memory data location：{group_memory}")
@@ -678,6 +671,12 @@ NONEBOT PLUGIN SUGGARCHAT
     logger.info(f"Model presets dir：{custom_models_dir}")
     save_config(get_config(no_base_prompt=True))
     
+@get_driver().on_startup
+async def onEnable():
+    logger.info(f"""
+NONEBOT PLUGIN SUGGARCHAT
+{__KERNEL_VERSION__}
+""")
  
     logger.info("Start successfully!")
     

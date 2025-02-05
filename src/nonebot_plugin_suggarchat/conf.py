@@ -1,7 +1,7 @@
 import os
-from pathlib import Path
+from nonebot.adapters.onebot.v11 import Bot
 import nonebot_plugin_localstore as store
-__KERNEL_VERSION__:str = "V1.9.1-Public-Dev"
+__KERNEL_VERSION__:str = "V1.9.2-Public-Dev"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
 config_dir = store.get_plugin_config_dir()
@@ -17,3 +17,6 @@ main_config = config_dir/"config.json"
 group_prompt = config_dir/"prompt_group.txt"
 private_prompt = config_dir/"prompt_private.txt"
 custom_models_dir = config_dir/"models"
+def init(bot:Bot):
+    global config_dir
+    config_dir = config_dir/bot.self_id

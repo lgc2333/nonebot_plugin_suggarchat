@@ -10,7 +10,8 @@ __default_model_conf__={
     "model":"auto",
     "name":"",
     "base_url":"",
-    "api_key":""
+    "api_key":"",
+    #"protocol":"openai",
 }
 def get_models()->list:
     models = []
@@ -34,15 +35,13 @@ def update_dict(default:dict, to_update:dict) ->dict:
         if key not in to_update:
             to_update[key] = value
     return to_update
-__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复。"""
-__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复！！！！！ 对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！"""
+__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
+__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
 __default_config__ = {
     "preset":"__main__",
     "memory_lenth_limit":50,
     "enable":False,
     "poke_reply":True,
-    #"private_train":{ "role": "system", "content": ""},
-    #"group_train":{ "role": "system", "content": ""},
     "enable_group_chat":True,
     "enable_private_chat":True,
     "allow_custom_prompt":True,
@@ -104,7 +103,7 @@ def get_config(no_base_prompt:bool=False)->dict:
     """
 
     if (not Path(config_dir).exists() or not Path(config_dir).is_dir()) or not Path(main_config).exists() or not Path(main_config).is_file():
-        logger.info("配置文件不存在，已创建默认配置文件")
+        logger.info("Default config file not found, creating...")
         try:
             Path.mkdir(config_dir)
         except:pass

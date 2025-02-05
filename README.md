@@ -6,7 +6,7 @@
 
 # Nonebot Plugin Suggarchat
 
-Plugin for the Suggar chat framework compatible with Nonebot2.
+Chat plugin for **Nonebot2** with **Onebot V11 adapter**. 
 
 
 [![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/) [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/) [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/nonebot-plugin-suggarchat/)
@@ -16,7 +16,7 @@ Plugin for the Suggar chat framework compatible with Nonebot2.
 
 ## 温馨提示
 
-本插件全局性较高！***可能会与其他插件冲突***，请谨慎使用！
+本插件全局性较高！***可能会与其他插件冲突***，请谨慎使用，只适用于**单Bot连**接的情况！
 
 如果你想主要做聊天类型的Bot，请忽略。
 
@@ -165,7 +165,7 @@ plugins=["nonebot_plugin_suggarchat"]
 ```
 ## 配置文件
 
-- **配置文件路径**：通常位于项目的运行目录的config目录下，文件名为`config.json`。
+- **配置文件路径**： 将在插件启动时在控制台输出。
 ### **配置项说明**
 <details><summary>点此展开</summary>
 
