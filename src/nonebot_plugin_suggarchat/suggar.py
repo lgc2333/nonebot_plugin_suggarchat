@@ -70,7 +70,7 @@ async def rule(event: Event, session: Uninfo) -> bool:
     message = event.get_message()
     message_text = message.extract_plain_text().strip()
     if keyword == "at":#当config中keyword为at时rule为tome
-        if event.is_tome:
+        if event.is_tome():
             return True
     else:
         if message_text.startswith(keyword):
