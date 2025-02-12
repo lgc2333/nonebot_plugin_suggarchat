@@ -844,7 +844,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             
                             response = await get_chat(send_messages)
                             debug_response = response
-                            message = MessageSegment.reply(user_id=user_id) + MessageSegment.text(response) 
+                            message = MessageSegment.reply(event.message_id) + MessageSegment.text(response) 
                            
                             if debug:
                                  await send_to_admin(f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
