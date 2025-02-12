@@ -1,4 +1,6 @@
 from nonebot import on_command,on_notice,on_message,get_driver
+from nonebot_plugin_uninfo import Uninfo
+from nonebot.adapters import Event
 import nonebot.adapters
 from nonebot.rule import to_me
 from nonebot.adapters import Message
@@ -21,6 +23,9 @@ from datetime import datetime
 
 config = get_config()
 ifenable = config['enable']
+random_reply = config['fake_people']
+random_reply_rate = config['probability']
+keyword = config['keyword']
 debug = False
 admins = config['admins']
 custom_menu = []
@@ -59,6 +64,30 @@ async def send_to_admin(msg:str)-> None:
     # 获取bot实例并发送消息到管理员群
     bot: Bot = nonebot.get_bot()
     await bot.send_group_msg(group_id=config['admin_group'], message=msg)
+
+##fakepeople rule
+async def rule(event: Event, session: Uninfo) -> bool:
+    message = event.get_message()
+    message_text = message.extract_plain_text().strip()
+    if keyword == "at":#当config中keyword为at时rule为tome
+        if event.is_tome:
+            return True
+    else:
+        if message_text.startswith(keyword):
+            """开头为{keyword}必定回复"""
+            return True
+    if not random_reply:
+        return False
+    else:
+        if event.is_tome() and not session.group:
+            """私聊过滤"""
+            return False
+        rand = random.randint(1, 100)
+        rate = random_reply_rate
+        if rand <= rate:
+            return True
+        return False
+
 
 async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
     """
@@ -156,9 +185,10 @@ async def get_chat(messages:list)->str:
     return response
 
 #创建响应器实例
+fake_people = on_notice(block=False)
 add_notice = on_notice(block=False)
 menu = on_command("聊天菜单",block=True,aliases={"chat_menu"},priority=10)
-chat = on_message(rule=to_me(),block=True,priority=11)
+chat = on_message(block=False,priority=11,rule=rule)#不再在此处判断是否触发,转到line68
 del_memory = on_command("del_memory",aliases={"失忆","删除记忆","删除历史消息","删除回忆"},block=True,priority=10)
 enable = on_command("enable_chat",aliases={"启用聊天"},block=True,priority=10)
 disable = on_command("disable_chat",aliases={"禁用聊天"},block=True,priority=10)
@@ -814,7 +844,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             
                             response = await get_chat(send_messages)
                             debug_response = response
-                            message = MessageSegment.at(user_id=user_id) + MessageSegment.text(response) 
+                            message = MessageSegment.reply(user_id=user_id) + MessageSegment.text(response) 
                            
                             if debug:
                                  await send_to_admin(f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
