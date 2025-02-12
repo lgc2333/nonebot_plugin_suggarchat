@@ -1,6 +1,7 @@
 
 from nonebot.plugin import require
 require("nonebot_plugin_localstore")
+require("nonebot_plugin_uninfo")
 from nonebot.plugin import PluginMetadata
 from .conf import __KERNEL_VERSION__
 from .conf import *
