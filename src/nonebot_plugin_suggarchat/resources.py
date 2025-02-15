@@ -41,6 +41,9 @@ __default_config__ = {
     "preset":"__main__",
     "memory_lenth_limit":50,
     "enable":False,
+    "fake_people":True,#是否启用无人触发自动回复
+    "probability":10,#无人触发自动回复概率
+    "keyword":"at",#触发bot对话关键词,at为to_me,其他为startwith
     "poke_reply":True,
     "enable_group_chat":True,
     "enable_private_chat":True,
