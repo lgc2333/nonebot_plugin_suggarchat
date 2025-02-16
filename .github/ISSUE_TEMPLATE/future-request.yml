@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         欢迎来到 SuggarChat 新功能提交处。
-  - type: input
+  - type: textarea
     id: feature-new-content
     attributes:
       label: 什么新功能/改进
