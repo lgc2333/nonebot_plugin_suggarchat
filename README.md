@@ -18,10 +18,14 @@ Chat plugin for **Nonebot2** with **Onebot V11 adapter**.
 
 本插件全局性较高！***可能会与其他插件冲突***，请谨慎使用，只适用于**单Bot连**接的情况！
 
+
+
 如果你想主要做聊天类型的Bot，请忽略。
 
 在Suggar机器人实现中，暂时没有发现有冲突，如果有，请提交至Issues。
-
+```explaintext
+Issue不用模板一律不看！
+```
 ***本插件更面向于有Nonebot2基础或插件开发者以及有LLM API开发/使用经验的用户！***
 
 不推荐直接调用**resources.py的**方法，而是通过插件API进行调用。
@@ -191,6 +195,9 @@ plugins=["nonebot_plugin_suggarchat"]
 | `max_tokens`       | int               | 100 | 在单次时，LLM最多可以回复多少个token（即字数，如果你的模型提供商支持                                   |
 | `model`       | str               | auto | 使用什么模型（具体看你的API提供商                                   |
 | `parse_segments` | bool               | true | 是否解析消息段，此权重覆盖`use_base_prompt`（即at/合并转发等）                                   |
+| `fake_people`      |     bool     |     true    |   是否启用自动回复模式    |
+| `probability`      |     int     |     10   |   随机回复的概率(1%~100%)    |
+|  `keyword`         |     str     |     "at"    |   触发bot对话关键词,at为to_me,其他为以这个词开头必定回复   |
 
 </details>
 

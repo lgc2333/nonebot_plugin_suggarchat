@@ -3,8 +3,8 @@ from nonebot.log import logger
 import json
 import nonebot
 from pathlib import Path
-from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent
-import math
+from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot
+import asyncio,threading
 from .conf import private_memory,group_memory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
 __default_model_conf__={
     "model":"auto",
@@ -35,8 +35,8 @@ def update_dict(default:dict, to_update:dict) ->dict:
         if key not in to_update:
             to_update[key] = value
     return to_update
-__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
-__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\（戳一戳消息）\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
+__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
+__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
 __default_config__ = {
     "preset":"__main__",
     "memory_lenth_limit":50,
@@ -44,6 +44,7 @@ __default_config__ = {
     "fake_people":True,#是否启用无人触发自动回复
     "probability":10,#无人触发自动回复概率
     "keyword":"at",#触发bot对话关键词,at为to_me,其他为startwith
+    #"use_jieba":False,#是否使用jieba进行分词输出
     "poke_reply":True,
     "enable_group_chat":True,
     "enable_private_chat":True,
@@ -79,7 +80,21 @@ __default_config__ = {
     "parse_segments":True,
     #"protocol":"openai"
 }
+async def synthesize_message(message:Message,bot:Bot=None)->str:
+    content = ""
+    for segment in message:
+        if segment.type == "text":
+            content = content + segment.data['text']
 
+        elif segment.type == "at":
+            content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
+        elif segment.type == "forward":  
+            if bot is None:
+                bot = nonebot.get_bot()                  
+            forward = await bot.get_forward_msg(message_id=segment.data['id'])
+            logger.debug(forward)
+            content +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+    return content
 def save_config(conf:dict):
     """
     保存配置文件
@@ -87,15 +102,17 @@ def save_config(conf:dict):
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
-    if not Path(config_dir).exists():
-        try:
-            Path.mkdir(config_dir)
-        except:pass
+    lock = threading.Lock()
+    with lock:
+        if not Path(config_dir).exists():
+            try:
+                Path.mkdir(config_dir)
+            except:pass
+            with open(str(main_config),"w") as f:
+                json.dump(__default_config__,f,ensure_ascii=False,indent=4)
         with open(str(main_config),"w") as f:
-            json.dump(__default_config__,f,ensure_ascii=False,indent=4)
-    with open(str(main_config),"w") as f:
-        conf = update_dict(__default_config__,conf)
-        json.dump(conf,f,ensure_ascii=False,indent=4)
+            conf = update_dict(__default_config__,conf)
+            json.dump(conf,f,ensure_ascii=False,indent=4)
 def get_config(no_base_prompt:bool=False)->dict:
     f"""
     获取配置文件
@@ -201,12 +218,14 @@ def get_memory_data(event:MessageEvent)->dict:
     # 读取并返回记忆数据
     with open(str(conf_path), "r", encoding="utf-8") as f:
         conf = json.load(f)
-        logger
+        logger.debug(f"读取到记忆数据{conf}")
         return conf
 def write_memory_data(event: MessageEvent, data: dict) -> None:
-    logger.debug(f"写入记忆数据{data}")
-    logger.debug(f"事件：{type(event)}")
-    """
+  lock = threading.Lock()
+    
+  logger.debug(f"写入记忆数据{data}")
+  logger.debug(f"事件：{type(event)}")
+  """
     根据事件类型将数据写入到特定的记忆数据文件中。
     
     该函数根据传入的事件类型（群组消息事件或用户消息事件），将相应的数据以JSON格式写入到对应的文件中。
@@ -219,6 +238,7 @@ def write_memory_data(event: MessageEvent, data: dict) -> None:
     返回值:
     无返回值。
     """
+  with lock:
     # 判断事件是否为群组消息事件
     if isinstance(event, GroupMessageEvent):
         # 获取群组ID，并根据群组ID构造配置文件路径
@@ -257,7 +277,7 @@ async def get_friend_info(qq_number: int)->str:
         if friend['user_id'] == qq_number:
             return friend['nickname']  # 返回找到的好友的昵称
     
-    return None 
+    return ""
 
 async def get_friend_qq_list():  
     bot = nonebot.get_bot()  

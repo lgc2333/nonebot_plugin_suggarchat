@@ -177,3 +177,4 @@ group/
 private/
 bot.py
 .env.dev
+.vscode/settings.json

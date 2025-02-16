@@ -7,8 +7,8 @@ from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
-     get_friend_info,synthesize_forward_message,get_memory_data,write_memory_data\
-     ,get_models,save_config,get_group_prompt,get_private_prompt
+     get_friend_info,get_memory_data,write_memory_data\
+     ,get_models,save_config,get_group_prompt,get_private_prompt,synthesize_message
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
@@ -66,26 +66,82 @@ async def send_to_admin(msg:str)-> None:
     await bot.send_group_msg(group_id=config['admin_group'], message=msg)
 
 ##fakepeople rule
-async def rule(event: Event, session: Uninfo) -> bool:
+async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
+    """
+    根据配置和消息事件判断是否触发回复的规则。
+
+    参数:
+    - event: MessageEvent 类型的事件，包含消息事件的详细信息。
+    - session: Uninfo 类型的会话信息，可能包含与当前会话相关的上下文或配置信息。
+    - bot: Bot 类型的机器人实例，用于调用机器人相关方法。
+
+    返回值:
+    - bool 类型，表示是否触发回复的规则。
+    """
+    global random_reply, random_reply_rate, keyword
+    # 获取消息内容并去除前后空格
     message = event.get_message()
     message_text = message.extract_plain_text().strip()
-    if keyword == "at":#当config中keyword为at时rule为tome
+    
+    # 如果不是群消息事件，则总是返回 True，表示总是回复私聊消息
+    if not isinstance(event, GroupMessageEvent):
+        return True
+    
+    # 根据配置中的 keyword 判断是否需要回复
+    if keyword == "at":
+        # 如果配置中的 keyword 为 "at"，则当消息是提到机器人时回复
         if event.is_tome():
             return True
     else:
+        # 如果配置中的 keyword 不为 "at"，则当消息文本以 keyword 开头时回复
         if message_text.startswith(keyword):
             """开头为{keyword}必定回复"""
             return True
+    
+    # 如果没有开启随机回复功能，则不回复
     if not random_reply:
         return False
     else:
+        # 私聊消息不进行随机回复
         if event.is_tome() and not session.group:
             """私聊过滤"""
             return False
+        
+        # 将 event 强制转换为 GroupMessageEvent 类型
+        event: GroupMessageEvent = event
+        
+        # 根据随机率判断是否回复
         rand = random.randint(1, 100)
         rate = random_reply_rate
         if rand <= rate:
             return True
+        
+        # 获取记忆数据
+        memory_data: dict = get_memory_data(event)
+        
+        # 合成消息内容
+        content = await synthesize_message(message, bot)
+        
+        # 获取当前时间戳
+        Date = get_current_datetime_timestamp()
+        
+        # 获取消息发送者的角色（群成员或管理员等）
+        role = (await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id))['role']
+        
+        # 获取消息发送者的用户ID和昵称
+        user_id = event.user_id
+        user_name = (await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id))['nickname'] or (await bot.get_stranger_info(user_id=event.user_id))['nickname']
+        
+        # 构造消息记录格式
+        content_message = f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
+        
+        # 将消息记录添加到记忆数据中
+        memory_data["memory"]["messages"].append(content_message)
+        
+        # 更新记忆数据
+        write_memory_data(event, memory_data)
+        
+        # 不回复
         return False
 
 
@@ -185,7 +241,7 @@ async def get_chat(messages:list)->str:
     return response
 
 #创建响应器实例
-fake_people = on_notice(block=False)
+#fake_people = on_notice(block=False)
 add_notice = on_notice(block=False)
 menu = on_command("聊天菜单",block=True,aliases={"chat_menu"},priority=10)
 chat = on_message(block=False,priority=11,rule=rule)#不再在此处判断是否触发,转到line68
@@ -505,7 +561,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 if debug:
                     await send_to_admin(f"POKEMSG{event.group_id}/{event.user_id}\n {send_messages}") 
                 # 构建最终消息并发送
-                message = MessageSegment.at(user_id=event.user_id) +" "+ MessageSegment.text(response)
+                message = MessageSegment.at(user_id=event.user_id) +MessageSegment.text(" ")+ MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 
                 # 更新群聊数据
@@ -765,17 +821,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                     user_id = event.user_id
                     content = ""
                     user_name = (await bot.get_group_member_info(group_id=group_id, user_id=user_id))['card'] or (await bot.get_stranger_info(user_id=user_id))['nickname']
-                    for segment in event.get_message():
-                        if segment.type == "text":
-                            content = content + segment.data['text']
-
-                        elif segment.type == "at":
-                             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
-                        elif segment.type == "forward":
-                            
-                            forward = await bot.get_forward_msg(message_id=segment.data['id'])
-                            logger.debug(forward)
-                            content +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                    content = await synthesize_message(event.get_message())
                     if content.strip() == "":
                          content = ""
                     role = await bot.get_group_member_info(group_id=group_id, user_id=user_id)
@@ -811,18 +857,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                          formatted_time = dt_object.strftime('%Y-%m-%d %I:%M:%S %p') 
                          DT = f"{formatted_time} {weekday} [{rl}]{event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说：" 
                          reply += DT
-                         for msg in event.reply.message:
-                             if msg.type == "text":
-                                  reply += msg.data['text']
-        
-                             elif msg.type == "at":
-                                 reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']})）\\"
-                             elif msg.type == "forward":
-                                
-                                forward = await bot.get_forward_msg(message_id=msg.data['id'])
-                                logger.debug(forward)
-                                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
-
+                         reply += await synthesize_message(event.reply.message)
                          if config['parse_segments']:
                                 content += str(reply)
                          else:
@@ -876,17 +911,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                 if data['id'] == event.user_id:
                     content = ""
                     rl = ""
-                    for segment in event.get_message():
-                        if segment.type == "text":
-                            content = content + segment.data['text']
-
-                        elif segment.type == "at":
-                             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
-                        elif segment.type == "forward":
-                            logger.debug(segment)
-                            forward = await bot.get_forward_msg(message_id=segment.data['id'])
-                            logger.debug(type(forward))
-                            content+=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                    content = synthesize_message(event.get_message())
                     if content.strip() == "":
                          content = ""
                     logger.debug(f"{content}")
@@ -899,17 +924,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                          formatted_time = dt_object.strftime('%Y-%m-%d %I:%M:%S %p') 
                          DT = f"{formatted_time} {weekday} {rl} {event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说：" 
                          reply += DT
-                         for msg in event.reply.message:
-                             if msg.type == "text":
-                                  reply += msg.data['text']
-              
-                             elif segment.type == "at":
-                                reply += f"\\（at: @{msg.data.get('name')}(QQ:{msg.data['qq']}))"
-                             elif msg.type == "forward":
-                              
-                                forward = await bot.get_forward_msg(message_id=msg.data['id'])
-                                logger.debug(type(forward))
-                                reply +=" \\（合并转发\n"+ await synthesize_forward_message(forward) + "）\\\n"
+                         reply+=await synthesize_message(event.reply.message)
                          if config['parse_segments']:
                             content += str(reply)
                          else:
