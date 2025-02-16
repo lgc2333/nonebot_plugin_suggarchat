@@ -8,7 +8,8 @@ from nonebot.params import CommandArg
 from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,get_memory_data,write_memory_data\
-     ,get_models,save_config,get_group_prompt,get_private_prompt,synthesize_message
+     ,get_models,save_config,get_group_prompt,get_private_prompt,synthesize_message,\
+     split_message_into_chats
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
@@ -19,6 +20,7 @@ from nonebot.matcher import Matcher
 import sys
 import openai
 import random
+import asyncio
 from datetime import datetime  
 #import aiohttp
 
@@ -29,6 +31,7 @@ random_reply_rate = config['probability']
 keyword = config['keyword']
 debug = False
 admins = config['admins']
+nature_chat_mode = config['nature_chat_style']
 custom_menu = []
 private_train = get_private_prompt()
 group_train = get_group_prompt()
@@ -792,7 +795,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
     
     此函数负责根据配置和消息类型处理不同的聊天消息，包括群聊和私聊消息的处理。
     """
-    global debug, config
+    global debug, config,nature_chat_mode
     # 检查配置，如果未启用则跳过处理
     if not config['enable']:
         matcher.skip()
@@ -901,7 +904,14 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            await chat.send(message)
+                            if not nature_chat_mode:
+                                await chat.send(message)
+                            else:
+                                response_list = split_message_into_chats(response)
+                                await chat.send(MessageSegment.at(event.user_id))
+                                for message in response_list:
+                                    await chat.send(message)
+                                    await asyncio.sleep(random.randint(1,3))
                     
                     except Exception as e:
                         await chat.send(f"出错了，稍后试试（错误已反馈") 
@@ -967,7 +977,14 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            await chat.send(message)
+                            if not nature_chat_mode:
+                                await chat.send(message)
+                            else:
+                                await chat.send(MessageSegment.at(event.user_id))
+                                response_list = split_message_into_chats(response)
+                                for response in response_list:
+                                    await chat.send(response)
+                                    await asyncio.sleep(random.randint(1, 3))
                            
                             
                                 

@@ -7,6 +7,26 @@ from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot
 import asyncio,threading
 from .conf import private_memory,group_memory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
+import jieba
+def split_message_into_chats(message)->list:
+    # 使用jieba分词并按照分隔符分割消息
+    words = jieba.cut(message, cut_all=False)
+    words_list = list(words)
+    split_chars = set(['。', '！', '？', ',', '，', '；', ';', '：', ':','，'])
+    chats = []
+    current_chat = []
+
+    for word in words_list:
+        current_chat.append(word)
+        if word in split_chars:
+            chats.append(''.join(current_chat).replace(',', '').replace('。', '').strip())
+            current_chat = []
+
+    # 处理剩余的未分割部分
+    if current_chat:
+        chats.append(''.join(current_chat).replace(',', '').replace('。', '').replace('，', '').replace('.', '').strip())
+
+    return chats
 __default_model_conf__={
     "model":"auto",
     "name":"",
@@ -68,7 +88,7 @@ __default_config__ = {
     "fake_people":True,#是否启用无人触发自动回复
     "probability":10,#无人触发自动回复概率
     "keyword":"at",#触发bot对话关键词,at为to_me,其他为startwith
-    #"use_jieba":False,#是否使用jieba进行分词输出
+    "nature_chat_style":True,#是否启用更加自然的对话风格(使用Jieba分词+回复输出)
     "poke_reply":True,
     "enable_group_chat":True,
     "enable_private_chat":True,
