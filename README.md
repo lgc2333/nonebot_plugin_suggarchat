@@ -185,6 +185,7 @@ plugins=["nonebot_plugin_suggarchat"]
 | `admin_group`                  | int               | 0            | 管理员群组的ID                                             |  
 | `admins`                       | list[int]               | []           | 管理员用户的列表                                            |  
 | `open_ai_base_url`             | string             | ""           | OpenAI协议 API URL                                        |  
+| `use_env_api_key`              | bool             | False           | 是否使用环境变量中的API密钥（如果启用将忽略`open_ai_api_key`项）                                        |                                            |  
 | `open_ai_api_key`              | string             | ""           | OpenAI协议 API 密钥                                            |  
 | `say_after_self_msg_be_deleted` | bool               | true         | 自己的消息被删除后是否回复                                  |  
 | `group_added_msg`              | string             | "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”" | 加入群组时发送的欢迎消息                                     |  

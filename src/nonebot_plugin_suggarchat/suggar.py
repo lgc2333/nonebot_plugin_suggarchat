@@ -13,6 +13,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEve
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
     , MessageEvent
+import os
 from nonebot import logger
 from nonebot.matcher import Matcher
 import sys
@@ -192,7 +193,10 @@ async def get_chat(messages:list)->str:
     if config['preset'] == "__main__":
         # 如果是主配置，直接使用配置文件中的设置
         base_url = config['open_ai_base_url']
-        key = config['open_ai_api_key']
+        if config['use_env_api_key']:
+            key = os.getenv("OPENAI_API_KEY")
+        else:
+            key = config['open_ai_api_key']
         model = config['model']
     else:
         # 如果是其他预设，从模型列表中查找匹配的设置
@@ -217,7 +221,7 @@ async def get_chat(messages:list)->str:
     # 记录日志，开始获取对话
     logger.debug(f"Start to get response with model {model}")
     logger.debug(f"Preset：{config['preset']}")
-    logger.debug(f"Key：{key[:10]}...")
+    logger.debug(f"Key：{key[:7]}...")
     logger.debug(f"API base_url：{base_url}")
 
     client = openai.AsyncOpenAI( base_url=base_url, api_key=key)

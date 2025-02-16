@@ -78,6 +78,7 @@ __default_config__ = {
     "admin_group":0,
     "admins":[],
     "open_ai_base_url":"",
+    "use_env_api_key":False,#是否使用环境变量中的api_key（OPENAI_API_KEY），如果使用，则忽略open_ai_api_key配置
     "open_ai_api_key":"",
     "stream":False,
     "max_tokens":100,
@@ -160,9 +161,10 @@ def get_config(no_base_prompt:bool=False)->dict:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
     if conf['enable']:
-        if conf['open_ai_api_key'] == "" or conf['open_ai_base_url'] == "":
+        if (conf['open_ai_api_key'] and not conf["use_env_api_key"]) == "" or conf['open_ai_base_url'] == "":
             logger.error("配置文件不完整，请检查配置文件")
             raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
+    
     return conf
 def get_group_prompt()->dict:
     config = get_config()
