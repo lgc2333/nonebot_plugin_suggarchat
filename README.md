@@ -199,6 +199,7 @@ plugins=["nonebot_plugin_suggarchat"]
 | `fake_people`      |     bool     |     true    |   是否启用自动回复模式    |
 | `probability`      |     int     |     10   |   随机回复的概率(1%~100%)    |
 |  `keyword`         |     str     |     "at"    |   触发bot对话关键词,at为to_me,其他为以这个词开头必定回复   |
+|  `nature_chat_style`         |     bool     |     false    |   启用更加自然的聊天风格   |
 
 </details>
 
