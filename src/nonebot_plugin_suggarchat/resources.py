@@ -1,6 +1,7 @@
 from datetime import datetime as datetime
 from nonebot.log import logger
 import json
+import chardet
 import nonebot
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot
@@ -13,11 +14,34 @@ __default_model_conf__={
     "api_key":"",
     #"protocol":"openai",
 }
+def convert_to_utf8(file_path)->bool:  
+  lock = threading.RLock()
+  file_path = str(file_path)
+  # 检测文件编码  
+  with lock:
+    with open(file_path, 'rb') as file:  
+        raw_data = file.read()  
+        result = chardet.detect(raw_data)  
+        encoding = result['encoding']  
+    
+    if encoding is None:  
+        logger.warning(f"无法检测到编码{file_path}")
+        return False
+
+    # 读取原文件并写入UTF-8编码的文件  
+    with open(file_path, 'r', encoding=encoding) as file:  
+        content = file.read()  
+
+    # 以UTF-8编码重新写入文件  
+    with open(file_path, 'w', encoding='utf-8') as file:  
+        file.write(content)  
+    return True
 def get_models()->list:
     models = []
     if not Path(custom_models_dir).exists() or not Path(custom_models_dir).is_dir():
         Path.mkdir(custom_models_dir)
     for file in Path(custom_models_dir).glob("*.json"):
+        convert_to_utf8(file)
         with open(file,"r") as f:
             model =json.load(f)
             model = update_dict(__default_model_conf__, model)
@@ -102,7 +126,7 @@ def save_config(conf:dict):
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
-    lock = threading.Lock()
+    lock = threading.RLock()
     with lock:
         if not Path(config_dir).exists():
             try:
@@ -113,6 +137,7 @@ def save_config(conf:dict):
         with open(str(main_config),"w") as f:
             conf = update_dict(__default_config__,conf)
             json.dump(conf,f,ensure_ascii=False,indent=4)
+        
 def get_config(no_base_prompt:bool=False)->dict:
     f"""
     获取配置文件
@@ -130,6 +155,7 @@ def get_config(no_base_prompt:bool=False)->dict:
         except:pass
         with open(str(main_config),"w") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
+    convert_to_utf8(main_config)
     with open(str(main_config),"r") as f:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
@@ -149,9 +175,11 @@ def get_group_prompt()->dict:
     if not Path(group_prompt).exists() or not Path(group_prompt).is_file():
         with open(str(group_prompt),"w") as f:
             f.write(prompt_old)
-    with open (str(group_prompt),"r") as f:
-        prompt = f.read()
-    return {"role": "system", "content": prompt}
+    if convert_to_utf8(str(group_prompt)):
+        with open (str(group_prompt),"r") as f:
+            prompt = f.read()
+        return {"role": "system", "content": prompt}
+    else:raise UnicodeDecodeError(f"提示词文件{group_prompt}编码错误！")
 def get_private_prompt()->dict:
     config = get_config()
     prompt_old = ""
@@ -163,9 +191,13 @@ def get_private_prompt()->dict:
     if not Path(private_prompt).exists() or not Path(private_prompt).is_file():
         with open(str(private_prompt),"w") as f:
             f.write(prompt_old)
-    with open (str(private_prompt),"r") as f:
-        prompt = f.read()
-    return {"role": "system", "content": prompt}
+    if convert_to_utf8(str(private_prompt)):
+        with open (str(private_prompt),"r") as f:
+            prompt = f.read()
+        return {"role": "system", "content": prompt}
+    else:
+        raise UnicodeDecodeError(f"{private_prompt}编码错误！")
+
 def get_memory_data(event:MessageEvent)->dict:
     logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
@@ -215,13 +247,14 @@ def get_memory_data(event:MessageEvent)->dict:
             if not conf_path.exists():
                 with open(str(conf_path), "w", encoding="utf-8") as f:
                     json.dump({"id": user_id, "enable": True, "memory": {"messages": []}, 'full': False}, f, ensure_ascii=True, indent=0)
+    convert_to_utf8(conf_path)
     # 读取并返回记忆数据
     with open(str(conf_path), "r", encoding="utf-8") as f:
         conf = json.load(f)
         logger.debug(f"读取到记忆数据{conf}")
         return conf
 def write_memory_data(event: MessageEvent, data: dict) -> None:
-  lock = threading.Lock()
+  lock = threading.RLock()
     
   logger.debug(f"写入记忆数据{data}")
   logger.debug(f"事件：{type(event)}")

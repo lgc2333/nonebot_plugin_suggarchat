@@ -255,7 +255,13 @@ recall = on_notice()
 prompt = on_command("prompt",priority=10,block=True)
 presets = on_command("presets",priority=10,block=True)
 set_preset = on_command("set_preset",aliases={"设置预设","设置模型预设"},priority=10,block=True)
-
+del_all_memory = on_command("del_all_memory",priority=10,block=True)
+@del_all_memory.handle()
+async def del_all_memory_handle(bot:Bot,event:MessageEvent):
+    global config
+    if not event.user_id in config["admins"]:
+        await del_all_memory.finish("你没有权限执行此操作")
+    
 # 处理设置预设的函数
 @set_preset.handle()
 async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
@@ -748,7 +754,9 @@ async def onConnect():
     from .conf import group_memory,private_memory
     from pathlib import Path
     from .conf import init
-    init(nonebot.get_bot())
+    bot:Bot = nonebot.get_bot()
+    logger.info(f"Bot {bot.self_id} connected")
+    init(bot)
     logger.info(f"Config dir：{config_dir}") 
     logger.info(f"Main config location：{main_config}")
     logger.info(f"Group memory data location：{group_memory}")
@@ -763,7 +771,7 @@ NONEBOT PLUGIN SUGGARCHAT
 {__KERNEL_VERSION__}
 """)
  
-    logger.info("Start successfully!")
+    logger.info("Start successfully!Waitting for bot connection...")
     
 
 
