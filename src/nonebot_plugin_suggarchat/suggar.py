@@ -140,7 +140,7 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
         content_message = f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
         
         # 将消息记录添加到记忆数据中
-        memory_data["memory"]["messages"].append(content_message)
+        memory_data["memory"]["messages"].append({"role":"user","content":content_message})
         
         # 更新记忆数据
         write_memory_data(event, memory_data)
