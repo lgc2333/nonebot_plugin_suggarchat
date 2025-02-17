@@ -43,10 +43,17 @@ def convert_to_utf8(file_path)->bool:
         raw_data = file.read()  
         result = chardet.detect(raw_data)  
         encoding = result['encoding']  
-    
     if encoding is None:  
+        try:
+            with open(file_path, 'r') as f:
+                contents = f.read()
+                if contents.strip()=="":return True
+        except Exception as e:
+            logger.warning(f"无法读取文件{file_path}")
+            return False
         logger.warning(f"无法检测到编码{file_path}")
         return False
+            
 
     # 读取原文件并写入UTF-8编码的文件  
     with open(file_path, 'r', encoding=encoding) as file:  
@@ -201,7 +208,7 @@ def get_group_prompt()->dict:
         with open (str(group_prompt),"r") as f:
             prompt = f.read()
         return {"role": "system", "content": prompt}
-    else:raise UnicodeDecodeError(f"提示词文件{group_prompt}编码错误！")
+    else:raise EncodingWarning(f"提示词文件{group_prompt}编码错误！")
 def get_private_prompt()->dict:
     config = get_config()
     prompt_old = ""
@@ -218,7 +225,7 @@ def get_private_prompt()->dict:
             prompt = f.read()
         return {"role": "system", "content": prompt}
     else:
-        raise UnicodeDecodeError(f"{private_prompt}编码错误！")
+        raise EncodingWarning(f"{private_prompt}编码错误！")
 
 def get_memory_data(event:MessageEvent)->dict:
     logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
