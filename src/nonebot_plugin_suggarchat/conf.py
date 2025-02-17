@@ -5,7 +5,7 @@ __KERNEL_VERSION__:str = "V1.10.1-Public"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
 config_dir = store.get_plugin_config_dir()
-data_dir = store.get_data_dir()
+data_dir = store.get_plugin_data_dir()
 if not config_dir.exists():
     config_dir.mkdir()
 group_memory = data_dir/"group"
