@@ -933,7 +933,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                 if data['id'] == event.user_id:
                     content = ""
                     rl = ""
-                    content = synthesize_message(event.get_message())
+                    content = await synthesize_message(event.get_message())
                     if content.strip() == "":
                          content = ""
                     logger.debug(f"{content}")
