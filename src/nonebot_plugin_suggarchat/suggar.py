@@ -996,10 +996,8 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                         import traceback  
                         await send_to_admin(f"出错了！{exc_value},\n{str(exc_type)}")
                         await send_to_admin(f"{traceback.format_exc()} ")
-                       
                         logger.error(f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}")      
-              
-                        write_memory_data(event,data)      
+                    write_memory_data(event,data)      
      except Exception as e:
                         await chat.send(f"出错了稍后试试吧（错误已反馈 ") 
                         
