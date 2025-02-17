@@ -764,11 +764,11 @@ async def onConnect():
     bot:Bot = nonebot.get_bot()
     logger.info(f"Bot {bot.self_id} connected")
     init(bot)
-    logger.info(f"Config dir：{config_dir}") 
-    logger.info(f"Main config location：{main_config}")
-    logger.info(f"Group memory data location：{group_memory}")
-    logger.info(f"Private memory data location：{private_memory}")
-    logger.info(f"Model presets dir：{custom_models_dir}")
+    logger.info(f"配置文件目录：{config_dir}") 
+    logger.info(f"主要配置文件：{main_config}")
+    logger.info(f"群聊记忆文件目录：{group_memory}")
+    logger.info(f"私聊记忆文件目录：{private_memory}")
+    logger.info(f"模型预设文件目录：{custom_models_dir}")
     save_config(get_config(no_base_prompt=True))
     
 @get_driver().on_startup
