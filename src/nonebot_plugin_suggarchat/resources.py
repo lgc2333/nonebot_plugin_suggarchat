@@ -181,14 +181,14 @@ def get_config(no_base_prompt:bool=False)->dict:
     config_dir = get_config_dir()
     main_config = get_config_file_path()
     if (not Path(config_dir).exists() or not Path(config_dir).is_dir()) or not Path(main_config).exists() or not Path(main_config).is_file():
-        logger.info("Default config file not found, creating...")
+        logger.info("未找到默认配置文件，已自动创建默认配置文件")
         try:
             Path.mkdir(config_dir)
         except:pass
         with open(str(main_config),"w") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     convert_to_utf8(main_config)
-    with open(str(main_config),"r") as f:
+    with open(str(main_config),"r",encoding="utf-8") as f:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
     if conf['enable']:
@@ -210,7 +210,7 @@ def get_group_prompt()->dict:
         with open(str(group_prompt),"w") as f:
             f.write(prompt_old)
     if convert_to_utf8(str(group_prompt)):
-        with open (str(group_prompt),"r") as f:
+        with open (str(group_prompt),"r",encoding="utf-8") as f:
             prompt = f.read()
         return {"role": "system", "content": prompt}
     else:raise EncodingWarning(f"提示词文件{group_prompt}编码错误！")
@@ -227,7 +227,7 @@ def get_private_prompt()->dict:
         with open(str(private_prompt),"w") as f:
             f.write(prompt_old)
     if convert_to_utf8(str(private_prompt)):
-        with open (str(private_prompt),"r") as f:
+        with open (str(private_prompt),"r",encoding="utf-8") as f:
             prompt = f.read()
         return {"role": "system", "content": prompt}
     else:
