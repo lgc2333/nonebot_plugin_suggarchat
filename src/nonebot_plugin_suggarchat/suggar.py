@@ -5,7 +5,8 @@ import nonebot.adapters
 from nonebot.rule import to_me
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
-from .conf import __KERNEL_VERSION__,current_directory,config_dir,main_config,custom_models_dir
+from .conf import *
+from .conf import __KERNEL_VERSION__
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,get_memory_data,write_memory_data\
      ,get_models,save_config,get_group_prompt,get_private_prompt,synthesize_message,\
@@ -22,7 +23,6 @@ import openai
 import random
 import asyncio
 from datetime import datetime  
-#import aiohttp
 
 config = get_config()
 ifenable = config['enable']
@@ -37,7 +37,19 @@ private_train = get_private_prompt()
 group_train = get_group_prompt()
 running_messages = {}
 running_messages_poke = {}
-
+config_dir:Path
+main_config:Path
+custom_models_dir:Path
+private_memory:Path
+group_memory:Path
+def reload_from_memory():
+    """从内存重载配置文件"""
+    global config_dir,main_config,custom_models_dir,private_memory,group_memory
+    config_dir = get_config_dir()
+    main_config = get_config_file_path()
+    custom_models_dir = get_custom_models_dir()
+    private_memory = get_private_memory_dir()
+    group_memory = get_group_memory_dir()
 async def send_to_admin(msg:str)-> None:
     """
     异步发送消息给管理员。
@@ -758,12 +770,11 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
        
 @get_driver().on_bot_connect
 async def onConnect():
-    from .conf import group_memory,private_memory
-    from pathlib import Path
     from .conf import init
     bot:Bot = nonebot.get_bot()
     logger.info(f"Bot {bot.self_id} connected")
     init(bot)
+    reload_from_memory()
     logger.info(f"配置文件目录：{config_dir}") 
     logger.info(f"主要配置文件：{main_config}")
     logger.info(f"群聊记忆文件目录：{group_memory}")

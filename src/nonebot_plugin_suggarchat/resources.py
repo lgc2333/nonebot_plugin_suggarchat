@@ -6,7 +6,7 @@ import nonebot
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot
 import asyncio,threading
-from .conf import private_memory,group_memory,main_config,config_dir,custom_models_dir,private_prompt,group_prompt
+from .conf import get_custom_models_dir,get_config_dir,get_config_file_path,get_group_memory_dir,get_private_memory_dir,get_group_prompt_path,get_private_prompt_path
 import jieba
 def split_message_into_chats(message)->list:
     # 使用jieba分词并按照分隔符分割消息
@@ -65,6 +65,7 @@ def convert_to_utf8(file_path)->bool:
     return True
 def get_models()->list:
     models = []
+    custom_models_dir = get_custom_models_dir()
     if not Path(custom_models_dir).exists() or not Path(custom_models_dir).is_dir():
         Path.mkdir(custom_models_dir)
     for file in Path(custom_models_dir).glob("*.json"):
@@ -154,6 +155,8 @@ def save_config(conf:dict):
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
+    config_dir = get_config_dir()
+    main_config = get_config_file_path()
     lock = threading.RLock()
     with lock:
         if not Path(config_dir).exists():
@@ -175,7 +178,8 @@ def get_config(no_base_prompt:bool=False)->dict:
         
 
     """
-
+    config_dir = get_config_dir()
+    main_config = get_config_file_path()
     if (not Path(config_dir).exists() or not Path(config_dir).is_dir()) or not Path(main_config).exists() or not Path(main_config).is_file():
         logger.info("Default config file not found, creating...")
         try:
@@ -195,6 +199,7 @@ def get_config(no_base_prompt:bool=False)->dict:
     return conf
 def get_group_prompt()->dict:
     config = get_config()
+    group_prompt = get_group_prompt_path()
     prompt_old = ""
     if config.get("group_train")!=None:
         logger.warning(f"配置文件的group_train字段已经弃用，请将其存放在配置文件同级目录的{group_prompt}文件中，我们已自动为您迁移。")
@@ -210,6 +215,7 @@ def get_group_prompt()->dict:
         return {"role": "system", "content": prompt}
     else:raise EncodingWarning(f"提示词文件{group_prompt}编码错误！")
 def get_private_prompt()->dict:
+    private_prompt = get_private_prompt_path()
     config = get_config()
     prompt_old = ""
     if config.get("private_train")!=None:
@@ -238,6 +244,8 @@ def get_memory_data(event:MessageEvent)->dict:
     返回:
     dict - 用户或群组的记忆数据字典
     """
+    private_memory = get_private_memory_dir()
+    group_memory = get_group_memory_dir()
        # 检查私聊记忆目录是否存在，如果不存在则创建
     if not Path(private_memory).exists() or not Path(private_memory).is_dir():
         Path.mkdir(private_memory)
@@ -300,6 +308,8 @@ def write_memory_data(event: MessageEvent, data: dict) -> None:
     返回值:
     无返回值。
     """
+  group_memory = get_group_memory_dir()
+  private_memory = get_private_memory_dir()
   with lock:
     # 判断事件是否为群组消息事件
     if isinstance(event, GroupMessageEvent):
