@@ -6,6 +6,8 @@ from nonebot.rule import to_me
 from nonebot.adapters import Message
 from nonebot.params import CommandArg
 from .conf import *
+from .matcher import SuggarMatcher
+from .event import PokeEvent,ChatEvent,EventType
 from .conf import __KERNEL_VERSION__
 from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,get_memory_data,write_memory_data\
@@ -591,6 +593,9 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 
                 # 更新群聊数据
                 write_memory_data(event,i)
+                if config["matcher_function"]:
+                    _matcher = SuggarMatcher(event_type=EventType().poke())
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
                 await poke.send(message)
         
         else:
@@ -611,6 +616,9 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 message = MessageSegment.text(response)
                 i['memory']['messages'].append({"role":"assistant","content":str(response)})
                 write_memory_data(event,i)
+                if config["matcher_function"]:
+                    _matcher = SuggarMatcher(event_type=EventType().poke())
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
                 await poke.send(message)
                 
     except Exception as e:
@@ -915,6 +923,9 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
+                            if config["matcher_function"]:
+                                _matcher = SuggarMatcher(event_type=EventType.chat())
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:
@@ -988,6 +999,9 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
+                            if config["matcher_function"]:
+                                _matcher = SuggarMatcher(event_type=EventType.chat())
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:

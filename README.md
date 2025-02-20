@@ -148,7 +148,11 @@ while True:
 - 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式）
 
 ## 安装方式
-1. **通过pip安装**
+1. **通过NB-CLI安装（推荐）**
+    ```bash
+    nb plugin install nonebot-plugin-suggarchat
+    ```
+2. **通过pip安装**
    - 确保已安装Python（版本>=3.9）。
     打开命令行工具，执行以下命令来安装插件：
      ```bash
@@ -157,7 +161,7 @@ while True:
      
      
 
-2. **通过PDM安装**
+3. **通过PDM安装**
     ```bash
     pdm add nonebot-plugin-suggarchat
     ```
@@ -200,6 +204,8 @@ plugins=["nonebot_plugin_suggarchat"]
 | `probability`      |     int     |     10   |   随机回复的概率(1%~100%)    |
 |  `keyword`         |     str     |     "at"    |   触发bot对话关键词,at为to_me,其他为以这个词开头必定回复   |
 |  `nature_chat_style`         |     bool     |     false    |   启用更加自然的聊天风格   |
+|  `matcher_function`         |     bool     |     false    |   启用matcher,当这一项启用,SuggaeMatcher将会运行（这是一个实验性的功能）。   |
+
 
 </details>
 
@@ -251,7 +257,27 @@ plugins=["nonebot_plugin_suggarchat"]
 
 </details>
 
+## 实验功能
+事件循环套事件循环？实现了一个简单的Matcher功能，可以注册处理器函数，并进行额外处理。
 
+<details><summary>展开查看示例代码</summary>
+
+
+```python
+from nonebot.plugin import require
+require("nonebot_plugin_suggarchat")
+# 先require再import!!!
+from nonebot_plugin_suggarchat.on_event import on_chat
+from nonebot_plugin_suggarchat.event import ChatEvent
+from nonebot import logger
+@on_chat().handle()
+async def _(event:ChatEvent):
+    logger.info("收到聊天事件!")
+    logger.info(event)
+```
+
+
+</details>
 
 ## 讨论
 

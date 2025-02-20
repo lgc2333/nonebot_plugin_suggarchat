@@ -131,7 +131,8 @@ __default_config__ = {
     "希望我能继续为你提供帮助，不要太在意我的小错误哦！",  
     ],  
     "parse_segments":True,
-    #"protocol":"openai"
+    #"protocol":"openai",
+    "matcher_function":False#启用matcher,当这一项启用,SuggaeMatcher将会运行。
 }
 async def synthesize_message(message:Message,bot:Bot=None)->str:
     content = ""

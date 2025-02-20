@@ -1,6 +1,6 @@
 [project]
 name = "nonebot_plugin_suggarchat"
-version = "1.10.3"
+version = "1.11"
 description = "Plugin for the Suggar chat framework compatible with Nonebot2."
 authors = [{ name = "JohnRichard4096", email = "windowserror@163.com" }]
 dependencies = [
@@ -11,6 +11,7 @@ dependencies = [
     "nonebot-adapter-onebot>=2.0.0",
     "nonebot-plugin-localstore>=0.7",
     "nonebot_plugin_uninfo>=0.4.1",
+    "chardet>=5.1.0",
 ]
 requires-python = ">=3.9, <4.0"
 readme = "README.md"
