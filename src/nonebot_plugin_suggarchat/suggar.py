@@ -924,7 +924,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config["matcher_function"]:
-                                _matcher = SuggarMatcher(event_type=EventType.chat())
+                                _matcher = SuggarMatcher(event_type=EventType().chat())
                                 _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)
@@ -1000,7 +1000,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config["matcher_function"]:
-                                _matcher = SuggarMatcher(event_type=EventType.chat())
+                                _matcher = SuggarMatcher(event_type=EventType().chat())
                                 _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)

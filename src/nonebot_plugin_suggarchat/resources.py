@@ -193,9 +193,10 @@ def get_config(no_base_prompt:bool=False)->dict:
            conf = json.load(f)
     conf = update_dict(__default_config__, conf)
     if conf['enable']:
-        if (conf['open_ai_api_key'] and not conf["use_env_api_key"]) == "" or conf['open_ai_base_url'] == "":
-            logger.error("配置文件不完整，请检查配置文件")
-            raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
+        if conf['preset']=="__main__":
+            if (conf['open_ai_api_key'] and not conf["use_env_api_key"]) == "" or conf['open_ai_base_url'] == "":
+                logger.error("配置文件不完整，请检查配置文件")
+                raise ValueError(f"配置文件不完整，请检查配置文件{main_config}")
     
     return conf
 def get_group_prompt()->dict:
