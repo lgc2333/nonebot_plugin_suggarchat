@@ -11,22 +11,37 @@ Chat plugin for **Nonebot2** with **Onebot V11 adapter**.
 
 [![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/) [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/) [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/nonebot-plugin-suggarchat/)
 
+
+
+
+
+
 ## 描述
 适用于**Nonebot2**的**Onebot V11 适配器**的LLM聊天插件
 
+</div align="center">
+
+## 目录
+- [温馨提示](#温馨提示)
+- [特性](#特性)
+- [安装方式](#安装方式)
+- [配置文件](#配置文件)
+- [提示词设置](#提示词)
+- [模型预设](#模型预设)
+- [预设使用方法](#预设使用方法)
+- [指令](#指令使用方法)
+- [实验功能](#实验功能)
+- [交流/反馈](#讨论)
+
+
+
 ## 温馨提示
 
-本插件全局性较高！***可能会与其他插件冲突***，请谨慎使用，只适用于**单Bot连**接的情况！
+**可能会与其他插件冲突**，比如导致指令无法触发，我的设计目的只是为了一个纯粹的聊天机器人，问题请提交到[ISSUE](https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/issues)。
 
+### Issue不用模板一律不看！
 
-
-如果你想主要做聊天类型的Bot，请忽略。
-
-在Suggar机器人实现中，暂时没有发现有冲突，如果有，请提交至Issues。
-```explaintext
-Issue不用模板一律不看！
-```
-***本插件更面向于有Nonebot2基础或插件开发者以及有LLM API开发/使用经验的用户！***
+*本插件更面向于有Nonebot2基础或插件开发者以及有LLM API开发/使用经验的用户！*
 
 不推荐直接调用**resources.py的**方法，而是通过插件API进行调用。
 
@@ -62,7 +77,7 @@ at+文字：
 ```
 私聊引用消息：
 ```plaintext
-私聊普通消息格式+ （（（引用的消息）））：其他消息段解析后内容
+私聊普通消息格式+ （（（引用的消息）））：引用消息内其他消息段解析后内容
 ```
 私聊合并转发消息：
 ```plaintext
@@ -78,7 +93,7 @@ at+文字：
 
 聊群引用消息：
 ```plaintext
-聊群普通消息格式+ （（（引用的消息）））：其他消息段解析后内容
+聊群普通消息格式+ （（（引用的消息）））：引用消息内其他消息段解析后内容
 ```
 聊群合并转发消息：
 ```plaintext
@@ -95,7 +110,7 @@ at+文字：
 
 ### 对于源码
 
-~~警告！本插件源码可能含有以下内容~~
+警告！本插件源码可能含有以下内容
  
 <details><summary>
 
@@ -120,7 +135,6 @@ else:pass
 
 ```
 《如判断》
-~~其实是懒得改陈年史山缩进，但为了不必要的麻烦，就这样了（~~
 ```python
 if True:
     todo()
@@ -140,37 +154,42 @@ while True:
 - API 开放
 - 戳一戳消息触发支持
 - 多模型切换选择
-- （未来将会支持）黑名单/白名单
 - 不同群内自定义聊天开关
 - 不同聊群可设置的自定义补充Prompt
 - 向超控（特定聊群）推送插件的错误日志
 - 自定义Bot消息被撤回时缓解尴尬的推送
-- 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式）
+- 合并转发/引用消息解析支持（只会解析纯文本/at消息段，如果您不理解这是什么意思，你可以理解为丢给LLM的信息只有"@a 你好"这样的格式，会在下文介绍提及）
+- “伪人模式”-聊群自动随机概率回复功能
+- 会话控制
 
 ## 安装方式
 1. **通过NB-CLI安装（推荐）**
-    ```bash
-    nb plugin install nonebot-plugin-suggarchat
-    ```
+```bash
+nb plugin install nonebot-plugin-suggarchat
+```
 2. **通过pip安装**
-   - 确保已安装Python（版本>=3.9）。
-    打开命令行工具，执行以下命令来安装插件：
-     ```bash
-     pip install nonebot-plugin-suggarchat
-     ```
+确保已安装Python（版本>=3.9）。
+打开命令行工具，执行以下命令来安装插件：
+```bash
+pip install nonebot-plugin-suggarchat
+```
      
      
 
 3. **通过PDM安装**
-    ```bash
-    pdm add nonebot-plugin-suggarchat
-    ```
+```bash
+pdm add nonebot-plugin-suggarchat
+```
+
+
     
 以上方法需要在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
 ```toml
 plugins=["nonebot_plugin_suggarchat"]
 #添加"nonebot_plugin_suggarchat"
 ```
+此外，如果你创建了**虚拟环境**，并且使用**2,3**方法安装，请额外使用`pipenv shell`**进入虚拟环境**再进行安装，**否则**插件将会安装在你的**系统Python环境**中。
+
 ## 配置文件
 
 - **配置文件路径**： 将在插件启动时在控制台输出。
@@ -196,7 +215,7 @@ plugins=["nonebot_plugin_suggarchat"]
 | `send_msg_after_be_invited`    | bool               | true         | 被邀请进群后是否发送消息                                        |  
 | `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
 | `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
-| `preset`       | string               | __main__ | 是否使用预设（在工作目录的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
+| `preset`       | string               | __main__ | 是否使用预设（在控制台打印的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
 | `max_tokens`       | int               | 100 | 在单次时，LLM最多可以回复多少个token（即字数，如果你的模型提供商支持                                   |
 | `model`       | str               | auto | 使用什么模型（具体看你的API提供商                                   |
 | `parse_segments` | bool               | true | 是否解析消息段，此权重覆盖`use_base_prompt`（即at/合并转发等）                                   |
@@ -210,10 +229,10 @@ plugins=["nonebot_plugin_suggarchat"]
 </details>
 
 ## 提示词
-提示词位于工作目录的config文件夹，分别`为prompt_group.txt`与`prompt_private.txt`，分别对应群聊和私聊的提示词。
+提示词位于将在控制台打印的config文件夹，分别`为prompt_group.txt`与`prompt_private.txt`，分别对应群聊和私聊的提示词。
 
 ## 模型预设
-预设文件位于工作目录的models文件夹下，预设文件为json格式，具体格式如下：
+预设文件位于将在控制台打印的models文件夹下，预设文件为json格式，具体格式如下：
 
 ```json
     {
@@ -229,7 +248,7 @@ plugins=["nonebot_plugin_suggarchat"]
 - `base_url`: OpenAI协议 API URL，默认为空。
 - `api_key`: OpenAI协议 API 密钥，默认为空。
 ## 预设使用方法
-1. 在工作目录的models文件夹下，创建一个json文件，文件名必须与预设的名字一致。
+1. 在控制台打印的models文件夹下，创建一个json文件，文件名必须与预设的名字一致。
 2. 在json文件中，填写预设的内容。
 3. 在插件配置文件中，将`preset`的值设置为预设的名字（我们更推荐你使用**指令**来切换而不是直接修改配置文件）。
 ## 指令使用方法
