@@ -13,6 +13,7 @@ from .resources import get_current_datetime_timestamp,get_config,\
      get_friend_info,get_memory_data,write_memory_data\
      ,get_models,save_config,get_group_prompt,get_private_prompt,synthesize_message,\
      split_message_into_chats
+import time
 from nonebot.adapters.onebot.v11 import Message, MessageSegment, GroupMessageEvent,  \
     GroupIncreaseNoticeEvent, Bot, \
     PokeNotifyEvent,GroupRecallNoticeEvent\
@@ -559,9 +560,6 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
         poke.skip()
         return
     
-    # 获取群聊和私聊的数据
-    Group_Data = get_memory_data(event)
-    Private_Data = get_memory_data(event)
     
     # 如果事件的目标ID不是机器人自身，则直接返回
     if event.target_id != event.self_id:
@@ -570,9 +568,10 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
     try:
         # 判断事件是否发生在群聊中
         if event.group_id != None:
+            Group_Data = get_memory_data(event)
             i = Group_Data
             # 如果群聊ID匹配且群聊功能开启，则处理事件
-            if i['id'] == event.group_id and i['enable']:
+            if i['enable']:
                 # 获取用户昵称
                 user_name = (await bot.get_group_member_info(group_id=event.group_id, user_id=event.user_id))['nickname'] or (await bot.get_stranger_info(user_id=event.user_id))['nickname']
                 # 构建发送的消息内容
@@ -580,46 +579,33 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                     {"role": "system", "content": f"{group_train}"},
                     {"role": "user", "content": f"\\（戳一戳消息\\){user_name} (QQ:{event.user_id}) 戳了戳你"}
                 ]
-                
                 # 初始化响应内容和调试信息
                 response = await get_chat(send_messages)
-                
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
                     await send_to_admin(f"POKEMSG{event.group_id}/{event.user_id}\n {send_messages}") 
                 # 构建最终消息并发送
                 message = MessageSegment.at(user_id=event.user_id) +MessageSegment.text(" ")+ MessageSegment.text(response)
-                i['memory']['messages'].append({"role":"assistant","content":str(response)})
-                
-                # 更新群聊数据
-                write_memory_data(event,i)
                 if config["matcher_function"]:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
                     await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
                 await poke.send(message)
         
         else:
-            # 如果事件发生在私聊中，执行类似的处理流程
-            i = Private_Data
-            if i['id'] == event.user_id and i['enable']:
-                name = get_friend_info(event.user_id)
-                send_messages = [
+            name = get_friend_info(event.user_id)
+            send_messages = [
                     {"role": "system", "content": f"{private_train}"},
                     {"role": "user", "content": f" \\（戳一戳消息\\) {name}(QQ:{event.user_id}) 戳了戳你"}
                 ]
                 
-                response = await get_chat(send_messages)
-                if debug:
-                    await send_to_admin(f"POKEMSG {send_messages}") 
-                    
-                
-                message = MessageSegment.text(response)
-                i['memory']['messages'].append({"role":"assistant","content":str(response)})
-                write_memory_data(event,i)
-                if config["matcher_function"]:
-                    _matcher = SuggarMatcher(event_type=EventType().poke())
-                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
-                await poke.send(message)
+            response = await get_chat(send_messages)
+            if debug:
+                await send_to_admin(f"POKEMSG {send_messages}") 
+            message = MessageSegment.text(response)
+            if config["matcher_function"]:
+                _matcher = SuggarMatcher(event_type=EventType().poke())
+                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
+            await poke.send(message)
                 
     except Exception as e:
         # 异常处理，记录错误信息并发送给管理员
@@ -845,12 +831,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
         if isinstance(event,GroupMessageEvent):
                 if not config['enable_group_chat']:matcher.skip()
                 datag = Group_Data
-                if datag['id'] == event.group_id:
-                    if not datag['enable']:
-                        await chat.send( "聊天没有启用，快去找管理员吧！")
-                        chat.skip()
-                        return
-                    
+                if datag['enable']:                  
                     group_id = event.group_id
                     user_id = event.user_id
                     content = ""
@@ -916,11 +897,10 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             message = MessageSegment.reply(event.message_id) + MessageSegment.text(response) 
                            
                             if debug:
-                                 await send_to_admin(f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
-                            if debug:
-                                 logger.debug(datag['memory']['messages'])
-                                 logger.debug(str(response))
-                                 await send_to_admin(f"response:{response}")
+                                await send_to_admin(f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}")
+                                logger.debug(datag['memory']['messages'])
+                                logger.debug(str(response))
+                                await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config["matcher_function"]:
@@ -949,6 +929,9 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
  
             
                     write_memory_data(event,datag) 
+                else:
+                    await chat.send("聊天没有启用")
+                    return
         else:
                 if not config['enable_private_chat']:matcher.skip()
                 data = Private_Data
@@ -995,7 +978,6 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             if debug:
                                  logger.debug(data['memory']['messages'])
                                  logger.debug(str(response))
-               
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})

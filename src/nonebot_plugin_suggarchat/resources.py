@@ -4,7 +4,7 @@ import json
 import chardet
 import nonebot
 from pathlib import Path
-from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot
+from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot,Event
 import asyncio,threading
 from .conf import get_custom_models_dir,get_config_dir,get_config_file_path,get_group_memory_dir,get_private_memory_dir,get_group_prompt_path,get_private_prompt_path
 import jieba
@@ -132,7 +132,10 @@ __default_config__ = {
     ],  
     "parse_segments":True,
     #"protocol":"openai",
-    "matcher_function":False#启用matcher,当这一项启用,SuggaeMatcher将会运行。
+    "matcher_function":False,#启用matcher,当这一项启用,SuggaeMatcher将会运行。
+    #"session_control":False #启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
+    #"session_control_time":60 #预设的射时间间隔，单位分钟，默认60min
+    #"session_control_history":10 #储存的会话历史长度最多几条，默认10条
 }
 async def synthesize_message(message:Message,bot:Bot=None)->str:
     content = ""
@@ -235,7 +238,7 @@ def get_private_prompt()->dict:
     else:
         raise EncodingWarning(f"{private_prompt}编码错误！")
 
-def get_memory_data(event:MessageEvent)->dict:
+def get_memory_data(event:Event)->dict:
     logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
     根据消息事件获取记忆数据，如果用户或群组的记忆数据不存在，则创建初始数据结构
@@ -292,7 +295,7 @@ def get_memory_data(event:MessageEvent)->dict:
         conf = json.load(f)
         logger.debug(f"读取到记忆数据{conf}")
         return conf
-def write_memory_data(event: MessageEvent, data: dict) -> None:
+def write_memory_data(event: Event, data: dict) -> None:
   lock = threading.RLock()
     
   logger.debug(f"写入记忆数据{data}")
