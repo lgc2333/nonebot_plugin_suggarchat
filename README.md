@@ -224,6 +224,9 @@ plugins=["nonebot_plugin_suggarchat"]
 |  `keyword`         |     str     |     "at"    |   触发bot对话关键词,at为to_me,其他为以这个词开头必定回复   |
 |  `nature_chat_style`         |     bool     |     false    |   启用更加自然的聊天风格   |
 |  `matcher_function`         |     bool     |     false    |   启用matcher,当这一项启用,SuggaeMatcher将会运行（这是一个实验性的功能）。   |
+| `session_control`       | bool   | false  | 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果超时则裁切上下文并询问是否继续对话） |
+| `session_control_time`  | int    | 60     | 会话控制时间间隔（单位：分钟）                                                           |
+| `session_control_history` | int  | 10     | 储存的会话历史最大条数                                                                   |
 
 
 </details>
@@ -261,6 +264,8 @@ plugins=["nonebot_plugin_suggarchat"]
  | **/prompt** | `--(show)` 展示当前提示词，`--(clear)` 清空当前prompt，`--(set) <文字>`则设置提示词 | 设置或查看当前自定义提示词（适用于用户自定义补充提示词）
  | **/presets** | 无 | 查看可用的预设列表
  | **/set_preset** 或 **/设置预设** 或 **/设置模型预设** | `<预设名>`  |设置当前使用的预设
+| **/sessions**       | 无                     | 查看历史会话列表（显示编号、消息片段和时间戳）                        |
+| **/sessions**       | `set <编号>` 用指定编号的历史会话覆盖当前记忆 `del <编号>` 删除指定编号的历史会话 `archive` 将当前会话归档到历史记录中，并清空当前聊天上下文 `clear` 清空所有历史会话记录          | 会话控制管理指令                                      |                                          |
 
 <details><summary>隐藏指令</summary>
 
@@ -277,8 +282,7 @@ plugins=["nonebot_plugin_suggarchat"]
 </details>
 
 ## 实验功能
-事件循环套事件循环？实现了一个简单的Matcher功能，可以注册处理器函数，并进行额外处理。
-
+- 事件循环套事件循环？实现了一个简单的Matcher功能，可以注册处理器函数，并进行额外处理。
 <details><summary>展开查看示例代码</summary>
 
 
@@ -297,6 +301,9 @@ async def _(event:ChatEvent):
 
 
 </details>
+
+- 会话控制（在配置文件中设置，详情见配置文件部分）
+
 
 ## 讨论
 

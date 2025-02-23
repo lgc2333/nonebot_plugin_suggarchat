@@ -26,7 +26,9 @@ import openai
 import random
 import asyncio
 from datetime import datetime  
-
+from nonebot.exception import NoneBotException
+session_clear_group = []
+session_clear_user = []
 config = get_config()
 ifenable = config['enable']
 random_reply = config['fake_people']
@@ -155,7 +157,7 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
         content_message = f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
         
         # 将消息记录添加到记忆数据中
-        memory_data["memory"]["messages"].append({"role":"user","content":content_message})
+        memory_data['memory']['messages'].append({"role":"user","content":content_message})
         
         # 更新记忆数据
         write_memory_data(event, memory_data)
@@ -186,6 +188,19 @@ async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
         return True
     return False
 
+
+def format_datetime_timestamp(time:int)->str:
+    now = datetime.fromtimestamp(time)
+
+    # 格式化日期、星期和时间
+    formatted_date = now.strftime("%Y-%m-%d")
+    formatted_weekday = now.strftime("%A")
+    formatted_time = now.strftime("%I:%M:%S %p")
+
+    # 组合格式化的字符串
+    formatted_datetime = f"[{formatted_date} {formatted_weekday} {formatted_time}]"
+
+    return formatted_datetime
 
 async def get_chat(messages:list)->str:
     """
@@ -278,10 +293,74 @@ prompt = on_command("prompt",priority=10,block=True)
 presets = on_command("presets",priority=10,block=True)
 set_preset = on_command("set_preset",aliases={"设置预设","设置模型预设"},priority=10,block=True)
 del_all_memory = on_command("del_all_memory",priority=10,block=True)
+sessions = on_command("sessions",priority=10,block=True)
+
+@sessions.handle()
+async def sessions_handle(bot:Bot,event:MessageEvent,args:Message=CommandArg()):
+    global config
+    if not config['session_control']:sessions.skip()
+    data = get_memory_data(event)
+    if isinstance(event,GroupMessageEvent):
+        if (await bot.get_group_member_info(group_id=event.group_id,user_id=event.user_id))['role'] == "member" and not event.user_id in config['admins']:
+            await sessions.finish("你没有操作历史会话的权限")
+        id = event.group_id
+    else:
+        id =event.user_id
+    arg_list = args.extract_plain_text().strip().split()
+    if args.extract_plain_text().strip()=="":
+            message_content = "历史会话\n"
+            for msg in data['sessions']:
+                message_content+=f"编号：{data['sessions'].index(msg)} ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
+            await sessions.finish(message_content)
+    if len(arg_list)>=1:
+        if arg_list[0] == "set":
+            try:
+                if len(arg_list)>=2:
+                    data["memory"]["messages"] = data["sessions"][int(arg_list[1])]
+                    data['timestamp'] = time.time()
+                    write_memory_data(event,data)
+                    await sessions.send("完成记忆覆盖。")
+                else:await sessions.finish("请输入正确编号")
+            except NoneBotException as e:
+                raise e
+            except:
+                await sessions.finish("覆盖记忆文件失败。")
+        elif arg_list[0] == "del":
+            try:
+                if len(arg_list)>=2:
+                    data["sessions"].remove(data["sessions"][int(arg_list[1])])
+                    write_memory_data(event,data)
+                else:await sessions.finish("请输入正确编号")
+            except NoneBotException as e:
+                raise e
+            except:
+                await sessions.finish("删除指定编号会话失败。")
+        elif arg_list[0] == "archive":
+            try:
+                
+                    data["sessions"].append(data['memory']["messages"])
+                    data['memory']["messages"] = []
+                    data['timestamp'] = time.time()
+                    write_memory_data(event,data)
+                    await sessions.finish("当前会话已归档。")
+            except NoneBotException as e:
+                raise e
+            except:
+                await sessions.finish("归档当前会话失败。")
+        elif arg_list[0] == "clear":
+            try:
+                data["sessions"]=[]
+                data['timestamp'] = time.time()
+                write_memory_data(event,data)
+                await sessions.finish("会话已清空。")
+            except NoneBotException as e:
+                raise e
+            except:
+                await sessions.finish("清空当前会话失败。")
 @del_all_memory.handle()
 async def del_all_memory_handle(bot:Bot,event:MessageEvent):
     global config
-    if not event.user_id in config["admins"]:
+    if not event.user_id in config['admins']:
         await del_all_memory.finish("你没有权限执行此操作")
     
 # 处理设置预设的函数
@@ -586,7 +665,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                     await send_to_admin(f"POKEMSG{event.group_id}/{event.user_id}\n {send_messages}") 
                 # 构建最终消息并发送
                 message = MessageSegment.at(user_id=event.user_id) +MessageSegment.text(" ")+ MessageSegment.text(response)
-                if config["matcher_function"]:
+                if config['matcher_function']:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
                     await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
                 await poke.send(message)
@@ -602,7 +681,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}") 
             message = MessageSegment.text(response)
-            if config["matcher_function"]:
+            if config['matcher_function']:
                 _matcher = SuggarMatcher(event_type=EventType().poke())
                 await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
             await poke.send(message)
@@ -654,8 +733,7 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     
     # 获取并更新记忆中的数据结构
     datag = get_memory_data(event)
-    if True:
-        if datag['id'] == event.group_id:
+    if datag['id'] == event.group_id:
             if not datag['enable']:
                 await disable.send("聊天禁用")
             else:
@@ -697,8 +775,7 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     # 获取记忆中的数据
     datag = get_memory_data(event)
     # 检查记忆数据是否与当前群组相关
-    if True:
-        if datag['id'] == event.group_id:
+    if datag['id'] == event.group_id:
             # 如果聊天功能已启用，则发送提示信息
             if datag['enable']:
                 await enable.send("聊天启用")
@@ -744,8 +821,7 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
         GData = get_memory_data(event)
         
         # 清除群聊上下文
-        if True:
-            if GData['id'] == event.group_id:
+        if GData['id'] == event.group_id:
                 GData['memory']['messages'] = []
                 await del_memory.send("上下文已清除")
                 write_memory_data(event,GData)
@@ -789,7 +865,7 @@ NONEBOT PLUGIN SUGGARCHAT
 
 @chat.handle()
 async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
-    global running_messages
+    global running_messages,session_clear_group,session_clear_user
     """
     处理聊天事件的主函数。
     
@@ -831,7 +907,40 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
         if isinstance(event,GroupMessageEvent):
                 if not config['enable_group_chat']:matcher.skip()
                 datag = Group_Data
-                if datag['enable']:                  
+                if datag['enable']:
+                    if datag.get("sessions") is None:
+                        datag['sessions'] = []
+                    if datag.get("timestamp") is None:
+                        datag['timestamp'] = time.time()
+                    if config['session_control']:
+                        for session in session_clear_group:
+                            if session['id']==event.group_id:
+                                if not event.reply:
+                                    session_clear_group.remove(session)
+                                break
+                        if (time.time() - datag['timestamp']) >= (config['session_control_time']*60):
+                            datag['sessions'].append({"messages":datag['memory']['messages'],"time":time.time()})
+                            while len(datag['sessions'])>config['session_control_history']:
+                                datag['sessions'].remove(datag['sessions'][0])
+                            datag['memory']['messages'] = []
+                            datag['timestamp'] = time.time()
+                            write_memory_data(event,datag)
+                            chated = await chat.send(f"如果想和我继续用刚刚的上下文聊天，快回复我✨\"继续\"✨吧！\n（超过{config['session_control_time']}分钟没理我我就会被系统抱走存档哦！）")
+                            session_clear_group.append({"id":event.group_id,"message_id":chated['message_id'],"timestamp":time.time()})
+                            return
+                        elif event.reply:
+                                    if session['id'] == event.group_id:
+                                        if "继续" in event.reply.message.extract_plain_text():
+                                            try:
+                                                if time.time()-session['timestamp']<100:
+                                                    await bot.delete_msg(message_id=session['message_id'])
+                                            except:
+                                                pass
+                                            session_clear_group.remove(session)
+                                            datag['memory']['messages']=datag['sessions'][len(datag['sessions'])-1]
+                                            datag['sessions'].remove(datag['sessions'][len(datag['sessions'])-1])
+                                            await chat.send("让我们继续聊天吧～")
+                                    
                     group_id = event.group_id
                     user_id = event.user_id
                     content = ""
@@ -903,7 +1012,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                 await send_to_admin(f"response:{response}")
                                  
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config["matcher_function"]:
+                            if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
                                 _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
@@ -935,6 +1044,39 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
         else:
                 if not config['enable_private_chat']:matcher.skip()
                 data = Private_Data
+                if data.get("sessions") is None:
+                        data['sessions'] = []
+                if data.get("timestamp") is None:
+                    data['timestamp'] = time.time()
+                if True:
+                    if config['session_control']:
+                        for session in session_clear_user:
+                            if session['id']==event.user_id:
+                                if not event.reply:
+                                    session_clear_user.remove(session)
+                                break
+                        if (time.time() - data['timestamp']) >= (config['session_control_time']*60):
+                            data['sessions'].append({"messages":data['memory']['messages'],"time":time.time()})
+                            while len(data['sessions'])>config['session_control_history']:
+                                data['sessions'].remove(data['sessions'][0])
+                            data['memory']['messages'] = []
+                            data['timestamp'] = time.time()
+                            write_memory_data(event,data)
+                            chated = await chat.send(f"如果想和我继续用刚刚的上下文聊天，快回复我✨\"继续\"✨吧！\n（超过{config['session_control_time']}分钟没理我我就会被系统抱走存档哦！）")
+                            session_clear_user.append({"id":event.user_id,"message_id":chated['message_id'],"timestamp":time.time()})
+                            return
+                        elif event.reply:
+                                    if session['id'] == event.user_id:
+                                        if "继续" in event.reply.message.extract_plain_text():
+                                            try:
+                                                if time.time()-session['timestamp']<100:
+                                                    await bot.delete_msg(message_id=session['message_id'])
+                                            except:
+                                                pass
+                                            session_clear_user.remove(session)
+                                            data['memory']['messages']=data['sessions'][len(data['sessions'])-1]
+                                            data['sessions'].remove(data['sessions'][len(data['sessions'])-1])
+                                            await chat.send("让我们继续聊天吧～")
                 if data['id'] == event.user_id:
                     content = ""
                     rl = ""
@@ -981,7 +1123,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                  await send_to_admin(f"response:{response}")
                                  
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
-                            if config["matcher_function"]:
+                            if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
                                 _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
