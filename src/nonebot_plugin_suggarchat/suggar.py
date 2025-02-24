@@ -29,15 +29,15 @@ from datetime import datetime
 from nonebot.exception import NoneBotException
 session_clear_group = []
 session_clear_user = []
-config:dict
-ifenable:bool
-random_reply:bool
-random_reply_rate:int
-keyword:str
-admins:list
-private_train:dict
-group_train:dict
-nature_chat_mode:bool
+config = get_config()
+ifenable = config['enable']
+random_reply = config['fake_people']
+random_reply_rate = config['probability']
+keyword = config['keyword']
+admins = config['admins']
+private_train = get_private_prompt()
+group_train = get_group_prompt()
+nature_chat_mode = config['nature_chat_style']
 
 debug = False
 custom_menu = []

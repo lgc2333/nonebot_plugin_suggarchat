@@ -2,17 +2,17 @@ import os
 from nonebot.adapters.onebot.v11 import Bot
 from pathlib import Path
 import nonebot_plugin_localstore as store
-__KERNEL_VERSION__:str = "V1.12.3-Public"
+__KERNEL_VERSION__:str = "V1.12.5-Public"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
-config_dir:Path
-data_dir:Path
-group_memory:Path
-private_memory:Path
-main_config:Path
-group_prompt:Path
-private_prompt:Path
-custom_models_dir:Path
+config_dir = store.get_plugin_config_dir()
+data_dir = store.get_plugin_data_dir()
+group_memory = data_dir/"group"
+private_memory = data_dir/"private"
+main_config = config_dir/"config.json"
+group_prompt = config_dir/"prompt_group.txt"
+private_prompt = config_dir/"prompt_private.txt"
+custom_models_dir = config_dir/"models"
 def init(bot:Bot):
     global config_dir,data_dir,group_memory,private_memory,main_config,group_prompt,private_prompt,custom_models_dir
     config_dir = store.get_plugin_config_dir()/bot.self_id
@@ -20,6 +20,8 @@ def init(bot:Bot):
     if not config_dir.exists():
         config_dir.mkdir()
     group_memory = data_dir/"group"
+    if not data_dir.exists():
+        data_dir.mkdir()
     if not group_memory.exists():
         group_memory.mkdir()
     private_memory = data_dir/"private"
