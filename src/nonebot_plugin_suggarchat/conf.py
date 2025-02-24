@@ -5,6 +5,14 @@ import nonebot_plugin_localstore as store
 __KERNEL_VERSION__:str = "V1.12.2-Public"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
+config_dir:Path
+data_dir:Path
+group_memory:Path
+private_memory:Path
+main_config:Path
+group_prompt:Path
+private_prompt:Path
+custom_models_dir:Path
 def init(bot:Bot):
     global config_dir,data_dir,group_memory,private_memory,main_config,group_prompt,private_prompt,custom_models_dir
     config_dir = store.get_plugin_config_dir()/bot.self_id
