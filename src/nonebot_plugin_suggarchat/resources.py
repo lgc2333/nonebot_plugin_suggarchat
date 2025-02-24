@@ -167,9 +167,9 @@ def save_config(conf:dict):
             try:
                 Path.mkdir(config_dir)
             except:pass
-            with open(str(main_config),"w") as f:
+            with open(str(main_config),"w",encoding="utf-8") as f:
                 json.dump(__default_config__,f,ensure_ascii=False,indent=4)
-        with open(str(main_config),"w") as f:
+        with open(str(main_config),"w",encoding="utf-8") as f:
             conf = update_dict(__default_config__,conf)
             json.dump(conf,f,ensure_ascii=False,indent=4)
         
@@ -189,7 +189,7 @@ def get_config(no_base_prompt:bool=False)->dict:
         try:
             Path.mkdir(config_dir)
         except:pass
-        with open(str(main_config),"w") as f:
+        with open(str(main_config),"w",encoding="utf-8") as f:
             json.dump(__default_config__,f,ensure_ascii=False,indent=4)
     convert_to_utf8(main_config)
     with open(str(main_config),"r",encoding="utf-8") as f:
@@ -212,7 +212,7 @@ def get_group_prompt()->dict:
         del config['group_train']
         save_config(config)
     if not Path(group_prompt).exists() or not Path(group_prompt).is_file():
-        with open(str(group_prompt),"w") as f:
+        with open(str(group_prompt),"w",encoding="utf-8") as f:
             f.write(prompt_old)
     if convert_to_utf8(str(group_prompt)):
         with open (str(group_prompt),"r",encoding="utf-8") as f:
@@ -229,7 +229,7 @@ def get_private_prompt()->dict:
         del config['private_train']
         save_config(config)
     if not Path(private_prompt).exists() or not Path(private_prompt).is_file():
-        with open(str(private_prompt),"w") as f:
+        with open(str(private_prompt),"w",encoding="utf-8") as f:
             f.write(prompt_old)
     if convert_to_utf8(str(private_prompt)):
         with open (str(private_prompt),"r",encoding="utf-8") as f:
