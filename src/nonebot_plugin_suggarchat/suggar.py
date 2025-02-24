@@ -29,17 +29,19 @@ from datetime import datetime
 from nonebot.exception import NoneBotException
 session_clear_group = []
 session_clear_user = []
-config = get_config()
-ifenable = config['enable']
-random_reply = config['fake_people']
-random_reply_rate = config['probability']
-keyword = config['keyword']
+config:dict
+ifenable:bool
+random_reply:bool
+random_reply_rate:int
+keyword:str
+admins:list
+private_train:dict
+group_train:dict
+nature_chat_mode:bool
+
 debug = False
-admins = config['admins']
-nature_chat_mode = config['nature_chat_style']
 custom_menu = []
-private_train = get_private_prompt()
-group_train = get_group_prompt()
+
 running_messages = {}
 running_messages_poke = {}
 config_dir:Path
@@ -842,16 +844,27 @@ async def _(bot:Bot,event:MessageEvent,matcher:Matcher):
        
 @get_driver().on_bot_connect
 async def onConnect():
+    global config,ifenable,random_reply,random_reply_rate,keyword,admins,private_train,group_train,nature_chat_mode
     from .conf import init
     bot:Bot = nonebot.get_bot()
     logger.info(f"Bot {bot.self_id} connected")
     init(bot)
+    config = get_config()
+    ifenable = config['enable']
+    random_reply = config['fake_people']
+    random_reply_rate = config['probability']
+    keyword = config['keyword']
+    admins = config['admins']
+    private_train = get_private_prompt()
+    group_train = get_group_prompt()
+    nature_chat_mode = config['nature_chat_style']
     reload_from_memory()
     logger.info(f"配置文件目录：{config_dir}") 
     logger.info(f"主要配置文件：{main_config}")
     logger.info(f"群聊记忆文件目录：{group_memory}")
     logger.info(f"私聊记忆文件目录：{private_memory}")
     logger.info(f"模型预设文件目录：{custom_models_dir}")
+    
     save_config(get_config(no_base_prompt=True))
     
 @get_driver().on_startup
