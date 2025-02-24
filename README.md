@@ -1,6 +1,7 @@
 <p align="center">
-  <a href="https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/"><img src="https://v2.nonebot.dev/logo.png" width="200" height="200" alt="nonebot"></a>
+  <a href="https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/"><img src="https://github.com/user-attachments/assets/b5162036-5b17-4cf4-b0cb-8ec842a71bc6" width="200" height="200" alt="nonebot"></a>
 </p>
+<p align="center"><img src="https://github.com/A-kirami/nonebot-plugin-template/blob/resources/NoneBotPlugin.svg" width="240" alt="NoneBotPluginText"></p>
 
 <div align="center">
 
