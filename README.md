@@ -4,7 +4,7 @@
 
 <div align="center">
 
-# Nonebot Plugin Suggarchat
+# SuggarChat OpenAI协议聊天插件
 
 Chat plugin for **Nonebot2** with **Onebot V11 adapter**. 
 
