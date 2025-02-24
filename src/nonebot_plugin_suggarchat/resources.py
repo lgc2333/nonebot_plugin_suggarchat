@@ -70,7 +70,7 @@ def get_models()->list:
         Path.mkdir(custom_models_dir)
     for file in Path(custom_models_dir).glob("*.json"):
         convert_to_utf8(file)
-        with open(file,"r") as f:
+        with open(file,"r",encoding="utf-8") as f:
             model =json.load(f)
             model = update_dict(__default_model_conf__, model)
             models.append(model)
