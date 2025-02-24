@@ -292,7 +292,7 @@ recall = on_notice()
 prompt = on_command("prompt",priority=10,block=True)
 presets = on_command("presets",priority=10,block=True)
 set_preset = on_command("set_preset",aliases={"设置预设","设置模型预设"},priority=10,block=True)
-del_all_memory = on_command("del_all_memory",priority=10,block=True)
+#del_all_memory = on_command("del_all_memory",priority=10,block=True)
 sessions = on_command("sessions",priority=10,block=True)
 
 @sessions.handle()
@@ -357,11 +357,13 @@ async def sessions_handle(bot:Bot,event:MessageEvent,args:Message=CommandArg()):
                 raise e
             except:
                 await sessions.finish("清空当前会话失败。")
+"""
 @del_all_memory.handle()
 async def del_all_memory_handle(bot:Bot,event:MessageEvent):
     global config
     if not event.user_id in config['admins']:
         await del_all_memory.finish("你没有权限执行此操作")
+"""
     
 # 处理设置预设的函数
 @set_preset.handle()

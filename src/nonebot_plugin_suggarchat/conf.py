@@ -5,24 +5,23 @@ import nonebot_plugin_localstore as store
 __KERNEL_VERSION__:str = "V1.12.1-Public"
 # 获取当前工作目录  
 current_directory:str = os.getcwd()  
-config_dir = store.get_plugin_config_dir()
-data_dir = store.get_plugin_data_dir()
-if not config_dir.exists():
-    config_dir.mkdir()
-group_memory = data_dir/"group"
-if not group_memory.exists():
-    group_memory.mkdir()
-private_memory = data_dir/"private"
-if not private_memory.exists():
-    private_memory.mkdir()
-main_config = config_dir/"config.json"
-group_prompt = config_dir/"prompt_group.txt"
-private_prompt = config_dir/"prompt_private.txt"
-custom_models_dir = config_dir/"models"
 def init(bot:Bot):
-    global config_dir,data_dir
-    config_dir = config_dir/bot.self_id
-    data_dir = data_dir/bot.self_id
+    global config_dir,data_dir,group_memory,private_memory,main_config,group_prompt,private_prompt,custom_models_dir
+    config_dir = store.get_plugin_config_dir()/bot.self_id
+    data_dir = store.get_plugin_data_dir()/bot.self_id
+    if not config_dir.exists():
+        config_dir.mkdir()
+    group_memory = data_dir/"group"
+    if not group_memory.exists():
+        group_memory.mkdir()
+    private_memory = data_dir/"private"
+    if not private_memory.exists():
+        private_memory.mkdir()
+    main_config = config_dir/"config.json"
+    group_prompt = config_dir/"prompt_group.txt"
+    private_prompt = config_dir/"prompt_private.txt"
+    custom_models_dir = config_dir/"models"
+    
 
 def get_private_memory_dir()->Path:
     return private_memory

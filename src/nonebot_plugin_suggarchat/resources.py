@@ -7,26 +7,33 @@ from pathlib import Path
 from nonebot.adapters.onebot.v11 import PrivateMessageEvent,GroupMessageEvent,MessageEvent,PokeNotifyEvent,Message,Bot,Event
 import asyncio,threading
 from .conf import get_custom_models_dir,get_config_dir,get_config_file_path,get_group_memory_dir,get_private_memory_dir,get_group_prompt_path,get_private_prompt_path
-import jieba
-def split_message_into_chats(message)->list:
-    # 使用jieba分词并按照分隔符分割消息
-    words = jieba.cut(message, cut_all=False)
-    words_list = list(words)
-    split_chars = set(['。', '！', '？', ',', '，', '；', ';', '：', ':','，'])
-    chats = []
-    current_chat = []
-
-    for word in words_list:
-        current_chat.append(word)
-        if word in split_chars:
-            chats.append(''.join(current_chat).replace(',', '').replace('。', '').strip())
-            current_chat = []
-
-    # 处理剩余的未分割部分
-    if current_chat:
-        chats.append(''.join(current_chat).replace(',', '').replace('。', '').replace('，', '').replace('.', '').strip())
-
-    return chats
+import re
+def split_message_into_chats(text):
+    # 匹配中文句末标点（。！？）和常见英文标点（.?!），支持省略号（...）
+    sentence_delimiters = re.compile(
+        r'([。！？!?\.][”"’\']*|\.{3,}[”"’\']*)', 
+        re.UNICODE
+    )
+    
+    sentences = []
+    start = 0
+    for match in sentence_delimiters.finditer(text):
+        # 获取匹配到的分隔符位置
+        punctuation = match.group()
+        end = match.end()
+        # 提取完整句子（包含标点）
+        sentence = text[start:end].strip()
+        if sentence:
+            sentences.append(sentence)
+        start = end
+    
+    # 处理最后剩余的文本
+    if start < len(text):
+        remaining = text[start:].strip()
+        if remaining:
+            sentences.append(remaining)
+    
+    return sentences
 __default_model_conf__={
     "model":"auto",
     "name":"",
