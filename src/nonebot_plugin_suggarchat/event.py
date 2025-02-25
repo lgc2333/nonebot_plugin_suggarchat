@@ -1,6 +1,6 @@
 from nonebot.adapters import Event as BaseEvent
 from typing_extensions import override
-from nonebot.adapters.onebot.v11 import MessageSegment,Message,MessageEvent,GroupMessageEvent,PokeNotifyEvent
+from nonebot.adapters.onebot.v11 import Message,MessageEvent,GroupMessageEvent,PokeNotifyEvent
 
 class EventType:
     """
@@ -84,7 +84,7 @@ class SuggarEvent:
     """
     与消息收发相关的事件基类
     """
-    def __init__(self, model_response: str, nbevent: BaseEvent, user_id: int, send_message: MessageSegment):
+    def __init__(self, model_response: str, nbevent: BaseEvent, user_id: int, send_message: list):
         """
         初始化SuggarEvent对象
 
@@ -206,13 +206,6 @@ class SuggarEvent:
         """
         return self.__modelResponse
 
-    def get_nonebot_event(self) -> BaseEvent:
-        """
-        获取NoneBot事件对象
-
-        :return: NoneBot事件对象
-        """
-        return self.__nbevent
 
     def get_user_id(self) -> int:
         """
@@ -338,5 +331,5 @@ class FinalObject:
     def __init__(self,send_message:list):
         self.__message = send_message
     @property
-    def message(self)->MessageSegment:
+    def message(self)->list:
         return self.__message

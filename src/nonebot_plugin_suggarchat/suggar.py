@@ -230,9 +230,9 @@ async def get_chat(messages:list)->str:
         # 如果是主配置，直接使用配置文件中的设置
         base_url = config['open_ai_base_url']
         if config['use_env_api_key']:
-            key = os.getenv("OPENAI_API_KEY")
+            key:str = os.getenv("OPENAI_API_KEY")
         else:
-            key = config['open_ai_api_key']
+            key:str = config['open_ai_api_key']
         model = config['model']
     else:
         # 如果是其他预设，从模型列表中查找匹配的设置
@@ -248,7 +248,7 @@ async def get_chat(messages:list)->str:
             logger.error(f"Preset {config['preset']} not found")
             logger.info("Found：Main config，Model："+config['model'])
             config['preset'] = "__main__"
-            key = config['open_ai_api_key']
+            key:str = config['open_ai_api_key']
             model = config['model']
             base_url = config['open_ai_base_url']
             # 保存更新后的配置
@@ -406,7 +406,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
                 break
         else:
             # 如果未找到预设，提示用户
-            set_preset.finish("未找到预设，请输入/presets查看预设列表。")
+            await set_preset.finish("未找到预设，请输入/presets查看预设列表。")
     else:
         # 如果参数为空，重置预设为默认
         config['preset'] = "__main__"
@@ -669,7 +669,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 ]
                 if config['matcher_function']:
                     _matcher = SuggarMatcher(event_type=EventType().before_poke())
-                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response="",user_id=event.user_id),_matcher)
                 # 初始化响应内容和调试信息
                 response = await get_chat(send_messages)
                 # 如果调试模式开启，发送调试信息给管理员
@@ -697,7 +697,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 ]
             if config['matcher_function']:
                 _matcher = SuggarMatcher(event_type=EventType().before_poke())
-                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
+                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response="",user_id=event.user_id),_matcher)
             response = await get_chat(send_messages)
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}") 
@@ -1061,7 +1061,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                     try:    
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().before_chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher))
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
                             response = await get_chat(send_messages)
                             debug_response = response
                             message = MessageSegment.reply(event.message_id) + MessageSegment.text(response) 
@@ -1075,7 +1075,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher))
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher)
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:
@@ -1171,7 +1171,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                     try:    
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().before_chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher))
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
                             response = await get_chat(send_messages)
                             debug_response = response
                             if debug:
@@ -1189,7 +1189,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher))
+                                await _matcher.trigger_event(ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher)
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:
