@@ -1,6 +1,7 @@
 #施工中。。。。。。敬请期待
-from .suggar import menu_msg,send_to_admin,get_chat
-import sys,os
+from .suggar import send_to_admin,get_chat
+from . import suggar
+import threading
 from nonebot import logger
 from .resources import get_config,save_config
 
@@ -26,8 +27,8 @@ class Menu:
         返回:
         - Menu: 返回 Menu 类的实例，支持方法链式调用。
         """
-        global menu_msg
-        menu_msg += f"{cmd_name} \n"
+        with threading.RLock:
+            suggar.menu_msg += f"{cmd_name} \n"
         return self
     
 

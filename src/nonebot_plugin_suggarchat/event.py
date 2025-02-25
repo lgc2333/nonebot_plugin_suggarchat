@@ -1,5 +1,5 @@
 from nonebot.adapters import Event as BaseEvent
-from typing import override
+from typing_extensions import override
 from nonebot.adapters.onebot.v11 import MessageSegment,Message,MessageEvent,GroupMessageEvent,PokeNotifyEvent
 
 class EventType:
@@ -16,6 +16,8 @@ class EventType:
     __CHAT = "chat"
     __None = ""
     __POKE = "poke"
+    __BEFORE_CHAT = "before_chat"
+    __BEFORE_POKE = "before_poke"
     
     def __init__(self):
         """
@@ -32,6 +34,24 @@ class EventType:
         str: 聊天事件的字符串标识。
         """
         return self.__CHAT
+    
+    def before_chat(self):
+        """
+        获取聊天调用LLM前的的事件类型的字符串标识。
+        
+        返回:
+        str: 聊天前的事件类型的字符串标识。
+        """
+        return self.__BEFORE_CHAT
+    
+    def before_poke(self):
+        """
+        获取戳一戳事件调用LLM前的类型的字符串标识。
+        
+        返回:
+        str: 戳一戳前的事件类型的字符串标识。
+        """
+        return self.__BEFORE_POKE
  
     def none(self):
         """
@@ -71,7 +91,7 @@ class SuggarEvent:
         :param model_response: 模型的响应文本
         :param nbevent: NoneBot事件对象
         :param user_id: 用户ID
-        :param send_message: 要发送的消息内容
+        :param send_message: 发送的模型的上下文
         """
         # 初始化事件类型为none
         self.__event_type = EventType().none()
@@ -82,7 +102,7 @@ class SuggarEvent:
         # 初始化用户ID
         self.__user_id: int = user_id
         # 初始化要发送的消息内容
-        self.__send_message: MessageSegment = send_message
+        self.__send_message: list = send_message
     def __int__(self):
         """
         防止将对象转换为整数。
@@ -132,21 +152,14 @@ class SuggarEvent:
         return self.__nbevent
 
     @property
-    def message(self) -> MessageSegment:
+    def message(self) -> list:
         """
-        获取要发送的消息内容
+        获取传入到模型的上下文
 
         :return: 消息内容
         """
         return self.__send_message
 
-    def add_message(self, value: MessageSegment):
-        """
-        添加消息内容
-
-        :param value: 要添加的消息内容
-        """
-        self.__send_message = self.__send_message + value
 
     @property
     def user_id(self) -> int:
@@ -166,9 +179,9 @@ class SuggarEvent:
         """
         return self.__modelResponse
 
-    def get_send_message(self) -> MessageSegment:
+    def get_send_message(self) -> list:
         """
-        获取要发送的消息内容
+        获取传入到模型的上下文
 
         :return: 消息内容
         """
@@ -225,11 +238,11 @@ class ChatEvent(SuggarEvent):
     
     参数:
     - nbevent: MessageEvent - 消息事件对象，包含事件的相关信息。
-    - send_message: MessageSegment - 发送的消息段。
+    - send_message: list - 发送到模型的上下文。
     - model_response: str - 模型的响应内容。
     - user_id: int - 用户ID。
     """
-    def __init__(self,nbevent:MessageEvent,send_message:MessageSegment,model_response:str,user_id:int):
+    def __init__(self,nbevent:MessageEvent,send_message:list,model_response:str,user_id:int):
         """
         构造函数，初始化聊天事件对象。
         """
@@ -242,7 +255,7 @@ class ChatEvent(SuggarEvent):
         重写__str__方法，返回聊天事件对象的字符串表示。
         
         返回:
-        字符串，包含事件类型、消息事件、模型响应、用户ID和发送的消息。
+        字符串，包含事件类型、消息事件、模型响应、用户ID和发送到模型的上下文信息。
         """
         return f"SUGGARCHATEVENT({self.__event_type},{self.__nbevent},{self.__modelResponse},{self.__user_id},{self.__send_message})"
 
@@ -287,11 +300,11 @@ class PokeEvent(SuggarEvent):
     
     参数:
     - nbevent: PokeNotifyEvent类型，表示戳一戳通知事件。
-    - send_message: MessageSegment类型，表示要发送的消息段。
+    - send_message: list 发送到模型的上下文。
     - model_response: str类型，模型的响应。
     - user_id: int类型，用户ID。
     """
-    def __init__(self,nbevent:PokeNotifyEvent,send_message:MessageSegment,model_response:str,user_id:int):
+    def __init__(self,nbevent:PokeNotifyEvent,send_message:list,model_response:str,user_id:int):
        # 初始化PokeEvent类，并设置相关属性
        super().__init__(model_response=model_response,nbevent=nbevent,user_id=user_id,send_message=send_message)
        self.__event_type = EventType().poke()
@@ -322,7 +335,7 @@ class FinalObject:
     """
     最终返回的对象
     """
-    def __init__(self,send_message:MessageSegment):
+    def __init__(self,send_message:list):
         self.__message = send_message
     @property
     def message(self)->MessageSegment:

@@ -37,6 +37,7 @@ keyword = config['keyword']
 admins = config['admins']
 private_train = get_private_prompt()
 group_train = get_group_prompt()
+enable_matcher = config["matcher_function"]
 nature_chat_mode = config['nature_chat_style']
 
 debug = False
@@ -311,6 +312,8 @@ async def sessions_handle(bot:Bot,event:MessageEvent,args:Message=CommandArg()):
     arg_list = args.extract_plain_text().strip().split()
     if args.extract_plain_text().strip()=="":
             message_content = "历史会话\n"
+            if data.get('sessions') == None:
+                await sessions.finish("没有历史会话")
             for msg in data['sessions']:
                 message_content+=f"编号：{data['sessions'].index(msg)} ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
             await sessions.finish(message_content)
@@ -359,6 +362,8 @@ async def sessions_handle(bot:Bot,event:MessageEvent,args:Message=CommandArg()):
                 raise e
             except:
                 await sessions.finish("清空当前会话失败。")
+        elif arg_list[0] == "help":
+            await sessions.finish("Sessions指令帮助：\nset：覆盖当前会话为指定编号的会话\ndel：删除指定编号的会话\narchive：归档当前会话\nclear：清空所有会话\n")
 """
 @del_all_memory.handle()
 async def del_all_memory_handle(bot:Bot,event:MessageEvent):
@@ -593,7 +598,7 @@ async def _(bot:Bot,event:GroupRecallNoticeEvent,matcher:Matcher):
 
 
 # 定义聊天功能菜单的初始消息内容，包含各种命令及其描述
-menu_msg = "聊天功能菜单:\n/聊天菜单 唤出菜单 \n/del_memory 丢失这个群/聊天的记忆 \n/enable 在群聊启用聊天 \n/disable 在群聊里关闭聊天\n/prompt <arg> [text] 设置聊群自定义补充prompt（--(show) 展示当前提示词，--(clear) 清空当前prompt，--(set) [文字]则设置提示词，e.g.:/prompt --(show)）,/prompt --(set) [text]。）"
+menu_msg = "聊天功能菜单:\n/聊天菜单 唤出菜单 \n/del_memory 丢失这个群/聊天的记忆 \n/enable 在群聊启用聊天 \n/disable 在群聊里关闭聊天\n/prompt <arg> [text] 设置聊群自定义补充prompt（--(show) 展示当前提示词，--(clear) 清空当前prompt，--(set) [文字]则设置提示词，e.g.:/prompt --(show)）,/prompt --(set) [text]。）/sessions指令帮助：\nset：覆盖当前会话为指定编号的会话\ndel：删除指定编号的会话\narchive：归档当前会话\nclear：清空所有会话\nPreset帮助：\n/presets 列出所有读取到的模型预设\n/set_preset 或 /设置预设 或 /设置模型预设  <预设名> 设置当前使用的预设"
 
 # 处理菜单命令的函数
 @menu.handle()
@@ -631,7 +636,7 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
     此函数主要根据配置信息和事件类型，响应戳一戳事件，并发送预定义的消息。
     """
     # 声明全局变量，用于获取prompt和调试模式
-    global private_train,group_train
+    global private_train,group_train,nature_chat_mode
     global debug,config
     
     # 检查配置，如果机器人未启用，则跳过处理
@@ -662,6 +667,9 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                     {"role": "system", "content": f"{group_train}"},
                     {"role": "user", "content": f"\\（戳一戳消息\\){user_name} (QQ:{event.user_id}) 戳了戳你"}
                 ]
+                if config['matcher_function']:
+                    _matcher = SuggarMatcher(event_type=EventType().before_poke())
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
                 # 初始化响应内容和调试信息
                 response = await get_chat(send_messages)
                 # 如果调试模式开启，发送调试信息给管理员
@@ -671,8 +679,15 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                 message = MessageSegment.at(user_id=event.user_id) +MessageSegment.text(" ")+ MessageSegment.text(response)
                 if config['matcher_function']:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
-                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
-                await poke.send(message)
+                    await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher)
+                if not nature_chat_mode:
+                    await poke.send(message)
+                else:
+                    response_list = split_message_into_chats(response)
+                    await poke.send(MessageSegment.at(event.user_id))
+                    for message in response_list:
+                        await poke.send(message)
+                        await asyncio.sleep(random.randint(1,3)+int(len(message)/random.randint(80,100)))
         
         else:
             name = get_friend_info(event.user_id)
@@ -680,15 +695,24 @@ async def _(event:PokeNotifyEvent,bot:Bot,matcher:Matcher):
                     {"role": "system", "content": f"{private_train}"},
                     {"role": "user", "content": f" \\（戳一戳消息\\) {name}(QQ:{event.user_id}) 戳了戳你"}
                 ]
-                
+            if config['matcher_function']:
+                _matcher = SuggarMatcher(event_type=EventType().before_poke())
+                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher)
             response = await get_chat(send_messages)
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}") 
             message = MessageSegment.text(response)
             if config['matcher_function']:
                 _matcher = SuggarMatcher(event_type=EventType().poke())
-                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher)
-            await poke.send(message)
+                await _matcher.trigger_event(PokeEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher)
+            if not nature_chat_mode:
+                await poke.send(message)
+            else:
+                response_list = split_message_into_chats(response)
+                await poke.send(MessageSegment.at(event.user_id))
+                for message in response_list:
+                    await poke.send(message)
+                    await asyncio.sleep(random.randint(1,3)+int(len(message)/random.randint(80,100)))
                 
     except Exception as e:
         # 异常处理，记录错误信息并发送给管理员
@@ -1035,7 +1059,9 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                     train['content'] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt','无')}"
                     send_messages.insert(0,train)
                     try:    
-                            
+                            if config['matcher_function']:
+                                _matcher = SuggarMatcher(event_type=EventType().before_chat())
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher))
                             response = await get_chat(send_messages)
                             debug_response = response
                             message = MessageSegment.reply(event.message_id) + MessageSegment.text(response) 
@@ -1049,7 +1075,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             datag['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:
@@ -1057,8 +1083,8 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                 await chat.send(MessageSegment.at(event.user_id))
                                 for message in response_list:
                                     await chat.send(message)
-                                    await asyncio.sleep(random.randint(1,3))
-                    
+                                    await asyncio.sleep(random.randint(1,3)+int(len(message)/random.randint(80,100)))
+                                    
                     except Exception as e:
                         await chat.send(f"出错了，稍后试试（错误已反馈") 
                         
@@ -1143,6 +1169,9 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                     send_messages = data['memory']['messages'].copy()
                     send_messages.insert(0,private_train)
                     try:    
+                            if config['matcher_function']:
+                                _matcher = SuggarMatcher(event_type=EventType().before_chat())
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=None,user_id=event.user_id),_matcher))
                             response = await get_chat(send_messages)
                             debug_response = response
                             if debug:
@@ -1160,7 +1189,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                             data['memory']['messages'].append({"role":"assistant","content":str(response)})
                             if config['matcher_function']:
                                 _matcher = SuggarMatcher(event_type=EventType().chat())
-                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=message,model_response=response,user_id=event.user_id),_matcher))
+                                _matcher.trigger_event((ChatEvent(nbevent=event,send_message=send_messages,model_response=response,user_id=event.user_id),_matcher))
                             if not nature_chat_mode:
                                 await chat.send(message)
                             else:
@@ -1168,7 +1197,7 @@ async def _(event:MessageEvent, matcher:Matcher, bot:Bot):
                                 response_list = split_message_into_chats(response)
                                 for response in response_list:
                                     await chat.send(response)
-                                    await asyncio.sleep(random.randint(1, 3))
+                                    await asyncio.sleep(random.randint(1,3)+int(len(message)/random.randint(80,100)))
                            
                             
                                 

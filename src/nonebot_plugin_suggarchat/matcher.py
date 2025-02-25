@@ -1,4 +1,4 @@
-from typing import Callable, List, Awaitable, Optional,override
+from typing_extensions import Callable, List, Awaitable, Optional,override
 import asyncio
 import inspect
 from nonebot import logger
@@ -13,7 +13,6 @@ suggar matcher
 用于触发Suggar中间件事件
 """
 event_handlers = {}
-running_tasks = []
 handler_infos = {}
 matchers_data = {}
 priority={}
@@ -24,7 +23,7 @@ class SuggarMatcher:
   
   def __init__(self, event_type: str = ""):
         # 存储事件处理函数的字典
-        global event_handlers,running_tasks,priority
+        global event_handlers,priority,handler_infos
         self.event_handlers = event_handlers
         self.handler_infos = handler_infos
         self.event_type = event_type
@@ -32,26 +31,31 @@ class SuggarMatcher:
         self.processing_message:MessageSegment
         self.priority = priority
 
-  def handle(self, event_type = None,priority:int=10):
+  def handle(self, event_type = None,priority_value:int=10):
     """
     事件处理函数注册函数
     参数：
       - event_type: 事件类型，默认为None，因为在on_event可能已经传入
-      - priority: 事件优先级，默认为10
+      - priority_value: 事件优先级，默认为10
     """
-    if not priority>0:raise ValueError("事件优先级不能为0或负！")
-    self.priority=priority
+    if not priority_value>0:raise ValueError("事件优先级不能为0或负！")
     if event_type==None and self.event_type != "":
         event_type = self.event_type
         if self.event_type == "" or self.event_type==None:raise ValueError("事件类型不能为空！")
     def decorator(func: Callable[[Optional[SuggarEvent]], Awaitable[None]]):
+        global priority,handler_infos,event_handlers
+        self.handler_infos = handler_infos
+        self.priority = priority
+        self.event_handlers = event_handlers
         if event_type not in self.event_handlers:
             self.event_handlers[event_type] = []
             self.handler_infos[event_type] = {}
+            self.priority[event_type] = []
         self.event_handlers[event_type].append(func)
-        self.priority[event_type].append(priority)
+        if not priority in self.priority[event_type]:
+            self.priority[event_type].append(priority_value)
         self.priority[event_type] = sorted(self.priority[event_type])
-        self.handler_infos[event_type][func.__name__] = {"func":func,"signature":inspect.signature(func),"frame":inspect.currentframe().f_back,"priority":priority}
+        self.handler_infos[event_type][func.__name__] = {"func":func,"signature":inspect.signature(func),"frame":inspect.currentframe().f_back,"priority":priority_value}
         return func
     return decorator
   def stop_process(self):
