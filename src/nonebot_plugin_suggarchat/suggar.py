@@ -1250,7 +1250,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            _matcher.trigger_event(
+                            await _matcher.trigger_event(
                                 (
                                     ChatEvent(
                                         nbevent=event,
@@ -1280,7 +1280,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         )
                         if config["matcher_function"]:
                             _matcher = SuggarMatcher(event_type=EventType().chat())
-                            _matcher.trigger_event(
+                            await _matcher.trigger_event(
                                 (
                                     ChatEvent(
                                         nbevent=event,
@@ -1423,7 +1423,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            _matcher.trigger_event(
+                            await _matcher.trigger_event(
                                 (
                                     ChatEvent(
                                         nbevent=event,
@@ -1453,7 +1453,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         )
                         if config["matcher_function"]:
                             _matcher = SuggarMatcher(event_type=EventType().chat())
-                            _matcher.trigger_event(
+                            await _matcher.trigger_event(
                                 (
                                     ChatEvent(
                                         nbevent=event,
