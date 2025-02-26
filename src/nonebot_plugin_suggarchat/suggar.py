@@ -1424,7 +1424,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 event_type=EventType().before_chat()
                             )
                             await _matcher.trigger_event(
-                                (
+                                
                                     ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
@@ -1432,7 +1432,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         user_id=event.user_id,
                                     ),
                                     _matcher,
-                                )
+                                
                             )
                         response = await get_chat(send_messages)
                         debug_response = response
