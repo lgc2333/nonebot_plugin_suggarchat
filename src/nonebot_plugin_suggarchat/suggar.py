@@ -320,12 +320,7 @@ async def get_chat(messages: list) -> str:
 
 
 # 创建响应器实例
-# fake_people = on_notice(block=False)
-add_notice = on_notice(block=False)
 menu = on_command("聊天菜单", block=True, aliases={"chat_menu"}, priority=10)
-chat = on_message(
-    block=False, priority=11, rule=rule
-)  # 不再在此处判断是否触发,转到line68
 del_memory = on_command(
     "del_memory",
     aliases={"失忆", "删除记忆", "删除历史消息", "删除回忆"},
@@ -334,10 +329,6 @@ del_memory = on_command(
 )
 enable = on_command("enable_chat", aliases={"启用聊天"}, block=True, priority=10)
 disable = on_command("disable_chat", aliases={"禁用聊天"}, block=True, priority=10)
-poke = on_notice(priority=10, block=True)
-debug_switch = on_command("debug", priority=10, block=True)
-debug_handle = on_message(rule=to_me(), priority=10, block=False)
-recall = on_notice()
 prompt = on_command("prompt", priority=10, block=True)
 presets = on_command("presets", priority=10, block=True)
 set_preset = on_command(
@@ -345,6 +336,15 @@ set_preset = on_command(
 )
 # del_all_memory = on_command("del_all_memory",priority=10,block=True)
 sessions = on_command("sessions", priority=10, block=True)
+debug_switch = on_command("debug", priority=10, block=True)
+add_notice = on_notice(block=False)
+poke = on_notice(priority=10, block=True)
+chat = on_message(
+    block=False, priority=11, rule=rule
+)  # 不再在此处判断是否触发,转到rule方法
+debug_handle = on_message(rule=to_me(), priority=10, block=False)
+recall = on_notice()
+
 
 
 @sessions.handle()

@@ -101,7 +101,7 @@ class SuggarMatcher:
         忽略当前处理器，继续处理下一个。
         """
         raise PassException()
-
+    
     async def trigger_event(self, event: SuggarEvent, *args, **kwargs) -> SuggarEvent:
         """
         触发特定类型的事件，并调用该类型的所有注册事件处理程序。
