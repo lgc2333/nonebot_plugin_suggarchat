@@ -65,10 +65,9 @@ __default_model_conf__ = {
 
 
 def convert_to_utf8(file_path) -> bool:
-    lock = threading.RLock()
-    file_path = str(file_path)
-    # 检测文件编码
-    with lock:
+        file_path = str(file_path)
+        # 检测文件编码
+    
         with open(file_path, "rb") as file:
             raw_data = file.read()
             result = chardet.detect(raw_data)
@@ -194,16 +193,14 @@ async def synthesize_message(message: Message, bot: Bot = None) -> str:
 
 
 def save_config(conf: dict):
-    """
+        """
     保存配置文件
 
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
-    config_dir = get_config_dir()
-    main_config = get_config_file_path()
-    lock = threading.RLock()
-    with lock:
+        config_dir = get_config_dir()
+        main_config = get_config_file_path()
         if not Path(config_dir).exists():
             try:
                 Path.mkdir(config_dir)
@@ -418,11 +415,10 @@ def get_memory_data(event: Event) -> dict:
 
 
 def write_memory_data(event: Event, data: dict) -> None:
-    lock = threading.RLock()
 
-    logger.debug(f"写入记忆数据{data}")
-    logger.debug(f"事件：{type(event)}")
-    """
+        logger.debug(f"写入记忆数据{data}")
+        logger.debug(f"事件：{type(event)}")
+        """
     根据事件类型将数据写入到特定的记忆数据文件中。
     
     该函数根据传入的事件类型（群组消息事件或用户消息事件），将相应的数据以JSON格式写入到对应的文件中。
@@ -435,9 +431,9 @@ def write_memory_data(event: Event, data: dict) -> None:
     返回值:
     无返回值。
     """
-    group_memory = get_group_memory_dir()
-    private_memory = get_private_memory_dir()
-    with lock:
+        group_memory = get_group_memory_dir()
+        private_memory = get_private_memory_dir()
+    
         # 判断事件是否为群组消息事件
         if isinstance(event, GroupMessageEvent):
             # 获取群组ID，并根据群组ID构造配置文件路径

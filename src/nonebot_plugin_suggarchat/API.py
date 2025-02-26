@@ -28,8 +28,7 @@ class Menu:
         返回:
         - Menu: 返回 Menu 类的实例，支持方法链式调用。
         """
-        with threading.RLock:
-            suggar.menu_msg += f"{cmd_name} \n"
+        suggar.menu_msg += f"{cmd_name} \n"
         return self
 
 
