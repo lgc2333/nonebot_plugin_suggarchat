@@ -112,7 +112,7 @@ at+文字：
 ### 对于源码
 
 警告！本插件源码可能含有以下内容
- 
+
 <details><summary>
 
 ~~点我开始赤史~~
@@ -174,8 +174,8 @@ nb plugin install nonebot-plugin-suggarchat
 ```bash
 pip install nonebot-plugin-suggarchat
 ```
-     
-     
+
+​     
 
 3. **通过PDM安装**
 ```bash
@@ -183,7 +183,7 @@ pdm add nonebot-plugin-suggarchat
 ```
 
 
-    
+​    
 以上方法需要在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
 ```toml
 plugins=["nonebot_plugin_suggarchat"]
@@ -197,23 +197,22 @@ plugins=["nonebot_plugin_suggarchat"]
 ### **配置项说明**
 <details><summary>点此展开</summary>
 
-| 配置项                         | 类型                | 默认值        | 解释                                                         |  
-|------------------------------|-------------------|--------------|------------------------------------------------------------|  
-| `memory_length_limit`          | int               | 50           | 单会话允许存储的最大消息数（**如果您不知道这是什么意思，请不要修改**）                                       |  
-| `enable`                       | bool               | **false**         | 是否启用聊天机器人（即该插件）                                          |  
-| `poke_reply`                   | bool               | true         | 是否启用戳一戳回复功能                                          |  
-| `enable_group_chat`            | bool               | true         | 是否启用群聊功能                                            |  
-| `enable_private_chat`          | bool               | true         | 是否启用私聊功能                                            |  
-| `allow_custom_prompt`          | bool               | true         | 是否允许自定义提示                                          |  
-| `allow_send_to_admin`          | bool               | true         | 是否允许向管理员发送消息                                    |  
-| `admin_group`                  | int               | 0            | 管理员群组的ID                                             |  
-| `admins`                       | list[int]               | []           | 管理员用户的列表                                            |  
-| `open_ai_base_url`             | string             | ""           | OpenAI协议 API URL                                        |  
-| `use_env_api_key`              | bool             | False           | 是否使用环境变量中的API密钥（如果启用将忽略`open_ai_api_key`项）                                        |                                            |  
-| `open_ai_api_key`              | string             | ""           | OpenAI协议 API 密钥                                            |  
-| `say_after_self_msg_be_deleted` | bool               | true         | 自己的消息被删除后是否回复                                  |  
-| `group_added_msg`              | string             | "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”" | 加入群组时发送的欢迎消息                                     |  
-| `send_msg_after_be_invited`    | bool               | true         | 被邀请进群后是否发送消息                                        |  
+| 配置项                         | 类型                | 默认值        | 解释                                                         |
+|------------------------------|-------------------|--------------|------------------------------------------------------------|
+| `memory_length_limit`          | int               | 50           | 单会话允许存储的最大消息数（**如果您不知道这是什么意思，请不要修改**）                                       |
+| `enable`                       | bool               | **false**         | 是否启用聊天机器人（即该插件）                                          |
+| `poke_reply`                   | bool               | true         | 是否启用戳一戳回复功能                                          |
+| `enable_group_chat`            | bool               | true         | 是否启用群聊功能                                            |
+| `enable_private_chat`          | bool               | true         | 是否启用私聊功能                                            |
+| `allow_custom_prompt`          | bool               | true         | 是否允许自定义提示                                          |
+| `allow_send_to_admin`          | bool               | true         | 是否允许向管理员发送消息                                    |
+| `admin_group`                  | int               | 0            | 管理员群组的ID                                             |
+| `admins`                       | list[int]               | []           | 管理员用户的列表                                            |
+| `open_ai_base_url`             | string             | ""           | OpenAI协议 API URL                                        |
+| `open_ai_api_key`              | string             | ""           | OpenAI协议 API 密钥                                            |
+| `say_after_self_msg_be_deleted` | bool               | true         | 自己的消息被删除后是否回复                                  |
+| `group_added_msg`              | string             | "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”" | 加入群组时发送的欢迎消息                                     |
+| `send_msg_after_be_invited`    | bool               | true         | 被邀请进群后是否发送消息                                        |
 | `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
 | `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
 | `preset`       | string               | __main__ | 是否使用预设（在控制台打印的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
