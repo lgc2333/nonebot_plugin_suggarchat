@@ -109,15 +109,15 @@ class SuggarEvent:
         :param send_message: 发送的模型的上下文
         """
         # 初始化事件类型为none
-        self.__event_type = EventType().none()
+        self._event_type = EventType().none()
         # 保存NoneBot事件对象
-        self.__nbevent = nbevent
+        self._nbevent = nbevent
         # 初始化模型响应文本
-        self.__modelResponse: str = model_response
+        self._modelResponse: str = model_response
         # 初始化用户ID
-        self.__user_id: int = user_id
+        self._user_id: int = user_id
         # 初始化要发送的消息内容
-        self.__send_message: list = send_message
+        self._send_message: list = send_message
 
     def __int__(self):
         """
@@ -150,8 +150,8 @@ class SuggarEvent:
         """
         返回SuggarEvent对象的字符串表示
         """
-        return f"SUGGAREVENT({self.__event_type},{self.__nbevent},{self.__modelResponse},{self.__user_id},{self.__send_message})"
-
+        return f"SUGGAREVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
+    
     @property
     def event_type(self) -> str:
         """
@@ -159,7 +159,7 @@ class SuggarEvent:
 
         :return: 事件类型字符串
         """
-        return self.__event_type
+        return self._event_type
 
     def get_nonebot_event(self) -> PokeNotifyEvent:
         """
@@ -167,7 +167,7 @@ class SuggarEvent:
 
         :return: NoneBot事件对象
         """
-        return self.__nbevent
+        return self._nbevent
 
     @property
     def message(self) -> list:
@@ -176,7 +176,7 @@ class SuggarEvent:
 
         :return: 消息内容
         """
-        return self.__send_message
+        return self._send_message
 
     @property
     def user_id(self) -> int:
@@ -185,7 +185,7 @@ class SuggarEvent:
 
         :return: 用户ID
         """
-        return self.__user_id
+        return self._user_id
 
     @property
     def model_response(self) -> str:
@@ -194,7 +194,7 @@ class SuggarEvent:
 
         :return: 模型响应文本
         """
-        return self.__modelResponse
+        return self._modelResponse
 
     def get_send_message(self) -> list:
         """
@@ -202,7 +202,7 @@ class SuggarEvent:
 
         :return: 消息内容
         """
-        return self.__send_message
+        return self._send_message
 
     def get_event_type(self) -> str:
         """
@@ -218,7 +218,7 @@ class SuggarEvent:
 
         :return: 模型响应文本
         """
-        return self.__modelResponse
+        return self._modelResponse
 
     def get_nonebot_event(self) -> BaseEvent:
         """
@@ -226,7 +226,7 @@ class SuggarEvent:
 
         :return: NoneBot事件对象
         """
-        return self.__nbevent
+        return self._nbevent
 
     def get_user_id(self) -> int:
         """
@@ -234,7 +234,7 @@ class SuggarEvent:
 
         :return: 用户ID
         """
-        return self.__user_id
+        return self._user_id
 
     def get_event_on_location(self):
         """
@@ -275,7 +275,7 @@ class ChatEvent(SuggarEvent):
             send_message=send_message,
         )
         # 初始化事件类型为聊天事件
-        self.__event_type = EventType().chat()
+        self._event_type = EventType().chat()
 
     def __str__(self):
         """
@@ -284,7 +284,7 @@ class ChatEvent(SuggarEvent):
         返回:
         字符串，包含事件类型、消息事件、模型响应、用户ID和发送到模型的上下文信息。
         """
-        return f"SUGGARCHATEVENT({self.__event_type},{self.__nbevent},{self.__modelResponse},{self.__user_id},{self.__send_message})"
+        return f"SUGGARCHATEVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
 
     @override
     def get_event_type(self) -> str:
@@ -295,7 +295,7 @@ class ChatEvent(SuggarEvent):
         字符串，表示事件类型为聊天事件。
         """
         return EventType().chat()
-
+    @override
     @property
     def event_type(self) -> str:
         """
@@ -314,7 +314,7 @@ class ChatEvent(SuggarEvent):
         返回:
         字符串，如果是群聊消息事件，则返回"group"，否则返回"private"。
         """
-        if isinstance(self.__nbevent, GroupMessageEvent):
+        if isinstance(self._nbevent, GroupMessageEvent):
             return "group"
         else:
             return "private"
@@ -345,12 +345,12 @@ class PokeEvent(SuggarEvent):
             user_id=user_id,
             send_message=send_message,
         )
-        self.__event_type = EventType().poke()
+        self._event_type = EventType().poke()
 
     def __str__(self):
         # 重写__str__方法，返回PokeEvent的字符串表示
-        return f"SUGGARPOKEEVENT({self.__event_type},{self.__nbevent},{self.__modelResponse},{self.__user_id},{self.__send_message})"
-
+        return f"SUGGARPOKEEVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
+    @override
     @property
     def event_type(self) -> str:
         # event_type属性，返回戳一戳事件类型
@@ -369,6 +369,75 @@ class PokeEvent(SuggarEvent):
         else:
             return "private"
 
+class BeforePokeEvent(PokeEvent):
+    """
+    继承自PokeEvent的BeforePokeEvent类，用于处理调用模型之前的事件，通常用于依赖注入或权限控制的写法中。
+    参数:
+    - nbevent: PokeNotifyEvent类型，表示戳一戳通知事件。
+    - send_message: list 发送到模型的上下文。
+    - model_response: str类型，模型的响应。
+    - user_id: int类型，用户ID。
+    """
+    def __init__(
+        self,
+        nbevent: PokeNotifyEvent,
+        send_message: list,
+        model_response: str,
+        user_id: int,
+    ):
+        # 初始化BeforePokeEvent类，并设置相关属性
+        super().__init__(
+            model_response=model_response,
+            nbevent=nbevent,
+            user_id=user_id,
+            send_message=send_message,
+        )
+        self._event_type = EventType().before_poke()
+    @override
+    @property
+    def event_type(self) -> str:
+        # event_type属性，返回戳一戳事件类型
+        return self._event_type
+
+    @override
+    def get_event_type(self) -> str:
+        # 重写get_event_type方法，返回戳一戳事件类型
+        return self._event_type
+    
+class BeforeChatEvent(ChatEvent):
+    """
+    继承自ChatEvent的BeforeChatEvent类，用于处理调用模型之前的事件，通常用于依赖注入或权限控制的写法中。
+    参数:
+    - nbevent: MessageEvent类型，表示消息事件。
+    - send_message: list 发送到模型的上下文。
+    - model_response: str类型，模型的响应。
+    - user_id: int类型，用户ID。
+
+    """
+    def __init__(
+        self,
+        nbevent: MessageEvent,
+        send_message: list,
+        model_response: str,
+        user_id: int,
+    ):
+        # 初始化BeforeChatEvent类，并设置相关属性
+        super().__init__(
+            model_response=model_response,
+            nbevent=nbevent,
+            user_id=user_id,
+            send_message=send_message,
+       )
+        self._event_type = EventType().before_chat()
+    @override
+    @property
+    def event_type(self) -> str:
+        # event_type属性，返回聊天事件类型
+        return self._event_type
+    @override
+    def get_event_type(self) -> str:
+        # 重写get_event_type方法，返回聊天事件类型
+        return self._event_type
 
 class FinalObject:
     """

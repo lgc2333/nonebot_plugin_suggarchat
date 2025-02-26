@@ -111,7 +111,7 @@ class SuggarMatcher:
         - **kwargs: 关键字参数，可能包含事件相关数据。
         - *args: 可变参数，可能包含事件相关数据。
         """
-        event_type = event.get_event_type()  # 获取事件类型
+        event_type = self.event_type  # 获取事件类型
         self.event = event
         self.processing_message = event.message
         logger.info(f"开始为这个类型 {event_type} 的事件运行处理。")
