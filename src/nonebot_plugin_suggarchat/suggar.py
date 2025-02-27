@@ -1234,9 +1234,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config['parse_segments'] else event.message.extract_plain_text()}",
                         }
                     )
-                    if len(datag["memory"]["messages"]) > memory_lenth_limit:
-                        while len(datag["memory"]["messages"]) > memory_lenth_limit:
-                            del datag["memory"]["messages"][0]
+                    while (len(datag["memory"]["messages"]) > memory_lenth_limit)or(datag["memory"]["messages"][0]["role"] != "user"):
+                        del datag["memory"]["messages"][0]
                     send_messages = []
                     send_messages = datag["memory"]["messages"].copy()
                     train = group_train.copy()
@@ -1251,7 +1250,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 event_type=EventType().before_chat()
                             )
                             await _matcher.trigger_event(
-                                (
+                                
                                     ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
@@ -1259,7 +1258,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         user_id=event.user_id,
                                     ),
                                     _matcher,
-                                )
+                                
                             )
                         response = await get_chat(send_messages)
                         debug_response = response
@@ -1281,7 +1280,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         if config["matcher_function"]:
                             _matcher = SuggarMatcher(event_type=EventType().chat())
                             await _matcher.trigger_event(
-                                (
+                                
                                     ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
@@ -1289,7 +1288,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         user_id=event.user_id,
                                     ),
                                     _matcher,
-                                )
+                                
                             )
                         if not nature_chat_mode:
                             await chat.send(message)
@@ -1412,9 +1411,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             "content": f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)if config['parse_segments'] else event.message.extract_plain_text()}",
                         }
                     )
-                    if len(data["memory"]["messages"]) > memory_lenth_limit:
-                        while len(data["memory"]["messages"]) > memory_lenth_limit:
-                            del data["memory"]["messages"][0]
+                    while (len(data["memory"]["messages"]) > memory_lenth_limit)or(data["memory"]["messages"][0]["role"] != "user"):
+                        del data["memory"]["messages"][0]
                     send_messages = []
                     send_messages = data["memory"]["messages"].copy()
                     send_messages.insert(0, private_train)
@@ -1454,7 +1452,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         if config["matcher_function"]:
                             _matcher = SuggarMatcher(event_type=EventType().chat())
                             await _matcher.trigger_event(
-                                (
+                                
                                     ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
@@ -1462,7 +1460,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         user_id=event.user_id,
                                     ),
                                     _matcher,
-                                )
+                                
                             )
                         if not nature_chat_mode:
                             await chat.send(message)

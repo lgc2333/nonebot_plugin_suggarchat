@@ -26,12 +26,13 @@ from .conf import (
 import re
 import os
 import copy
+import pytz
 
 
 def split_message_into_chats(text):
     # 匹配中文句末标点（。！？）和常见英文标点（.?!），支持省略号（...）
     sentence_delimiters = re.compile(
-        r'([。！？!?\.][”"’\']*|\.{3,}[”"’\']*)', re.UNICODE
+        r'([。！？!?]|(?<!\.)\.(?!\.))[”"’\']*', re.UNICODE
     )
 
     sentences = []
@@ -570,8 +571,12 @@ async def synthesize_forward_message(forward_msg: dict) -> str:
 
 
 def get_current_datetime_timestamp():
-    # 获取当前时间
-    now = datetime.now()
+    # 获取当前 UTC 时间
+    utc_time = datetime.now(pytz.utc)
+    
+    # 转换为+8时区的时间
+    asia_shanghai = pytz.timezone('Asia/Shanghai')
+    now = utc_time.astimezone(asia_shanghai)
 
     # 格式化日期、星期和时间
     formatted_date = now.strftime("%Y-%m-%d")

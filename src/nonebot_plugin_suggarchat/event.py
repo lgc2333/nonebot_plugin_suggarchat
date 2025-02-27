@@ -161,7 +161,7 @@ class SuggarEvent:
         """
         return self._event_type
 
-    def get_nonebot_event(self) -> PokeNotifyEvent:
+    def get_nonebot_event(self) -> MessageEvent:
         """
         获取NoneBot事件对象
 
