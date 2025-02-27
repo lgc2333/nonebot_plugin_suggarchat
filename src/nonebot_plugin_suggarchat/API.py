@@ -132,6 +132,9 @@ class Chat:
     async def get_msg(self, prompt: str, message: list):
         message.insert(0, {"role": "assistant", "content": prompt})
         return await get_chat(messages=message)
+    
+    async def get_msg_on_list(self,message:list):
+        return await get_chat(messages=message)
 
     def set_private_prompt(self, prompt: str):
         config = self.config
