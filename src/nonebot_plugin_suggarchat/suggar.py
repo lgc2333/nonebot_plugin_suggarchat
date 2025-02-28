@@ -752,17 +752,26 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                 ]
                 if config["matcher_function"]:
                     _matcher = SuggarMatcher(event_type=EventType().before_poke())
-                    await _matcher.trigger_event(
-                        PokeEvent(
+                    poke_event = PokeEvent(
                             nbevent=event,
                             send_message=send_messages,
                             model_response=None,
                             user_id=event.user_id,
-                        ),
-                        _matcher,
-                    )
+                        )
+                    await _matcher.trigger_event(poke_event,_matcher)
+                    send_messages = poke_event.get_send_message()
                 # 初始化响应内容和调试信息
                 response = await get_chat(send_messages)
+                if config["matcher_function"]:
+                    _matcher = SuggarMatcher(event_type=EventType().poke())
+                    poke_event = PokeEvent(
+                            nbevent=event,
+                            send_message=send_messages,
+                            model_response=response,
+                            user_id=event.user_id,
+                        )
+                    await _matcher.trigger_event(poke_event,_matcher)
+                    response = poke_event.model_response
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
                     await send_to_admin(
@@ -774,17 +783,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     + MessageSegment.text(" ")
                     + MessageSegment.text(response)
                 )
-                if config["matcher_function"]:
-                    _matcher = SuggarMatcher(event_type=EventType().poke())
-                    await _matcher.trigger_event(
-                        PokeEvent(
-                            nbevent=event,
-                            send_message=send_messages,
-                            model_response=response,
-                            user_id=event.user_id,
-                        ),
-                        _matcher,
-                    )
+
                 if not nature_chat_mode:
                     await poke.send(message)
                 else:
@@ -808,30 +807,29 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
             ]
             if config["matcher_function"]:
                 _matcher = SuggarMatcher(event_type=EventType().before_poke())
-                await _matcher.trigger_event(
-                    PokeEvent(
+                poke_event = PokeEvent(
                         nbevent=event,
                         send_message=send_messages,
                         model_response=None,
                         user_id=event.user_id,
-                    ),
-                    _matcher,
-                )
+                    )
+                await _matcher.trigger_event(poke_event,_matcher)
+                send_messages = poke_event.get_send_message()
             response = await get_chat(send_messages)
-            if debug:
-                await send_to_admin(f"POKEMSG {send_messages}")
-            message = MessageSegment.text(response)
             if config["matcher_function"]:
                 _matcher = SuggarMatcher(event_type=EventType().poke())
-                await _matcher.trigger_event(
-                    PokeEvent(
+                poke_event = PokeEvent(
                         nbevent=event,
                         send_message=send_messages,
                         model_response=response,
                         user_id=event.user_id,
-                    ),
-                    _matcher,
-                )
+                    )
+                await _matcher.trigger_event(poke_event,_matcher)
+                response = poke_event.model_response
+            if debug:
+                await send_to_admin(f"POKEMSG {send_messages}")
+            message = MessageSegment.text(response)
+            
             if not nature_chat_mode:
                 await poke.send(message)
             else:
@@ -1249,18 +1247,26 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            await _matcher.trigger_event(
-                                
-                                    ChatEvent(
+                            # todo send_messages传参改为datag["memory"]["messages"]
+                            chat_event = ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
                                         model_response=None,
                                         user_id=event.user_id,
-                                    ),
-                                    _matcher,
-                                
-                            )
+                                    )
+                            await _matcher.trigger_event(chat_event,_matcher)
+                            send_messages = chat_event.get_send_message()
                         response = await get_chat(send_messages)
+                        if config["matcher_function"]:
+                            _matcher = SuggarMatcher(event_type=EventType().chat())
+                            chat_event = ChatEvent(
+                                        nbevent=event,
+                                        send_message=send_messages,
+                                        model_response=response,
+                                        user_id=event.user_id,
+                                    )
+                            await _matcher.trigger_event(chat_event,_matcher)
+                            response = chat_event.model_response
                         debug_response = response
                         message = MessageSegment.reply(
                             event.message_id
@@ -1277,19 +1283,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         datag["memory"]["messages"].append(
                             {"role": "assistant", "content": str(response)}
                         )
-                        if config["matcher_function"]:
-                            _matcher = SuggarMatcher(event_type=EventType().chat())
-                            await _matcher.trigger_event(
-                                
-                                    ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=response,
-                                        user_id=event.user_id,
-                                    ),
-                                    _matcher,
-                                
-                            )
+                        
                         if not nature_chat_mode:
                             await chat.send(message)
                         else:
@@ -1421,18 +1415,26 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            await _matcher.trigger_event(
-                                
-                                    ChatEvent(
+                            # todo send_messages传参改为datag["memory"]["messages"]
+                            chat_event = ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
                                         model_response=None,
                                         user_id=event.user_id,
-                                    ),
-                                    _matcher,
-                                
-                            )
+                                    )
+                            await _matcher.trigger_event(chat_event,_matcher)
+                            send_messages = chat_event.get_send_message()
                         response = await get_chat(send_messages)
+                        if config["matcher_function"]:
+                            _matcher = SuggarMatcher(event_type=EventType().chat())
+                            chat_event = ChatEvent(
+                                        nbevent=event,
+                                        send_message=send_messages,
+                                        model_response=response,
+                                        user_id=event.user_id,
+                                    )
+                            await _matcher.trigger_event(chat_event,_matcher)
+                            response = chat_event.model_response
                         debug_response = response
                         if debug:
                             if debug:
@@ -1449,19 +1451,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         data["memory"]["messages"].append(
                             {"role": "assistant", "content": str(response)}
                         )
-                        if config["matcher_function"]:
-                            _matcher = SuggarMatcher(event_type=EventType().chat())
-                            await _matcher.trigger_event(
-                                
-                                    ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=response,
-                                        user_id=event.user_id,
-                                    ),
-                                    _matcher,
-                                
-                            )
+                        
                         if not nature_chat_mode:
                             await chat.send(message)
                         else:
