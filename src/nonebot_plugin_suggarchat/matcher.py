@@ -59,7 +59,7 @@ class SuggarMatcher:
                 self.handler_infos[event_type] = {}
                 self.priority[event_type] = []
             self.event_handlers[event_type].append(func)
-            if not priority in self.priority[event_type]:
+            if not priority_value in self.priority[event_type]:
                 self.priority[event_type].append(priority_value)
             self.priority[event_type] = sorted(self.priority[event_type])
             self.handler_infos[event_type][func.__name__] = {
@@ -101,7 +101,7 @@ class SuggarMatcher:
         忽略当前处理器，继续处理下一个。
         """
         raise PassException()
-    
+
     async def trigger_event(self, event: SuggarEvent, *args, **kwargs) -> SuggarEvent:
         """
         触发特定类型的事件，并调用该类型的所有注册事件处理程序。
@@ -117,19 +117,15 @@ class SuggarMatcher:
         logger.info(f"开始为这个类型 {event_type} 的事件运行处理。")
         # 检查是否有处理该事件类型的处理程序
         if event_type in self.event_handlers:
-            for priority in sorted(list(set(self.priority[event_type]))):
+            for priority in sorted(self.priority[event_type]):
                 logger.info(f"开始处理优先级为 {priority} 的 {event_type} 事件。")
                 # 遍历该事件类型的所有处理程序
-                self.event_handlers[event_type] = list(set(self.event_handlers[event_type]))
-                for index,handler in enumerate(self.event_handlers[event_type]):
+                for handler in self.event_handlers[event_type]:
                     # 获取处理程序的签名
+                    sig = inspect.signature(handler)
                     info = self.handler_infos[event_type][handler.__name__]
-                    if index == len(self.event_handlers[event_type]) -1:
-                        logger.info(f"优先级为 {priority} 的 {event_type} 事件的处理程序已完成。")
-                        break
                     if info["priority"] != priority:
                         continue
-                    sig = inspect.signature(handler)
                     line_number = info["frame"].f_lineno
                     file_name = info["frame"].f_code.co_filename
 
@@ -173,10 +169,10 @@ class SuggarMatcher:
                         )
                         continue
                     except CancelException:
-                        logger.info(f"'{event_type}'事件处理已取消。")
+                        logger.info("事件处理已取消。")
                         return
                     except BlockException:
-                        return FinalObject(self.processing_message)
+                        break
                     except Exception as e:
                         logger.error(
                             f"在运行处理器 '{handler.__name__}'(~{file_name}:{line_number}) 时遇到了问题"
@@ -196,7 +192,7 @@ class SuggarMatcher:
                         logger.info(
                             f"'{handler.__name__}'(~{file_name}:{line_number}任务已结束。"
                         )
-            logger.info(f"'{event_type}' 事件处理已完成。")
+
         else:
             logger.info(f"没有为这个事件: {event_type} 注册的处理器，跳过处理。")
         return FinalObject(self.processing_message)
