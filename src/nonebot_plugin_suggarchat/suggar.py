@@ -179,6 +179,12 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
                 group_id=event.group_id, user_id=event.user_id
             )
         )["role"]
+        if role == "admin":
+            role = "群管理员"
+        elif role == "owner":
+            role = "群主"
+        elif role == "member":
+            role = "普通成员"
 
         # 获取消息发送者的用户ID和昵称
         user_id = event.user_id
@@ -186,9 +192,7 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
             await bot.get_group_member_info(
                 group_id=event.group_id, user_id=event.user_id
             )
-        )["nickname"] or (await bot.get_stranger_info(user_id=event.user_id))[
-            "nickname"
-        ]
+        )["nickname"]
 
         # 构造消息记录格式
         content_message = f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
@@ -739,9 +743,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     await bot.get_group_member_info(
                         group_id=event.group_id, user_id=event.user_id
                     )
-                )["nickname"] or (await bot.get_stranger_info(user_id=event.user_id))[
-                    "nickname"
-                ]
+                )["nickname"]
                 # 构建发送的消息内容
                 send_messages = [
                     {"role": "system", "content": f"{group_train}"},
@@ -1178,9 +1180,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         await bot.get_group_member_info(
                             group_id=group_id, user_id=user_id
                         )
-                    )["card"] or (await bot.get_stranger_info(user_id=user_id))[
-                        "nickname"
-                    ]
+                    )["nickname"]
                     content = await synthesize_message(event.get_message())
                     if content.strip() == "":
                         content = ""
