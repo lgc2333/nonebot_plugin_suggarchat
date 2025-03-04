@@ -35,12 +35,13 @@ class SuggarMatcher:
         self.processing_message: MessageSegment
         self.priority = priority
 
-    def handle(self, event_type=None, priority_value: int = 10):
+    def handle(self, event_type=None, priority_value: int = 10,block=False):
         """
         事件处理函数注册函数
         参数：
           - event_type: 事件类型，默认为None，因为在on_event可能已经传入
           - priority_value: 事件优先级，默认为10
+          - block: 是否阻塞事件，默认为False
         """
         if not priority_value > 0:
             raise ValueError("事件优先级不能为0或负！")
@@ -67,6 +68,7 @@ class SuggarMatcher:
                 "signature": inspect.signature(func),
                 "frame": inspect.currentframe().f_back,
                 "priority": priority_value,
+                "block":block,
             }
             return func
 
@@ -118,6 +120,7 @@ class SuggarMatcher:
         # 检查是否有处理该事件类型的处理程序
         if event_type in self.event_handlers:
             for priority in sorted(self.priority[event_type]):
+              try:
                 logger.info(f"开始处理优先级为 {priority} 的 {event_type} 事件。")
                 # 遍历该事件类型的所有处理程序
                 for handler in self.event_handlers[event_type]:
@@ -171,8 +174,8 @@ class SuggarMatcher:
                     except CancelException:
                         logger.info("事件处理已取消。")
                         return
-                    except BlockException:
-                        break
+                    except BlockException as e:
+                        raise e
                     except Exception as e:
                         logger.error(
                             f"在运行处理器 '{handler.__name__}'(~{file_name}:{line_number}) 时遇到了问题"
@@ -192,7 +195,8 @@ class SuggarMatcher:
                         logger.info(
                             f"'{handler.__name__}'(~{file_name}:{line_number}任务已结束。"
                         )
-
+                        if info["block"]:raise BlockException()
+              except BlockException:break
         else:
             logger.info(f"没有为这个事件: {event_type} 注册的处理器，跳过处理。")
         return FinalObject(self.processing_message)

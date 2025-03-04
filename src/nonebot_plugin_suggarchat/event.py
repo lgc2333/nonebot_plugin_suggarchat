@@ -103,7 +103,7 @@ class SuggarEvent:
         """
         初始化SuggarEvent对象
 
-        :param model_response: 模型的响应文本
+        :param model_response: 模型的响应文本位于列表0的位置
         :param nbevent: NoneBot事件对象
         :param user_id: 用户ID
         :param send_message: 发送的模型的上下文
@@ -114,6 +114,8 @@ class SuggarEvent:
         self._nbevent = nbevent
         # 初始化模型响应文本
         self._modelResponse: list = model_response
+        #这里使用列表是因为Python的底层指针允许列表对象引用同一块内存，所以可以修改列表中的元素，而不需要重新分配内存，这样就能实现修改模型的响应了。
+
         # 初始化用户ID
         self._user_id: int = user_id
         # 初始化要发送的消息内容
@@ -188,14 +190,20 @@ class SuggarEvent:
         return self._user_id
 
     @property
-    def model_response(self) -> list:
+    def model_response(self) -> str:
         """
         获取模型响应文本
 
         :return: 模型响应文本
         """
-        return self._modelResponse
-
+        return self._modelResponse[0]
+    
+    @model_response.setter
+    def model_response(self, value: str):
+        """
+        设置模型响应文本
+        """
+        self._modelResponse[0] = value
     def get_send_message(self) -> list:
         """
         获取传入到模型的上下文
@@ -218,7 +226,7 @@ class SuggarEvent:
 
         :return: 模型响应文本
         """
-        return self._modelResponse
+        return self._modelResponse[0]
 
     def get_nonebot_event(self) -> BaseEvent:
         """
@@ -243,7 +251,6 @@ class SuggarEvent:
         :raise NotImplementedError: 当方法未在子类中实现时抛出异常
         """
         raise NotImplementedError
-
 
 class ChatEvent(SuggarEvent):
     """

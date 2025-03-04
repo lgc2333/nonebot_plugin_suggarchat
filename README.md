@@ -283,24 +283,7 @@ plugins=["nonebot_plugin_suggarchat"]
 
 ## 实验功能
 - 事件循环套事件循环？实现了一个简单的Matcher功能，可以注册处理器函数，并进行额外处理。
-<details><summary>展开查看示例代码</summary>
-
-
-```python
-from nonebot.plugin import require
-require("nonebot_plugin_suggarchat")
-# 先require再import!!!
-from nonebot_plugin_suggarchat.on_event import on_chat
-from nonebot_plugin_suggarchat.event import ChatEvent
-from nonebot import logger
-@on_chat().handle()
-async def _(event:ChatEvent):
-    logger.info("收到聊天事件!")
-    logger.info(event)
-```
-
-
-</details>
+示例代码请参考插件源码测试用例处。
 
 - 会话控制（在配置文件中设置，详情见配置文件部分）
 
