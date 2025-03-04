@@ -95,7 +95,7 @@ class SuggarEvent:
 
     def __init__(
         self,
-        model_response: str,
+        model_response: list,
         nbevent: BaseEvent,
         user_id: int,
         send_message: MessageSegment,
@@ -113,7 +113,7 @@ class SuggarEvent:
         # 保存NoneBot事件对象
         self._nbevent = nbevent
         # 初始化模型响应文本
-        self._modelResponse: str = model_response
+        self._modelResponse: list = model_response
         # 初始化用户ID
         self._user_id: int = user_id
         # 初始化要发送的消息内容
@@ -188,7 +188,7 @@ class SuggarEvent:
         return self._user_id
 
     @property
-    def model_response(self) -> str:
+    def model_response(self) -> list:
         """
         获取模型响应文本
 
@@ -262,7 +262,7 @@ class ChatEvent(SuggarEvent):
         self,
         nbevent: MessageEvent,
         send_message: list,
-        model_response: str,
+        model_response: list,
         user_id: int,
     ):
         """
@@ -335,7 +335,7 @@ class PokeEvent(SuggarEvent):
         self,
         nbevent: PokeNotifyEvent,
         send_message: list,
-        model_response: str,
+        model_response: list,
         user_id: int,
     ):
         # 初始化PokeEvent类，并设置相关属性
@@ -382,7 +382,7 @@ class BeforePokeEvent(PokeEvent):
         self,
         nbevent: PokeNotifyEvent,
         send_message: list,
-        model_response: str,
+        model_response: list,
         user_id: int,
     ):
         # 初始化BeforePokeEvent类，并设置相关属性
@@ -418,7 +418,7 @@ class BeforeChatEvent(ChatEvent):
         self,
         nbevent: MessageEvent,
         send_message: list,
-        model_response: str,
+        model_response: list,
         user_id: int,
     ):
         # 初始化BeforeChatEvent类，并设置相关属性
