@@ -767,11 +767,11 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     poke_event = PokeEvent(
                             nbevent=event,
                             send_message=send_messages,
-                            model_response=response,
+                            model_response=[response],
                             user_id=event.user_id,
                         )
                     await _matcher.trigger_event(poke_event,_matcher)
-                    response = poke_event.model_response
+                    response = poke_event.model_response[0]
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
                     await send_to_admin(
@@ -788,13 +788,18 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     await poke.send(message)
                 else:
                     response_list = split_message_into_chats(response)
-                    await poke.send(MessageSegment.at(event.user_id))
-                    for message in response_list:
-                        await poke.send(message)
-                        await asyncio.sleep(
-                            random.randint(1, 3)
-                            + int(len(message) / random.randint(80, 100))
-                        )
+                    if response_list:  # 确保消息列表非空
+                        # 将@用户添加到第一条消息
+                        first_message = MessageSegment.at(event.user_id) + MessageSegment.text(" ")+ response_list[0]
+                        await chat.send(first_message)
+                        
+                        # 发送剩余消息并保持原有延迟逻辑
+                        for message in response_list[1:]:
+                            await chat.send(message)
+                            await asyncio.sleep(
+                                random.randint(1, 3)
+                                + int(len(message) / random.randint(80, 100))
+                            )
 
         else:
             name = get_friend_info(event.user_id)
@@ -821,11 +826,11 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                 poke_event = PokeEvent(
                         nbevent=event,
                         send_message=send_messages,
-                        model_response=response,
+                        model_response=[response],
                         user_id=event.user_id,
                     )
                 await _matcher.trigger_event(poke_event,_matcher)
-                response = poke_event.model_response
+                response = poke_event.model_response[0]
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}")
             message = MessageSegment.text(response)
@@ -1262,11 +1267,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             chat_event = ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
-                                        model_response=response,
+                                        model_response=[response],
                                         user_id=event.user_id,
                                     )
                             await _matcher.trigger_event(chat_event,_matcher)
-                            response = chat_event.model_response
+                            response = chat_event.model_response[0]
                         debug_response = response
                         message = MessageSegment.reply(
                             event.message_id
@@ -1288,13 +1293,18 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             await chat.send(message)
                         else:
                             response_list = split_message_into_chats(response)
-                            await chat.send(MessageSegment.at(event.user_id))
-                            for message in response_list:
-                                await chat.send(message)
-                                await asyncio.sleep(
-                                    random.randint(1, 3)
-                                    + int(len(message) / random.randint(80, 100))
-                                )
+                            if response_list:  # 确保消息列表非空
+                                # 将@用户添加到第一条消息
+                                first_message = MessageSegment.at(event.user_id) + MessageSegment.text(" ")+ response_list[0]
+                                await chat.send(first_message)
+                                
+                                # 发送剩余消息并保持原有延迟逻辑
+                                for message in response_list[1:]:
+                                    await chat.send(message)
+                                    await asyncio.sleep(
+                                        random.randint(1, 3)
+                                        + int(len(message) / random.randint(80, 100))
+                                    )
 
                     except Exception as e:
                         await chat.send(f"出错了，稍后试试（错误已反馈")
@@ -1430,11 +1440,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             chat_event = ChatEvent(
                                         nbevent=event,
                                         send_message=send_messages,
-                                        model_response=response,
+                                        model_response=[response],
                                         user_id=event.user_id,
                                     )
                             await _matcher.trigger_event(chat_event,_matcher)
-                            response = chat_event.model_response
+                            response = chat_event.model_response[0]
                         debug_response = response
                         if debug:
                             if debug:
