@@ -512,7 +512,7 @@ def split_list(lst: list, threshold: int) -> list:
 
     result = []
     for i in range(0, len(lst), threshold):
-        chunk = lst[i: i + threshold]
+        chunk = lst[i : i + threshold]
         result.append(chunk)
 
     return result

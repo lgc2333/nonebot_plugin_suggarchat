@@ -18,6 +18,7 @@ handler_infos = {}
 matchers_data = {}
 priority = {}
 
+
 class SuggarMatcher:
 
     def __init__(self, event_type: str = ""):
@@ -127,10 +128,13 @@ class SuggarMatcher:
                         line_number = info["frame"].f_lineno
                         file_name = info["frame"].f_code.co_filename
 
-                        param_types = {k: v.annotation for k,
-                                       v in sig.parameters.items()}
+                        param_types = {
+                            k: v.annotation for k, v in sig.parameters.items()
+                        }
                         filtered_param_types = {
-                            k: v for k, v in param_types.items() if v is not inspect._empty
+                            k: v
+                            for k, v in param_types.items()
+                            if v is not inspect._empty
                         }
                         # 创建一个新的参数列表
                         new_args = []
@@ -159,6 +163,8 @@ class SuggarMatcher:
                             )
 
                             await handler(event, *new_args_tuple, **f_kwargs)
+                            if info["block"]:
+                                raise BlockException()
                         except ProcessException as e:
                             logger.info("处理已停止。")
                             raise e
@@ -177,10 +183,8 @@ class SuggarMatcher:
                                 f"在运行处理器 '{handler.__name__}'(~{file_name}:{line_number}) 时遇到了问题"
                             )
                             exc_type, exc_value, exc_traceback = sys.exc_info()
-                            logger.error(
-                                f"Exception type: {exc_type.__name__}")
-                            logger.error(
-                                f"Exception message: {str(exc_value)}")
+                            logger.error(f"Exception type: {exc_type.__name__}")
+                            logger.error(f"Exception message: {str(exc_value)}")
                             import traceback
 
                             back = ""
@@ -193,8 +197,6 @@ class SuggarMatcher:
                             logger.info(
                                 f"'{handler.__name__}'(~{file_name}:{line_number}任务已结束。"
                             )
-                            if info["block"]:
-                                raise BlockException()
                 except BlockException:
                     break
         else:
