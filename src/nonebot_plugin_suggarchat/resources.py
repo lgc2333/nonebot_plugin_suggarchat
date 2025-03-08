@@ -30,24 +30,20 @@ import pytz
 
 
 def split_message_into_chats(text):
-    # 匹配中文句末标点（。！？）和常见英文标点（.?!），支持省略号（...）
     sentence_delimiters = re.compile(
-        r'([。！？!?]|(?<!\.)\.(?!\.))[”"’\']*', re.UNICODE
+        r'(?<=[a-zA-Z])\.|([。！？!?~]+)[”"’\']*',  # 关键修改：仅匹配字母后的英文句号
+        re.UNICODE,
     )
 
     sentences = []
     start = 0
     for match in sentence_delimiters.finditer(text):
-        # 获取匹配到的分隔符位置
-        punctuation = match.group()
         end = match.end()
-        # 提取完整句子（包含标点）
         sentence = text[start:end].strip()
         if sentence:
             sentences.append(sentence)
         start = end
 
-    # 处理最后剩余的文本
     if start < len(text):
         remaining = text[start:].strip()
         if remaining:
@@ -66,33 +62,33 @@ __default_model_conf__ = {
 
 
 def convert_to_utf8(file_path) -> bool:
-        file_path = str(file_path)
-        # 检测文件编码
-    
-        with open(file_path, "rb") as file:
-            raw_data = file.read()
-            result = chardet.detect(raw_data)
-            encoding = result["encoding"]
-        if encoding is None:
-            try:
-                with open(file_path, "r") as f:
-                    contents = f.read()
-                    if contents.strip() == "":
-                        return True
-            except Exception as e:
-                logger.warning(f"无法读取文件{file_path}")
-                return False
-            logger.warning(f"无法检测到编码{file_path}")
+    file_path = str(file_path)
+    # 检测文件编码
+
+    with open(file_path, "rb") as file:
+        raw_data = file.read()
+        result = chardet.detect(raw_data)
+        encoding = result["encoding"]
+    if encoding is None:
+        try:
+            with open(file_path, "r") as f:
+                contents = f.read()
+                if contents.strip() == "":
+                    return True
+        except Exception as e:
+            logger.warning(f"无法读取文件{file_path}")
             return False
+        logger.warning(f"无法检测到编码{file_path}")
+        return False
 
-        # 读取原文件并写入UTF-8编码的文件
-        with open(file_path, "r", encoding=encoding) as file:
-            content = file.read()
+    # 读取原文件并写入UTF-8编码的文件
+    with open(file_path, "r", encoding=encoding) as file:
+        content = file.read()
 
-        # 以UTF-8编码重新写入文件
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(content)
-        return True
+    # 以UTF-8编码重新写入文件
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+    return True
 
 
 def get_models() -> list:
@@ -194,24 +190,24 @@ async def synthesize_message(message: Message, bot: Bot = None) -> str:
 
 
 def save_config(conf: dict):
-        """
+    """
     保存配置文件
 
     参数:
     conf: dict - 配置文件，包含以下键值对{__default_config__}
     """
-        config_dir = get_config_dir()
-        main_config = get_config_file_path()
-        if not Path(config_dir).exists():
-            try:
-                Path.mkdir(config_dir)
-            except:
-                pass
-            with open(str(main_config), "w", encoding="utf-8") as f:
-                json.dump(__default_config__, f, ensure_ascii=False, indent=4)
+    config_dir = get_config_dir()
+    main_config = get_config_file_path()
+    if not Path(config_dir).exists():
+        try:
+            Path.mkdir(config_dir)
+        except:
+            pass
         with open(str(main_config), "w", encoding="utf-8") as f:
-            conf = update_dict(__default_config__, conf)
-            json.dump(conf, f, ensure_ascii=False, indent=4)
+            json.dump(__default_config__, f, ensure_ascii=False, indent=4)
+    with open(str(main_config), "w", encoding="utf-8") as f:
+        conf = update_dict(__default_config__, conf)
+        json.dump(conf, f, ensure_ascii=False, indent=4)
 
 
 def replace_env_vars(data):
@@ -417,9 +413,9 @@ def get_memory_data(event: Event) -> dict:
 
 def write_memory_data(event: Event, data: dict) -> None:
 
-        logger.debug(f"写入记忆数据{data}")
-        logger.debug(f"事件：{type(event)}")
-        """
+    logger.debug(f"写入记忆数据{data}")
+    logger.debug(f"事件：{type(event)}")
+    """
     根据事件类型将数据写入到特定的记忆数据文件中。
     
     该函数根据传入的事件类型（群组消息事件或用户消息事件），将相应的数据以JSON格式写入到对应的文件中。
@@ -432,55 +428,55 @@ def write_memory_data(event: Event, data: dict) -> None:
     返回值:
     无返回值。
     """
-        group_memory = get_group_memory_dir()
-        private_memory = get_private_memory_dir()
-    
-        # 判断事件是否为群组消息事件
-        if isinstance(event, GroupMessageEvent):
-            # 获取群组ID，并根据群组ID构造配置文件路径
+    group_memory = get_group_memory_dir()
+    private_memory = get_private_memory_dir()
+
+    # 判断事件是否为群组消息事件
+    if isinstance(event, GroupMessageEvent):
+        # 获取群组ID，并根据群组ID构造配置文件路径
+        group_id = event.group_id
+        conf_path = Path(group_memory / f"{group_id}.json")
+    elif isinstance(event, PrivateMessageEvent):
+        # 获取用户ID，并根据用户ID构造配置文件路径
+        user_id = event.user_id
+        conf_path = Path(private_memory / f"{user_id}.json")
+    elif isinstance(event, PokeNotifyEvent):
+        if event.group_id:
             group_id = event.group_id
             conf_path = Path(group_memory / f"{group_id}.json")
-        elif isinstance(event, PrivateMessageEvent):
-            # 获取用户ID，并根据用户ID构造配置文件路径
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump(
+                        {
+                            "id": group_id,
+                            "enable": True,
+                            "memory": {"messages": []},
+                            "full": False,
+                        },
+                        f,
+                        ensure_ascii=True,
+                        indent=0,
+                    )
+        else:
             user_id = event.user_id
             conf_path = Path(private_memory / f"{user_id}.json")
-        elif isinstance(event, PokeNotifyEvent):
-            if event.group_id:
-                group_id = event.group_id
-                conf_path = Path(group_memory / f"{group_id}.json")
-                if not conf_path.exists():
-                    with open(str(conf_path), "w", encoding="utf-8") as f:
-                        json.dump(
-                            {
-                                "id": group_id,
-                                "enable": True,
-                                "memory": {"messages": []},
-                                "full": False,
-                            },
-                            f,
-                            ensure_ascii=True,
-                            indent=0,
-                        )
-            else:
-                user_id = event.user_id
-                conf_path = Path(private_memory / f"{user_id}.json")
-                if not conf_path.exists():
-                    with open(str(conf_path), "w", encoding="utf-8") as f:
-                        json.dump(
-                            {
-                                "id": user_id,
-                                "enable": True,
-                                "memory": {"messages": []},
-                                "full": False,
-                            },
-                            f,
-                            ensure_ascii=True,
-                            indent=0,
-                        )
-        # 打开配置文件路径对应的文件，以写入模式，并确保文件以UTF-8编码
-        with open(str(conf_path), "w", encoding="utf-8") as f:
-            # 将数据写入到文件中，确保ASCII字符以外的字符也能被正确处理
-            json.dump(data, f, ensure_ascii=True)
+            if not conf_path.exists():
+                with open(str(conf_path), "w", encoding="utf-8") as f:
+                    json.dump(
+                        {
+                            "id": user_id,
+                            "enable": True,
+                            "memory": {"messages": []},
+                            "full": False,
+                        },
+                        f,
+                        ensure_ascii=True,
+                        indent=0,
+                    )
+    # 打开配置文件路径对应的文件，以写入模式，并确保文件以UTF-8编码
+    with open(str(conf_path), "w", encoding="utf-8") as f:
+        # 将数据写入到文件中，确保ASCII字符以外的字符也能被正确处理
+        json.dump(data, f, ensure_ascii=True)
 
 
 async def get_friend_info(qq_number: int) -> str:
@@ -573,17 +569,17 @@ async def synthesize_forward_message(forward_msg: dict) -> str:
 def get_current_datetime_timestamp():
     # 获取当前 UTC 时间
     utc_time = datetime.now(pytz.utc)
-    
+
     # 转换为+8时区的时间
-    asia_shanghai = pytz.timezone('Asia/Shanghai')
+    asia_shanghai = pytz.timezone("Asia/Shanghai")
     now = utc_time.astimezone(asia_shanghai)
 
-    # 格式化日期、星期和时间
-    formatted_date = now.strftime("%Y-%m-%d")
-    formatted_weekday = now.strftime("%A")
-    formatted_time = now.strftime("%I:%M:%S %p")
+    # 格式化日期、星期和时间（24小时制）
+    formatted_date = now.strftime("%Y-%m-%d")  # 日期保持原格式[1](@ref)
+    formatted_weekday = now.strftime("%A")  # 星期保持完整名称[9](@ref)
+    formatted_time = now.strftime("%H:%M:%S")  # 关键修改点：%H 表示24小时制[2,8](@ref)
 
-    # 组合格式化的字符串
+    # 组合格式化的字符串（移除AM/PM）
     formatted_datetime = f"[{formatted_date} {formatted_weekday} {formatted_time}]"
 
     return formatted_datetime
