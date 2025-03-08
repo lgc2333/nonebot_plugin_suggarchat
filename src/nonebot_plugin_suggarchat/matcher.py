@@ -18,11 +18,6 @@ handler_infos = {}
 matchers_data = {}
 priority = {}
 
-
-async def run_handle(handler, event, *args, **kwargs):
-    await handler(event, *args, **kwargs)
-
-
 class SuggarMatcher:
 
     def __init__(self, event_type: str = ""):
@@ -163,7 +158,7 @@ class SuggarMatcher:
                                 f"开始运行处理器： '{handler.__name__}'(~{file_name}:{line_number})"
                             )
 
-                            await run_handle(handler, event, *new_args_tuple, **f_kwargs)
+                            await handler(event, *new_args_tuple, **f_kwargs)
                         except ProcessException as e:
                             logger.info("处理已停止。")
                             raise e
