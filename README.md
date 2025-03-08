@@ -216,7 +216,10 @@ plugins=["nonebot_plugin_suggarchat"]
 | `after_deleted_say_what`       | list[str]               | [ "Suggar说错什么话了吗～下次我会注意的呢～", "抱歉啦，不小心说错啦～", ... ] | 消息被删除后随机回复的内容                                   |
 | `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
 | `preset`       | string               | __main__ | 是否使用预设（在控制台打印的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
-| `max_tokens`       | int               | 100 | 在单次时，LLM最多可以回复多少个token（即字数，如果你的模型提供商支持                                   |
+| `max_tokens`       | int               | 100 | 在单次对话时，LLM最多可以生成多少个token（并非完全等于字数，如果你的模型提供商支持）                                   |
+| `tokens_count_mode`       | str               | bpe | 下文tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)                                  |
+| `session_max_tokens`       | int               | 5000 | 上下文最多允许多少的tokens数 ,**此计算可能有10%的误差**                                   |
+| `enable_tokens_limit`       | bool               | false | 是否启用上下文长度限制，如果启用，则上下文长度将不会超过`session_max_tokens`                                   |
 | `model`       | str               | auto | 使用什么模型（具体看你的API提供商                                   |
 | `parse_segments` | bool               | true | 是否解析消息段，此权重覆盖`use_base_prompt`（即at/合并转发等）                                   |
 | `fake_people`      |     bool     |     true    |   是否启用自动回复模式    |

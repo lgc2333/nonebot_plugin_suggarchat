@@ -3,6 +3,8 @@ from nonebot.log import logger
 import json
 import chardet
 import nonebot
+import jieba
+import re
 from pathlib import Path
 from nonebot.adapters.onebot.v11 import (
     PrivateMessageEvent,
@@ -28,6 +30,109 @@ import re
 import os
 import copy
 import pytz
+
+__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
+__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
+__default_config__ = {
+    "preset": "__main__",
+    "memory_lenth_limit": 50,
+    "enable": False,
+    "fake_people": True,  # 是否启用无人触发自动回复
+    "probability": 10,  # 无人触发自动回复概率
+    "keyword": "at",  # 触发bot对话关键词,at为to_me,其他为startwith
+    "nature_chat_style": True,  # 是否启用更加自然的对话风格(使用Jieba分词+回复输出)
+    "poke_reply": True,
+    "enable_group_chat": True,
+    "enable_private_chat": True,
+    "allow_custom_prompt": True,
+    "allow_send_to_admin": False,
+    "use_base_prompt": True,
+    "admin_group": 0,
+    "admins": [],
+    "open_ai_base_url": "",
+    "open_ai_api_key": "",
+    "stream": False,
+    "max_tokens": 100,  # LLM生成的最大tokens数量，单位为tokens。
+    "tokens_count_mode": "bpe",  # 上下文tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)
+    "session_max_tokens": 5000,  # 上下文长度限制，单位为tokens（可能有+-15%左右误差）
+    "enable_tokens_limit": True,  # 是否启用上下文长度限制，如果启用，则上下文长度将不会超过session_max_tokens
+    "model": "auto",
+    "say_after_self_msg_be_deleted": True,
+    "group_added_msg": "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
+    "send_msg_after_be_invited": True,
+    "after_deleted_say_what": [
+        "Suggar说错什么话了吗～下次我会注意的呢～",
+        "抱歉啦，不小心说错啦～",
+        "嘿，发生什么事啦？我",
+        "唔，我是不是说错了什么？",
+        "纠错时间到，如果我说错了请告诉我！",
+        "发生了什么？我刚刚没听清楚呢~",
+        "我能帮你做点什么吗？不小心说错话了让我变得不那么尴尬~",
+        "我会记住的，绝对不再说错话啦~",
+        "哦，看来我又犯错了，真是不好意思！",
+        "哈哈，看来我得多读书了~",
+        "哎呀，真是个小口误，别在意哦~",
+        "Suggar苯苯的，偶尔说错话很正常嘛！",
+        "哎呀，我也有尴尬的时候呢~",
+        "希望我能继续为你提供帮助，不要太在意我的小错误哦！",
+    ],
+    "parse_segments": True,
+    # "protocol":"openai",
+    "matcher_function": False,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
+    # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
+    "session_control": False,
+    "session_control_time": 60,  # 预设的射时间间隔，单位分钟，默认60min
+    "session_control_history": 10,  # 储存的会话历史长度最多几条，默认10条
+}
+
+
+def format_datetime_timestamp(time: int) -> str:
+    now = datetime.fromtimestamp(time)
+
+    # 格式化日期、星期和时间
+    formatted_date = now.strftime("%Y-%m-%d")
+    formatted_weekday = now.strftime("%A")
+    formatted_time = now.strftime("%I:%M:%S %p")
+
+    # 组合格式化的字符串
+    formatted_datetime = f"[{formatted_date} {formatted_weekday} {formatted_time}]"
+
+    return formatted_datetime
+
+
+def hybrid_token_count(text: str, mode: str = "word") -> int:
+    """
+    混合中英文的 Token 计算方法（支持词、子词、字符模式）
+
+    :param text: 输入文本
+    :param mode: 统计模式，可选 'word'(词), 'bpe'(子词), 'char'(字符)
+    :return: Token 数量
+    """
+    # 分离中英文部分（中文按结巴分词，英文按空格/标点分割）
+    chinese_parts = re.findall(r"[\u4e00-\u9fff]+", text)
+    non_chinese_parts = re.split(r"([\u4e00-\u9fff]+)", text)
+
+    tokens = []
+
+    # 处理中文部分（精准分词）
+    for part in chinese_parts:
+        tokens.extend(list(jieba.cut(part, cut_all=False)))  # 精准模式
+
+    # 处理非中文部分（按空格和标点分割）
+    for part in non_chinese_parts:
+        if not part.strip() or part in chinese_parts:
+            continue
+        # 按正则匹配英文单词、数字、标点
+        if mode == "word":
+            tokens.extend(re.findall(r"\b\w+\b|\S", part))
+        elif mode == "char":
+            tokens.extend(list(part))
+        elif mode == "bpe":
+            # 简易BPE处理（示例：按2-gram拆分）
+            tokens.extend([part[i : i + 2] for i in range(0, len(part), 2)])
+        else:
+            raise ValueError("Invalid tokens-counting mode")
+    return len(tokens)
 
 
 def split_message_into_chats(text):
@@ -118,58 +223,6 @@ def update_dict(default: dict, to_update: dict) -> dict:
         if key not in to_update:
             to_update[key] = value
     return to_update
-
-
-__base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
-__base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
-__default_config__ = {
-    "preset": "__main__",
-    "memory_lenth_limit": 50,
-    "enable": False,
-    "fake_people": True,  # 是否启用无人触发自动回复
-    "probability": 10,  # 无人触发自动回复概率
-    "keyword": "at",  # 触发bot对话关键词,at为to_me,其他为startwith
-    "nature_chat_style": True,  # 是否启用更加自然的对话风格(使用Jieba分词+回复输出)
-    "poke_reply": True,
-    "enable_group_chat": True,
-    "enable_private_chat": True,
-    "allow_custom_prompt": True,
-    "allow_send_to_admin": False,
-    "use_base_prompt": True,
-    "admin_group": 0,
-    "admins": [],
-    "open_ai_base_url": "",
-    "open_ai_api_key": "",
-    "stream": False,
-    "max_tokens": 100,
-    "model": "auto",
-    "say_after_self_msg_be_deleted": True,
-    "group_added_msg": "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
-    "send_msg_after_be_invited": True,
-    "after_deleted_say_what": [
-        "Suggar说错什么话了吗～下次我会注意的呢～",
-        "抱歉啦，不小心说错啦～",
-        "嘿，发生什么事啦？我",
-        "唔，我是不是说错了什么？",
-        "纠错时间到，如果我说错了请告诉我！",
-        "发生了什么？我刚刚没听清楚呢~",
-        "我能帮你做点什么吗？不小心说错话了让我变得不那么尴尬~",
-        "我会记住的，绝对不再说错话啦~",
-        "哦，看来我又犯错了，真是不好意思！",
-        "哈哈，看来我得多读书了~",
-        "哎呀，真是个小口误，别在意哦~",
-        "Suggar苯苯的，偶尔说错话很正常嘛！",
-        "哎呀，我也有尴尬的时候呢~",
-        "希望我能继续为你提供帮助，不要太在意我的小错误哦！",
-    ],
-    "parse_segments": True,
-    # "protocol":"openai",
-    "matcher_function": False,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
-    # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
-    "session_control": False,
-    "session_control_time": 60,  # 预设的射时间间隔，单位分钟，默认60min
-    "session_control_history": 10,  # 储存的会话历史长度最多几条，默认10条
-}
 
 
 async def synthesize_message(message: Message, bot: Bot = None) -> str:

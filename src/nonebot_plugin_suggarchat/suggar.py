@@ -21,6 +21,8 @@ from .resources import (
     get_private_prompt,
     synthesize_message,
     split_message_into_chats,
+    format_datetime_timestamp,
+    hybrid_token_count,
 )
 import time
 from nonebot.adapters.onebot.v11 import (
@@ -55,6 +57,9 @@ private_train = get_private_prompt()
 group_train = get_group_prompt()
 enable_matcher = config["matcher_function"]
 nature_chat_mode = config["nature_chat_style"]
+tokens_count_mode = config["tokens_count_mode"]
+session_max_tokens = config["session_max_tokens"]
+enable_tokens_limit = config["enable_tokens_limit"]
 
 debug = False
 custom_menu = []
@@ -230,20 +235,6 @@ async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
     if user_role == "member":
         return True
     return False
-
-
-def format_datetime_timestamp(time: int) -> str:
-    now = datetime.fromtimestamp(time)
-
-    # 格式化日期、星期和时间
-    formatted_date = now.strftime("%Y-%m-%d")
-    formatted_weekday = now.strftime("%A")
-    formatted_time = now.strftime("%I:%M:%S %p")
-
-    # 组合格式化的字符串
-    formatted_datetime = f"[{formatted_date} {formatted_weekday} {formatted_time}]"
-
-    return formatted_datetime
 
 
 async def get_chat(messages: list) -> str:
@@ -1014,7 +1005,7 @@ async def _(bot: Bot, event: MessageEvent, matcher: Matcher):
 
 @get_driver().on_bot_connect
 async def onConnect():
-    global config, ifenable, random_reply, random_reply_rate, keyword, admins, private_train, group_train, nature_chat_mode
+    global config, ifenable, random_reply, random_reply_rate, keyword, admins, private_train, group_train, nature_chat_mode, enable_tokens_limit, session_max_tokens, tokens_count_mode
     from .conf import init
 
     bot: Bot = nonebot.get_bot()
@@ -1242,6 +1233,25 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         datag["memory"]["messages"][0]["role"] != "user"
                     ):
                         del datag["memory"]["messages"][0]
+                    if enable_tokens_limit:
+                        full_string = ""
+                        memory_l = (datag["memory"]["messages"].copy()).append(
+                            group_train.copy()
+                        )
+                        for str in memory_l:
+                            full_string += str["content"]
+                        tokens = hybrid_token_count(full_string, tokens_count_mode)
+                        logger.debug(f"tokens:{tokens}")
+                        logger.debug(f"tokens_limit:{session_max_tokens}")
+                        while tokens > session_max_tokens:
+                            del datag["memory"]["messages"][0]
+                            full_string = ""
+                            for str in (datag["memory"]["messages"].copy()).append(
+                                group_train.copy()
+                            ):
+                                full_string += str["content"]
+                            tokens = hybrid_token_count(full_string, tokens_count_mode)
+
                     send_messages = []
                     send_messages = datag["memory"]["messages"].copy()
                     train = group_train.copy()
@@ -1426,6 +1436,24 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         data["memory"]["messages"][0]["role"] != "user"
                     ):
                         del data["memory"]["messages"][0]
+                    if enable_tokens_limit:
+                        full_string = ""
+                        memory_l = (datag["memory"]["messages"].copy()).append(
+                            group_train.copy()
+                        )
+                        for str in memory_l:
+                            full_string += str["content"]
+                        tokens = hybrid_token_count(full_string, tokens_count_mode)
+                        logger.debug(f"tokens:{tokens}")
+                        logger.debug(f"tokens_limit:{session_max_tokens}")
+                        while tokens > session_max_tokens:
+                            del datag["memory"]["messages"][0]
+                            full_string = ""
+                            for str in (datag["memory"]["messages"].copy()).append(
+                                group_train.copy()
+                            ):
+                                full_string += str["content"]
+                            tokens = hybrid_token_count(full_string, tokens_count_mode)
                     send_messages = []
                     send_messages = data["memory"]["messages"].copy()
                     send_messages.insert(0, private_train)
