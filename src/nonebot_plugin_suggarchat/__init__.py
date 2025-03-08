@@ -1,13 +1,15 @@
-from nonebot.plugin import require
-
-require("nonebot_plugin_localstore")
-require("nonebot_plugin_uninfo")
-from nonebot.plugin import PluginMetadata
-from .conf import __KERNEL_VERSION__
 from .conf import *
 from .resources import *
 from .suggar import *
 from .API import *
+from nonebot.plugin import PluginMetadata
+from nonebot.plugin import require
+require("nonebot_plugin_localstore")
+require("nonebot_plugin_uninfo")
+from .conf import __KERNEL_VERSION__
+
+
+
 
 __plugin_meta__ = PluginMetadata(
     name="SuggarChat OpenAI协议聊天插件",

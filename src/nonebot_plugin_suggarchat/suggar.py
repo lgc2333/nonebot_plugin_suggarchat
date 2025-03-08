@@ -113,7 +113,7 @@ async def send_to_admin(msg: str) -> None:
     await bot.send_group_msg(group_id=config["admin_group"], message=msg)
 
 
-##fakepeople rule
+# fakepeople rule
 async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
     """
     根据配置和消息事件判断是否触发回复的规则。
@@ -350,7 +350,6 @@ debug_handle = on_message(rule=to_me(), priority=10, block=False)
 recall = on_notice()
 
 
-
 @sessions.handle()
 async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     global config
@@ -379,7 +378,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
         if arg_list[0] == "set":
             try:
                 if len(arg_list) >= 2:
-                    data["memory"]["messages"] = data["sessions"][int(arg_list[1])]
+                    data["memory"]["messages"] = data["sessions"][int(
+                        arg_list[1])]
                     data["timestamp"] = time.time()
                     write_memory_data(event, data)
                     await sessions.send("完成记忆覆盖。")
@@ -568,7 +568,7 @@ async def _(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
 
     # 根据用户输入的不同命令进行相应的处理
     if arg.startswith("--(show)"):
-        await prompt.send(f"Prompt:\n{data.get('prompt','未设置prompt')}")
+        await prompt.send(f"Prompt:\n{data.get('prompt', '未设置prompt')}")
         return
     elif arg.startswith("--(clear)"):
         data["prompt"] = ""
@@ -753,26 +753,27 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     },
                 ]
                 if config["matcher_function"]:
-                    _matcher = SuggarMatcher(event_type=EventType().before_poke())
+                    _matcher = SuggarMatcher(
+                        event_type=EventType().before_poke())
                     poke_event = PokeEvent(
-                            nbevent=event,
-                            send_message=send_messages,
-                            model_response=None,
-                            user_id=event.user_id,
-                        )
-                    await _matcher.trigger_event(poke_event,_matcher)
+                        nbevent=event,
+                        send_message=send_messages,
+                        model_response=None,
+                        user_id=event.user_id,
+                    )
+                    await _matcher.trigger_event(poke_event, _matcher)
                     send_messages = poke_event.get_send_message()
                 # 初始化响应内容和调试信息
                 response = await get_chat(send_messages)
                 if config["matcher_function"]:
                     _matcher = SuggarMatcher(event_type=EventType().poke())
                     poke_event = PokeEvent(
-                            nbevent=event,
-                            send_message=send_messages,
-                            model_response=[response],
-                            user_id=event.user_id,
-                        )
-                    await _matcher.trigger_event(poke_event,_matcher)
+                        nbevent=event,
+                        send_message=send_messages,
+                        model_response=[response],
+                        user_id=event.user_id,
+                    )
+                    await _matcher.trigger_event(poke_event, _matcher)
                     response = poke_event.model_response[0]
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
@@ -792,9 +793,10 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     response_list = split_message_into_chats(response)
                     if response_list:  # 确保消息列表非空
                         # 将@用户添加到第一条消息
-                        first_message = MessageSegment.at(event.user_id) + MessageSegment.text(" ")+ response_list[0]
+                        first_message = MessageSegment.at(
+                            event.user_id) + MessageSegment.text(" ") + response_list[0]
                         await chat.send(first_message)
-                        
+
                         # 发送剩余消息并保持原有延迟逻辑
                         for message in response_list[1:]:
                             await chat.send(message)
@@ -815,28 +817,28 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
             if config["matcher_function"]:
                 _matcher = SuggarMatcher(event_type=EventType().before_poke())
                 poke_event = PokeEvent(
-                        nbevent=event,
-                        send_message=send_messages,
-                        model_response=None,
-                        user_id=event.user_id,
-                    )
-                await _matcher.trigger_event(poke_event,_matcher)
+                    nbevent=event,
+                    send_message=send_messages,
+                    model_response=None,
+                    user_id=event.user_id,
+                )
+                await _matcher.trigger_event(poke_event, _matcher)
                 send_messages = poke_event.get_send_message()
             response = await get_chat(send_messages)
             if config["matcher_function"]:
                 _matcher = SuggarMatcher(event_type=EventType().poke())
                 poke_event = PokeEvent(
-                        nbevent=event,
-                        send_message=send_messages,
-                        model_response=[response],
-                        user_id=event.user_id,
-                    )
-                await _matcher.trigger_event(poke_event,_matcher)
+                    nbevent=event,
+                    send_message=send_messages,
+                    model_response=[response],
+                    user_id=event.user_id,
+                )
+                await _matcher.trigger_event(poke_event, _matcher)
                 response = poke_event.model_response[0]
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}")
             message = MessageSegment.text(response)
-            
+
             if not nature_chat_mode:
                 await poke.send(message)
             else:
@@ -1169,7 +1171,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         len(datag["sessions"]) - 1
                                     ]
                                     datag["sessions"].remove(
-                                        datag["sessions"][len(datag["sessions"]) - 1]
+                                        datag["sessions"][len(
+                                            datag["sessions"]) - 1]
                                     )
                                     await chat.send("让我们继续聊天吧～")
 
@@ -1218,7 +1221,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 rl = "自己"
                             else:
                                 rl = "[获取身份失败]"
-                        formatted_time = dt_object.strftime("%Y-%m-%d %I:%M:%S %p")
+                        formatted_time = dt_object.strftime(
+                            "%Y-%m-%d %I:%M:%S %p")
                         DT = f"{formatted_time} {weekday} [{rl}]{event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说："
                         reply += DT
                         reply += await synthesize_message(event.reply.message)
@@ -1237,7 +1241,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config['parse_segments'] else event.message.extract_plain_text()}",
                         }
                     )
-                    while (len(datag["memory"]["messages"]) > memory_lenth_limit)or(datag["memory"]["messages"][0]["role"] != "user"):
+                    while (len(datag["memory"]["messages"]) > memory_lenth_limit) or (datag["memory"]["messages"][0]["role"] != "user"):
                         del datag["memory"]["messages"][0]
                     send_messages = []
                     send_messages = datag["memory"]["messages"].copy()
@@ -1245,7 +1249,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
 
                     train[
                         "content"
-                    ] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt','无')}"
+                    ] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt', '无')}"
                     send_messages.insert(0, train)
                     try:
                         if config["matcher_function"]:
@@ -1254,23 +1258,24 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             )
                             # todo send_messages传参改为datag["memory"]["messages"]
                             chat_event = ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=None,
-                                        user_id=event.user_id,
-                                    )
-                            await _matcher.trigger_event(chat_event,_matcher)
+                                nbevent=event,
+                                send_message=send_messages,
+                                model_response=None,
+                                user_id=event.user_id,
+                            )
+                            await _matcher.trigger_event(chat_event, _matcher)
                             send_messages = chat_event.get_send_message()
                         response = await get_chat(send_messages)
                         if config["matcher_function"]:
-                            _matcher = SuggarMatcher(event_type=EventType().chat())
+                            _matcher = SuggarMatcher(
+                                event_type=EventType().chat())
                             chat_event = ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=[response],
-                                        user_id=event.user_id,
-                                    )
-                            await _matcher.trigger_event(chat_event,_matcher)
+                                nbevent=event,
+                                send_message=send_messages,
+                                model_response=[response],
+                                user_id=event.user_id,
+                            )
+                            await _matcher.trigger_event(chat_event, _matcher)
                             response = chat_event.model_response[0]
                         debug_response = response
                         message = MessageSegment.reply(
@@ -1288,22 +1293,24 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         datag["memory"]["messages"].append(
                             {"role": "assistant", "content": str(response)}
                         )
-                        
+
                         if not nature_chat_mode:
                             await chat.send(message)
                         else:
                             response_list = split_message_into_chats(response)
                             if response_list:  # 确保消息列表非空
                                 # 将@用户添加到第一条消息
-                                first_message = MessageSegment.at(event.user_id) + MessageSegment.text(" ")+ response_list[0]
+                                first_message = MessageSegment.at(
+                                    event.user_id) + MessageSegment.text(" ") + response_list[0]
                                 await chat.send(first_message)
-                                
+
                                 # 发送剩余消息并保持原有延迟逻辑
                                 for message in response_list[1:]:
                                     await chat.send(message)
                                     await asyncio.sleep(
                                         random.randint(1, 3)
-                                        + int(len(message) / random.randint(80, 100))
+                                        + int(len(message) /
+                                              random.randint(80, 100))
                                     )
 
                     except Exception as e:
@@ -1383,7 +1390,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         len(data["sessions"]) - 1
                                     ]
                                     data["sessions"].remove(
-                                        data["sessions"][len(data["sessions"]) - 1]
+                                        data["sessions"][len(
+                                            data["sessions"]) - 1]
                                     )
                                     await chat.send("让我们继续聊天吧～")
                 if data["id"] == event.user_id:
@@ -1399,7 +1407,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         weekday = dt_object.strftime("%A")
                         # 格式化输出结果
 
-                        formatted_time = dt_object.strftime("%Y-%m-%d %I:%M:%S %p")
+                        formatted_time = dt_object.strftime(
+                            "%Y-%m-%d %I:%M:%S %p")
                         DT = f"{formatted_time} {weekday} {rl} {event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说："
                         reply += DT
                         reply += await synthesize_message(event.reply.message)
@@ -1415,7 +1424,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             "content": f"{Date}{await get_friend_info(event.user_id)}（{event.user_id}）： {str(content)if config['parse_segments'] else event.message.extract_plain_text()}",
                         }
                     )
-                    while (len(data["memory"]["messages"]) > memory_lenth_limit)or(data["memory"]["messages"][0]["role"] != "user"):
+                    while (len(data["memory"]["messages"]) > memory_lenth_limit) or (data["memory"]["messages"][0]["role"] != "user"):
                         del data["memory"]["messages"][0]
                     send_messages = []
                     send_messages = data["memory"]["messages"].copy()
@@ -1427,23 +1436,24 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             )
                             # todo send_messages传参改为datag["memory"]["messages"]
                             chat_event = ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=None,
-                                        user_id=event.user_id,
-                                    )
-                            await _matcher.trigger_event(chat_event,_matcher)
+                                nbevent=event,
+                                send_message=send_messages,
+                                model_response=None,
+                                user_id=event.user_id,
+                            )
+                            await _matcher.trigger_event(chat_event, _matcher)
                             send_messages = chat_event.get_send_message()
                         response = await get_chat(send_messages)
                         if config["matcher_function"]:
-                            _matcher = SuggarMatcher(event_type=EventType().chat())
+                            _matcher = SuggarMatcher(
+                                event_type=EventType().chat())
                             chat_event = ChatEvent(
-                                        nbevent=event,
-                                        send_message=send_messages,
-                                        model_response=[response],
-                                        user_id=event.user_id,
-                                    )
-                            await _matcher.trigger_event(chat_event,_matcher)
+                                nbevent=event,
+                                send_message=send_messages,
+                                model_response=[response],
+                                user_id=event.user_id,
+                            )
+                            await _matcher.trigger_event(chat_event, _matcher)
                             response = chat_event.model_response[0]
                         debug_response = response
                         if debug:
@@ -1461,7 +1471,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         data["memory"]["messages"].append(
                             {"role": "assistant", "content": str(response)}
                         )
-                        
+
                         if not nature_chat_mode:
                             await chat.send(message)
                         else:
@@ -1471,7 +1481,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 await chat.send(response)
                                 await asyncio.sleep(
                                     random.randint(1, 3)
-                                    + int(len(message) / random.randint(80, 100))
+                                    + int(len(message) /
+                                          random.randint(80, 100))
                                 )
 
                     except Exception as e:

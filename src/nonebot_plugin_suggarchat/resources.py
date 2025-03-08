@@ -13,7 +13,8 @@ from nonebot.adapters.onebot.v11 import (
     Bot,
     Event,
 )
-import asyncio, threading
+import asyncio
+import threading
 from .conf import (
     get_custom_models_dir,
     get_config_dir,
@@ -164,7 +165,8 @@ __default_config__ = {
     "parse_segments": True,
     # "protocol":"openai",
     "matcher_function": False,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
-    "session_control": False,  # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
+    # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
+    "session_control": False,
     "session_control_time": 60,  # 预设的射时间间隔，单位分钟，默认60min
     "session_control_history": 10,  # 储存的会话历史长度最多几条，默认10条
 }
@@ -510,7 +512,7 @@ def split_list(lst: list, threshold: int) -> list:
 
     result = []
     for i in range(0, len(lst), threshold):
-        chunk = lst[i : i + threshold]
+        chunk = lst[i: i + threshold]
         result.append(chunk)
 
     return result

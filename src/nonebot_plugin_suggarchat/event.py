@@ -114,7 +114,7 @@ class SuggarEvent:
         self._nbevent = nbevent
         # 初始化模型响应文本
         self._modelResponse: list = model_response
-        #这里使用列表是因为Python的底层指针允许列表对象引用同一块内存，所以可以修改列表中的元素，而不需要重新分配内存，这样就能实现修改模型的响应了。
+        # 这里使用列表是因为Python的底层指针允许列表对象引用同一块内存，所以可以修改列表中的元素，而不需要重新分配内存，这样就能实现修改模型的响应了。
 
         # 初始化用户ID
         self._user_id: int = user_id
@@ -153,7 +153,7 @@ class SuggarEvent:
         返回SuggarEvent对象的字符串表示
         """
         return f"SUGGAREVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
-    
+
     @property
     def event_type(self) -> str:
         """
@@ -197,13 +197,14 @@ class SuggarEvent:
         :return: 模型响应文本
         """
         return self._modelResponse[0]
-    
+
     @model_response.setter
     def model_response(self, value: str):
         """
         设置模型响应文本
         """
         self._modelResponse[0] = value
+
     def get_send_message(self) -> list:
         """
         获取传入到模型的上下文
@@ -251,6 +252,7 @@ class SuggarEvent:
         :raise NotImplementedError: 当方法未在子类中实现时抛出异常
         """
         raise NotImplementedError
+
 
 class ChatEvent(SuggarEvent):
     """
@@ -302,6 +304,7 @@ class ChatEvent(SuggarEvent):
         字符串，表示事件类型为聊天事件。
         """
         return EventType().chat()
+
     @override
     @property
     def event_type(self) -> str:
@@ -357,6 +360,7 @@ class PokeEvent(SuggarEvent):
     def __str__(self):
         # 重写__str__方法，返回PokeEvent的字符串表示
         return f"SUGGARPOKEEVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
+
     @override
     @property
     def event_type(self) -> str:
@@ -376,6 +380,7 @@ class PokeEvent(SuggarEvent):
         else:
             return "private"
 
+
 class BeforePokeEvent(PokeEvent):
     """
     继承自PokeEvent的BeforePokeEvent类，用于处理调用模型之前的事件，通常用于依赖注入或权限控制的写法中。
@@ -385,6 +390,7 @@ class BeforePokeEvent(PokeEvent):
     - model_response: str类型，模型的响应。
     - user_id: int类型，用户ID。
     """
+
     def __init__(
         self,
         nbevent: PokeNotifyEvent,
@@ -400,6 +406,7 @@ class BeforePokeEvent(PokeEvent):
             send_message=send_message,
         )
         self._event_type = EventType().before_poke()
+
     @override
     @property
     def event_type(self) -> str:
@@ -410,7 +417,8 @@ class BeforePokeEvent(PokeEvent):
     def get_event_type(self) -> str:
         # 重写get_event_type方法，返回戳一戳事件类型
         return self._event_type
-    
+
+
 class BeforeChatEvent(ChatEvent):
     """
     继承自ChatEvent的BeforeChatEvent类，用于处理调用模型之前的事件，通常用于依赖注入或权限控制的写法中。
@@ -421,6 +429,7 @@ class BeforeChatEvent(ChatEvent):
     - user_id: int类型，用户ID。
 
     """
+
     def __init__(
         self,
         nbevent: MessageEvent,
@@ -434,17 +443,20 @@ class BeforeChatEvent(ChatEvent):
             nbevent=nbevent,
             user_id=user_id,
             send_message=send_message,
-       )
+        )
         self._event_type = EventType().before_chat()
+
     @override
     @property
     def event_type(self) -> str:
         # event_type属性，返回聊天事件类型
         return self._event_type
+
     @override
     def get_event_type(self) -> str:
         # 重写get_event_type方法，返回聊天事件类型
         return self._event_type
+
 
 class FinalObject:
     """
