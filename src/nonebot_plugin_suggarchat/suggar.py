@@ -1439,7 +1439,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                     if enable_tokens_limit:
                         full_string = ""
                         memory_l = (data["memory"]["messages"].copy()).append(
-                            group_train.copy()
+                            private_train.copy()
                         )
                         for st in memory_l:
                             full_string += st["content"]
@@ -1450,7 +1450,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             del data["memory"]["messages"][0]
                             full_string = ""
                             for st in (data["memory"]["messages"].copy()).append(
-                                group_train.copy()
+                                private_train.copy()
                             ):
                                 full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
