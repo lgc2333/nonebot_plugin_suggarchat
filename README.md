@@ -5,7 +5,7 @@
 
 <div align="center">
 
-# SuggarChat OpenAI协议聊天插件
+# SuggarChat OpenAI协议聊天插件/框架
 
 Chat plugin for **Nonebot2** with **Onebot V11 adapter**. 
 
@@ -153,6 +153,7 @@ while True:
 - QQ私聊支持
 - 群组AT触发
 - API 开放
+- [SuggarMatcher扩展处理器](#suggarmatcher)
 - 戳一戳消息触发支持
 - 多模型切换选择
 - 不同群内自定义聊天开关
@@ -277,8 +278,8 @@ pdm add nonebot-plugin-suggarchat
 
 ## 隐藏指令
 
-为什么会有？因为开发者为了DEBUG，会保留一些在开发过程中测试的指令，如果您只是普通用户，请忽略，也不推荐您去使用这些指令
-~~主要是写的垃圾~~
+为什么会有？因为开发者为了DEBUG，会保留一些在开发过程中测试的指令，如果您只是普通用户，请忽略。
+
 。
 | 指令            |                    参数     |           解释     |
 |--------------|-----------------|------------------------------|
@@ -288,10 +289,52 @@ pdm add nonebot-plugin-suggarchat
 </details>
 
 ## 实验功能
+### SuggarMatcher
 - 事件循环套事件循环？实现了一个简单的Matcher功能，可以注册处理器函数，并进行额外处理。
-示例代码请参考插件源码测试用例处。
+```python
+from nonebot import logger
+from nonebot.plugin import require
+require("nonebot_plugin_suggarchat")
+from nonebot_plugin_suggarchat.event import (
+    ChatEvent,
+    PokeEvent,
+    BeforeChatEvent,
+    BeforePokeEvent,
+)
+from nonebot_plugin_suggarchat.on_event import (
+    on_chat,
+    on_before_chat,
+    on_poke,
+    on_before_poke,
+)
 
-- 会话控制（在配置文件中设置，详情见配置文件部分）
+@on_poke().handle(priority_value=10)
+async def _(event: PokeEvent):
+    logger.info("戳了！")
+    logger.info(event)
+
+
+@on_before_poke().handle(priority_value=10)
+async def _(event: BeforePokeEvent):
+    logger.info("现在在获取模型的回复之前！")
+    logger.info(event)
+
+
+@on_before_chat().handle(priority_value=10)
+async def _(event: BeforeChatEvent):
+    logger.info("现在在获取模型的回复之前！")
+    logger.info(event)
+
+
+@on_chat().handle(priority_value=10)
+async def _(event: ChatEvent):
+    logger.info("收到聊天事件!")
+    logger.info(event)
+
+```
+更多示例代码请参考插件源码测试用例处。
+### 会话控制
+- （在配置文件中设置，详情见配置文件部分）
 
 
 ## 讨论

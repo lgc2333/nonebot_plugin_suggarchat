@@ -1,3 +1,7 @@
+from nonebot import logger
+from nonebot.plugin import require
+
+require("nonebot_plugin_suggarchat")
 from nonebot_plugin_suggarchat.event import (
     ChatEvent,
     PokeEvent,
@@ -10,11 +14,6 @@ from nonebot_plugin_suggarchat.on_event import (
     on_poke,
     on_before_poke,
 )
-from nonebot import logger
-from nonebot.plugin import require
-
-require("nonebot_plugin_suggarchat")
-
 
 @on_poke().handle(priority_value=10)
 async def _(event: PokeEvent):
