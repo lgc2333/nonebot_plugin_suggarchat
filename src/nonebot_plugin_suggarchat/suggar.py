@@ -761,7 +761,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                         user_id=event.user_id,
                     )
                     await _matcher.trigger_event(poke_event, _matcher)
-                    response = poke_event.model_response[0]
+                    response = poke_event.model_response
                 # 如果调试模式开启，发送调试信息给管理员
                 if debug:
                     await send_to_admin(
@@ -824,7 +824,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     user_id=event.user_id,
                 )
                 await _matcher.trigger_event(poke_event, _matcher)
-                response = poke_event.model_response[0]
+                response = poke_event.model_response
             if debug:
                 await send_to_admin(f"POKEMSG {send_messages}")
             message = MessageSegment.text(response)
@@ -1235,9 +1235,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         del datag["memory"]["messages"][0]
                     if enable_tokens_limit:
                         full_string = ""
-                        memory_l = (datag["memory"]["messages"].copy()).append(
-                            group_train.copy()
-                        )
+                        memory_l = [group_train.copy()] + datag["memory"][
+                            "messages"
+                        ].copy()
                         for st in memory_l:
                             full_string += st["content"]
                         tokens = hybrid_token_count(full_string, tokens_count_mode)
@@ -1246,9 +1246,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         while tokens > session_max_tokens:
                             del datag["memory"]["messages"][0]
                             full_string = ""
-                            for st in (datag["memory"]["messages"].copy()).append(
-                                group_train.copy()
-                            ):
+                            for st in [group_train.copy()] + datag["memory"][
+                                "messages"
+                            ].copy():
                                 full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
 
@@ -1284,7 +1284,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 user_id=event.user_id,
                             )
                             await _matcher.trigger_event(chat_event, _matcher)
-                            response = chat_event.model_response[0]
+                            response = chat_event.model_response
                         debug_response = response
                         message = MessageSegment.reply(
                             event.message_id
@@ -1438,9 +1438,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         del data["memory"]["messages"][0]
                     if enable_tokens_limit:
                         full_string = ""
-                        memory_l = (data["memory"]["messages"].copy()).append(
-                            private_train.copy()
-                        )
+                        memory_l = [private_train.copy()] + data["memory"][
+                            "messages"
+                        ].copy()
                         for st in memory_l:
                             full_string += st["content"]
                         tokens = hybrid_token_count(full_string, tokens_count_mode)
@@ -1449,9 +1449,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         while tokens > session_max_tokens:
                             del data["memory"]["messages"][0]
                             full_string = ""
-                            for st in (data["memory"]["messages"].copy()).append(
-                                private_train.copy()
-                            ):
+                            for st in [private_train.copy()] + data["memory"][
+                                "messages"
+                            ].copy():
                                 full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
                     send_messages = []
@@ -1481,7 +1481,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 user_id=event.user_id,
                             )
                             await _matcher.trigger_event(chat_event, _matcher)
-                            response = chat_event.model_response[0]
+                            response = chat_event.model_response
                         debug_response = response
                         if debug:
                             if debug:
