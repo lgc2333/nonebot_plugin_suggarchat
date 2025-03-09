@@ -33,6 +33,16 @@ import pytz
 
 __base_group_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [管理员/群主/自己/群员][YYYY-MM-DD weekday hh:mm:ss AM/PM][昵称（QQ号）]说:<内容>），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，用户与你交谈的信息在<内容>。"""
 __base_private_prompt__ = """你在纯文本环境工作，不允许使用MarkDown回复，我会提供聊天记录，你可以从这里面获取一些关键信息，比如时间与用户身份（e.g.: [日期 时间]昵称（QQ：123456）说：消息 ），但是请不要以这个格式回复。对于消息上报我给你的有几个类型，除了文本还有,\\（戳一戳消息）\\：就是QQ的戳一戳消息，是戳一戳了你，而不是我，请参与讨论。交流时不同话题尽量不使用相似句式回复，现在你在聊群内工作！，用户与你交谈的信息在<内容>"""
+__default_model_conf__ = {
+    "model": "auto",
+    "name": "",
+    "base_url": "",
+    "api_key": "",
+    # "tokens_count_mode": "bpe",  # 上下文tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)
+    # "session_max_tokens": 5000,  # 上下文长度限制，单位为tokens（可能有+-15%左右误差）
+    # "enable_tokens_limit": True,  # 是否启用上下文长度限制，如果启用，则上下文长度将不会超过session_max_tokens
+    # "protocol":"openai",
+}
 __default_config__ = {
     "preset": "__main__",
     "memory_lenth_limit": 50,
@@ -156,15 +166,6 @@ def split_message_into_chats(text):
             sentences.append(remaining)
 
     return sentences
-
-
-__default_model_conf__ = {
-    "model": "auto",
-    "name": "",
-    "base_url": "",
-    "api_key": "",
-    # "protocol":"openai",
-}
 
 
 def convert_to_utf8(file_path) -> bool:

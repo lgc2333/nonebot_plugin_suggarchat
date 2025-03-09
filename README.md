@@ -168,13 +168,20 @@ while True:
 ```bash
 nb plugin install nonebot-plugin-suggarchat
 ```
+
+如果使用以下方法需要在你机器人项目根目录的`pyproject.toml`中的**plugins**`列表`做如下修改：
+```toml
+plugins=["nonebot_plugin_suggarchat","nonebot_plugin_xxx"]
+#添加"nonebot_plugin_suggarchat"
+```
+此外，如果你创建了**虚拟环境**，并且使用以下的方法安装，请额外在**机器人项目根目录**使用`pipenv shell`**进入虚拟环境**再进行安装，**否则**插件将会安装在你的**系统Python环境**中。
+
 2. **通过pip安装**
 确保已安装Python（版本>=3.9）。
 打开命令行工具，执行以下命令来安装插件：
 ```bash
 pip install nonebot-plugin-suggarchat
 ```
-
 ​     
 
 3. **通过PDM安装**
@@ -184,12 +191,8 @@ pdm add nonebot-plugin-suggarchat
 
 
 ​    
-以上方法需要在你的`pyproject.toml`中的**plugins**`列表`添加如下内容：
-```toml
-plugins=["nonebot_plugin_suggarchat"]
-#添加"nonebot_plugin_suggarchat"
-```
-此外，如果你创建了**虚拟环境**，并且使用**2,3**方法安装，请额外使用`pipenv shell`**进入虚拟环境**再进行安装，**否则**插件将会安装在你的**系统Python环境**中。
+
+
 
 ## 配置文件
 
@@ -217,9 +220,9 @@ plugins=["nonebot_plugin_suggarchat"]
 | `use_base_prompt`       | bool               | true | 是否使用基本提示词（即让LLM理解消息段解析）                                   |
 | `preset`       | string               | __main__ | 是否使用预设（在控制台打印的models文件夹下，预设json格式参考下文（你的预设名**不能**设为`__main__`）午）                                   |
 | `max_tokens`       | int               | 100 | 在单次对话时，LLM最多可以生成多少个token（并非完全等于字数，如果你的模型提供商支持）                                   |
-| `tokens_count_mode`       | str               | bpe | 下文tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)                                  |
+| `tokens_count_mode`       | str               | bpe | 上下文窗口tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)                                  |
 | `session_max_tokens`       | int               | 5000 | 上下文最多允许多少的tokens数 ,**此计算可能有10%的误差**                                   |
-| `enable_tokens_limit`       | bool               | false | 是否启用上下文长度限制，如果启用，则上下文长度将不会超过`session_max_tokens`                                   |
+| `enable_tokens_limit`       | bool               | true | 是否启用上下文长度限制，如果启用，则上下文长度将不会超过`session_max_tokens`                                   |
 | `model`       | str               | auto | 使用什么模型（具体看你的API提供商                                   |
 | `parse_segments` | bool               | true | 是否解析消息段，此权重覆盖`use_base_prompt`（即at/合并转发等）                                   |
 | `fake_people`      |     bool     |     true    |   是否启用自动回复模式    |
