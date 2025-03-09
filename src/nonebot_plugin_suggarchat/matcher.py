@@ -59,7 +59,7 @@ class SuggarMatcher:
             if not priority_value in self.priority[event_type]:
                 self.priority[event_type].append(priority_value)
             self.priority[event_type] = sorted(self.priority[event_type])
-            self.handler_infos[event_type][func.__name__] = {
+            self.handler_infos[event_type][id(func)] = {
                 "func": func,
                 "signature": inspect.signature(func),
                 "frame": inspect.currentframe().f_back,
@@ -120,11 +120,11 @@ class SuggarMatcher:
                     logger.info(f"开始处理优先级为 {priority} 的 {event_type} 事件。")
                     # 遍历该事件类型的所有处理程序
                     for handler in self.event_handlers[event_type]:
-                        # 获取处理程序的签名
-                        sig = inspect.signature(handler)
-                        info = self.handler_infos[event_type][handler.__name__]
+                        info = self.handler_infos[event_type][id(handler)]
                         if info["priority"] != priority:
                             continue
+                        # 获取处理程序的签名
+                        sig = inspect.signature(handler)
                         line_number = info["frame"].f_lineno
                         file_name = info["frame"].f_code.co_filename
 
@@ -163,8 +163,7 @@ class SuggarMatcher:
                             )
 
                             await handler(event, *new_args_tuple, **f_kwargs)
-                            if info["block"]:
-                                raise BlockException()
+
                         except ProcessException as e:
                             logger.info("处理已停止。")
                             raise e
@@ -197,6 +196,8 @@ class SuggarMatcher:
                             logger.info(
                                 f"'{handler.__name__}'(~{file_name}:{line_number}任务已结束。"
                             )
+                            if info["block"]:
+                                raise BlockException()
                 except BlockException:
                     break
         else:

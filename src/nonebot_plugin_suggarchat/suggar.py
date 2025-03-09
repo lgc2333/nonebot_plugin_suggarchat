@@ -1238,18 +1238,18 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         memory_l = (datag["memory"]["messages"].copy()).append(
                             group_train.copy()
                         )
-                        for str in memory_l:
-                            full_string += str["content"]
+                        for st in memory_l:
+                            full_string += st["content"]
                         tokens = hybrid_token_count(full_string, tokens_count_mode)
                         logger.debug(f"tokens:{tokens}")
                         logger.debug(f"tokens_limit:{session_max_tokens}")
                         while tokens > session_max_tokens:
                             del datag["memory"]["messages"][0]
                             full_string = ""
-                            for str in (datag["memory"]["messages"].copy()).append(
+                            for st in (datag["memory"]["messages"].copy()).append(
                                 group_train.copy()
                             ):
-                                full_string += str["content"]
+                                full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
 
                     send_messages = []
@@ -1438,21 +1438,21 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         del data["memory"]["messages"][0]
                     if enable_tokens_limit:
                         full_string = ""
-                        memory_l = (datag["memory"]["messages"].copy()).append(
+                        memory_l = (data["memory"]["messages"].copy()).append(
                             group_train.copy()
                         )
-                        for str in memory_l:
-                            full_string += str["content"]
+                        for st in memory_l:
+                            full_string += st["content"]
                         tokens = hybrid_token_count(full_string, tokens_count_mode)
                         logger.debug(f"tokens:{tokens}")
                         logger.debug(f"tokens_limit:{session_max_tokens}")
                         while tokens > session_max_tokens:
-                            del datag["memory"]["messages"][0]
+                            del data["memory"]["messages"][0]
                             full_string = ""
-                            for str in (datag["memory"]["messages"].copy()).append(
+                            for st in (data["memory"]["messages"].copy()).append(
                                 group_train.copy()
                             ):
-                                full_string += str["content"]
+                                full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
                     send_messages = []
                     send_messages = data["memory"]["messages"].copy()
@@ -1462,7 +1462,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            # todo send_messages传参改为datag["memory"]["messages"]
+                            # todo send_messages传参改为data["memory"]["messages"]
                             chat_event = ChatEvent(
                                 nbevent=event,
                                 send_message=send_messages,
