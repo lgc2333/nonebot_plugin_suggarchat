@@ -785,11 +785,11 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                             + MessageSegment.text(" ")
                             + response_list[0]
                         )
-                        await chat.send(first_message)
+                        await poke.send(first_message)
 
                         # 发送剩余消息并保持原有延迟逻辑
                         for message in response_list[1:]:
-                            await chat.send(message)
+                            await poke.send(message)
                             await asyncio.sleep(
                                 random.randint(1, 3)
                                 + int(len(message) / random.randint(80, 100))
