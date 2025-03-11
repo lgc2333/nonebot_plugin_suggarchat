@@ -6,6 +6,24 @@ from nonebot import logger
 from .resources import get_config, save_config
 
 
+class Adapter:
+    """用于处理Adapter注册的类"""
+
+    def __init__(self):
+        """
+        初始化 Adapter 类的新实例。
+        """
+        pass
+
+    def register_adapter(func: callable, protocol: str):
+        """
+        注册一个适配器。
+        """
+        if protocol in suggar.protocols_adapters:
+            raise ValueError("协议适配器已存在")
+        suggar.protocols_adapters[protocol] = func
+
+
 class Menu:
     """
     Menu 类用于通过注册菜单项来构建菜单。
@@ -135,37 +153,3 @@ class Chat:
 
     async def get_msg_on_list(self, message: list):
         return await get_chat(messages=message)
-
-    def set_private_prompt(self, prompt: str):
-        config = self.config
-
-        """
-        设置私聊的提示词。
-        
-        参数:
-        - prompt (str): 提示词。
-        
-        返回:
-        - Chat: 返回Chat实例，支持链式调用。
-        """
-        config["private_train"] = prompt
-        save_config(config)
-        self.config = get_config()
-        return self
-
-    def set_group_prompt(self, prompt: str):
-        config = self.config
-
-        """
-        设置群聊的提示词。
-        
-        参数:
-        - prompt (str): 提示词。
-        
-        返回:
-        - Chat: 返回Chat实例，支持链式调用。
-        """
-        config["group_train"] = prompt
-        save_config(config)
-        self.config = get_config()
-        return self

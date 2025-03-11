@@ -41,7 +41,7 @@ __default_model_conf__ = {
     # "tokens_count_mode": "bpe",  # 上下文tokens 计算模式，可选 'word'(词，较大误差), 'bpe'(子词，最精准), 'char'(字符，不推荐)
     # "session_max_tokens": 5000,  # 上下文长度限制，单位为tokens（可能有+-15%左右误差）
     # "enable_tokens_limit": True,  # 是否启用上下文长度限制，如果启用，则上下文长度将不会超过session_max_tokens
-    # "protocol":"openai",
+    "protocol": "__main__",
 }
 __default_config__ = {
     "preset": "__main__",
@@ -87,7 +87,7 @@ __default_config__ = {
         "希望我能继续为你提供帮助，不要太在意我的小错误哦！",
     ],
     "parse_segments": True,
-    # "protocol":"openai",
+    "protocol": "__main__",
     "matcher_function": False,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
     # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
     "session_control": False,

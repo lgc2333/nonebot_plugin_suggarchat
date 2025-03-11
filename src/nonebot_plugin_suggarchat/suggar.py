@@ -73,6 +73,39 @@ private_memory: Path
 group_memory: Path
 
 
+async def openai_get_chat(base_url, model, key, messages, max_tokens):
+    # 记录日志，开始获取对话
+    logger.debug(f"Start to get response with model {model}")
+    logger.debug(f"Preset：{config['preset']}")
+    logger.debug(f"Key：{key[:7]}...")
+    logger.debug(f"API base_url：{base_url}")
+
+    client = openai.AsyncOpenAI(base_url=base_url, api_key=key)
+    # 创建聊天完成请求
+    completion = await client.chat.completions.create(
+        model=model, messages=messages, max_tokens=max_tokens, stream=config["stream"]
+    )
+    response = ""
+    if config["stream"]:
+        # 流式接收响应并构建最终的聊天文本
+        async for chunk in completion:
+            try:
+                response += chunk.choices[0].delta.content
+                if debug:
+                    logger.debug(chunk.choices[0].delta.content)
+            except IndexError:
+                break
+        # 记录生成的响应日志
+    else:
+        if debug:
+            logger.debug(response)
+        response = completion.choices[0].message.content
+    return response
+
+
+protocols_adapters = {"openai-builtin": openai_get_chat}
+
+
 def reload_from_memory():
     """从内存重载配置文件"""
     global config_dir, main_config, custom_models_dir, private_memory, group_memory
@@ -253,7 +286,7 @@ async def get_chat(messages: list) -> str:
     """
 
     # 声明全局变量，用于访问配置和判断是否启用
-    global config, ifenable, debug
+    global config, ifenable, debug, protocols_adapters
     # 从配置中获取最大token数量
     max_tokens = config["max_tokens"]
 
@@ -282,34 +315,14 @@ async def get_chat(messages: list) -> str:
             base_url = config["open_ai_base_url"]
             # 保存更新后的配置
             save_config(config)
-
-    # 记录日志，开始获取对话
-    logger.debug(f"Start to get response with model {model}")
-    logger.debug(f"Preset：{config['preset']}")
-    logger.debug(f"Key：{key[:7]}...")
-    logger.debug(f"API base_url：{base_url}")
-
-    client = openai.AsyncOpenAI(base_url=base_url, api_key=key)
-    # 创建聊天完成请求
-    completion = await client.chat.completions.create(
-        model=model, messages=messages, max_tokens=max_tokens, stream=config["stream"]
-    )
-    response = ""
-    if config["stream"]:
-        # 流式接收响应并构建最终的聊天文本
-        async for chunk in completion:
-            try:
-                response += chunk.choices[0].delta.content
-                if debug:
-                    logger.debug(chunk.choices[0].delta.content)
-            except IndexError:
-                break
-        # 记录生成的响应日志
+    if config["protocol"] == "__main__":
+        return await openai_get_chat(base_url, model, key, messages, max_tokens)
+    elif config["protocol"] not in protocols_adapters:
+        raise Exception(f"Protocol {config["protocol"]} not found!")
     else:
-        if debug:
-            logger.debug(response)
-        response = completion.choices[0].message.content
-    return response
+        return await protocols_adapters[config["protocol"]](
+            base_url, model, key, messages, max_tokens
+        )
 
 
 # 创建响应器实例
