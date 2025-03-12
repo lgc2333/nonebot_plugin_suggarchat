@@ -48,7 +48,7 @@ __default_config__ = {
     "memory_lenth_limit": 50,
     "enable": False,
     "fake_people": True,  # 是否启用无人触发自动回复
-    "probability": 10,  # 无人触发自动回复概率
+    "probability": 1e-2,  # 无人触发自动回复概率
     "keyword": "at",  # 触发bot对话关键词,at为to_me,其他为startwith
     "nature_chat_style": True,  # 是否启用更加自然的对话风格(使用Jieba分词+回复输出)
     "poke_reply": True,

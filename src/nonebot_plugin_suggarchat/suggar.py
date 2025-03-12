@@ -195,7 +195,7 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
         event: GroupMessageEvent = event
 
         # 根据随机率判断是否回复
-        rand = random.randint(1, 100)
+        rand = random.random()
         rate = random_reply_rate
         if rand <= rate:
             return True
