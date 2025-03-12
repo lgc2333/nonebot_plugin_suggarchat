@@ -3,7 +3,43 @@ from .suggar import send_to_admin, get_chat
 from . import suggar
 import threading
 from nonebot import logger
-from .resources import get_config, save_config
+from .resources import get_config, save_config, get_models
+from . import resources
+
+
+class Config:
+    """用于处理Config注册的类"""
+
+    def __init__(self):
+        """
+        初始化 Config 类的新实例。
+        """
+        pass
+
+    def get_config(self, value: str | None):
+        if value == None:
+            return get_config()
+        else:
+            return (get_config())[value]
+
+    def get_models(self):
+        return get_models()
+
+    def reg_config(self, key: str):
+        conf = get_config()
+        if not key in conf:
+            resources.__default_config__[key] = None
+            get_config()
+        else:
+            raise Exception(f"Key {key} already exists!")
+
+    def reg_model_config(self, key: str):
+        conf = get_config()
+        if not key in conf["models"]:
+            resources.__default_model_conf__[key] = None
+            get_models()
+        else:
+            raise Exception(f"Key {key} already exists!")
 
 
 class Adapter:
@@ -15,7 +51,7 @@ class Adapter:
         """
         pass
 
-    def register_adapter(func: callable, protocol: str):
+    def register_adapter(self, func: callable, protocol: str):
         """
         注册一个适配器。
         """
