@@ -172,7 +172,7 @@ nb plugin install nonebot-plugin-suggarchat
 
 如果使用以下方法需要在你机器人项目根目录的`pyproject.toml`中的**plugins**`列表`做如下修改：
 ```toml
-plugins=["nonebot_plugin_suggarchat","nonebot_plugin_xxx"]
+plugins=['nonebot_plugin_suggarchat","nonebot_plugin_xxx']
 #添加"nonebot_plugin_suggarchat"
 ```
 此外，如果你创建了**虚拟环境**，并且使用以下的方法安装，请额外在**机器人项目根目录**使用`pipenv shell`**进入虚拟环境**再进行安装，**否则**插件将会安装在你的**系统Python环境**中。
