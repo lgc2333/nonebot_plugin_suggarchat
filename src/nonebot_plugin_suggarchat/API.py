@@ -1,5 +1,5 @@
 # 施工中。。。。。。敬请期待
-from .suggar import send_to_admin, get_chat
+from .suggar import send_to_admin, get_chat, reload_from_memory
 from . import suggar
 import threading
 from nonebot import logger
@@ -30,6 +30,7 @@ class Config:
         if not key in conf:
             resources.__default_config__[key] = None
             get_config()
+            reload_from_memory()
         else:
             raise Exception(f"Key {key} already exists!")
 
@@ -38,6 +39,7 @@ class Config:
         if not key in conf["models"]:
             resources.__default_model_conf__[key] = None
             get_models()
+            reload_from_memory()
         else:
             raise Exception(f"Key {key} already exists!")
 

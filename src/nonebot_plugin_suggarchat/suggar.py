@@ -108,13 +108,13 @@ protocols_adapters = {"openai-builtin": openai_get_chat}
 
 def reload_from_memory():
     """从内存重载配置文件"""
-    global config_dir, main_config, custom_models_dir, private_memory, group_memory
+    global config_dir, main_config, custom_models_dir, private_memory, group_memory, config
     config_dir = get_config_dir()
     main_config = get_config_file_path()
     custom_models_dir = get_custom_models_dir()
     private_memory = get_private_memory_dir()
     group_memory = get_group_memory_dir()
-
+    config = get_config()
 
 async def send_to_admin(msg: str) -> None:
     """
@@ -321,7 +321,7 @@ async def get_chat(messages: list) -> str:
         raise Exception(f"Protocol {config['protocol']} not found!")
     else:
         return await protocols_adapters[config["protocol"]](
-            base_url, model, key, messages, max_tokens
+            base_url, model, key, messages, max_tokens, config
         )
 
 

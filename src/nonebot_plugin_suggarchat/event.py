@@ -88,7 +88,16 @@ class EventType:
         return [self.__CHAT, self.__None, self.__POKE]
 
 
-class SuggarEvent:
+class BasicEvent:
+    """
+    所有事件的基类
+    """
+
+    def __init__(self):
+        pass
+
+
+class SuggarEvent(BasicEvent):
     """
     与消息收发相关的事件基类
     """
