@@ -5,9 +5,9 @@
 
 <div align="center">
 
-# SuggarChat OpenAI协议聊天插件/框架
+# SuggarChat 高可扩展性大模型聊天插件/框架
 
-Chat plugin for **Nonebot2** with **Onebot V11 adapter**. 
+Chat plugin/framework for **Nonebot2** with **Onebot V11 adapter**. 
 
 
 [![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/) [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/) [![PyPi](https://img.shields.io/badge/pypi-%23ececec.svg?style=for-the-badge&logo=pypi&logoColor=1f73b7)](https://pypi.org/project/nonebot-plugin-suggarchat/)
@@ -18,7 +18,7 @@ Chat plugin for **Nonebot2** with **Onebot V11 adapter**.
 
 
 ## 描述
-适用于**Nonebot2**的**Onebot V11 适配器**的LLM聊天插件
+适用于**Nonebot2**的**Onebot V11 适配器**的高可扩展性LLM聊天插件
 
 </div align="center">
 
@@ -149,6 +149,8 @@ while True:
 ## 特性
 
 - OpenAI API 支持
+- 高扩展性接口提供
+- 允许注册LLM 协议适配器
 - QQ群组聊天支持
 - QQ私聊支持
 - 群组AT触发

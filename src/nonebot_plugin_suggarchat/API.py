@@ -26,8 +26,7 @@ class Config:
         return get_models()
 
     def reg_config(self, key: str):
-        conf = get_config()
-        if not key in conf:
+        if not key in resources.__default_config__:
             resources.__default_config__[key] = None
             get_config()
             reload_from_memory()
@@ -35,8 +34,7 @@ class Config:
             raise Exception(f"Key {key} already exists!")
 
     def reg_model_config(self, key: str):
-        conf = get_config()
-        if not key in conf["models"]:
+        if not key in resources.__default_model_conf__:
             resources.__default_model_conf__[key] = None
             get_models()
             reload_from_memory()
