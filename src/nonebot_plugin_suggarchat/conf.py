@@ -3,7 +3,7 @@ from nonebot.adapters.onebot.v11 import Bot
 from pathlib import Path
 import nonebot_plugin_localstore as store
 
-__KERNEL_VERSION__: str = "V1.14.2.1-Public"
+__KERNEL_VERSION__: str = "V1.15-Public"
 # 获取当前工作目录
 current_directory: str = os.getcwd()
 config_dir = store.get_plugin_config_dir()

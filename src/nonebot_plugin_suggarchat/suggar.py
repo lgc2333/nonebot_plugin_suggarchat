@@ -318,7 +318,7 @@ async def get_chat(messages: list) -> str:
     if config["protocol"] == "__main__":
         return await openai_get_chat(base_url, model, key, messages, max_tokens, config)
     elif config["protocol"] not in protocols_adapters:
-        raise Exception(f"Protocol {config['protocol']} not found!")
+        raise Exception(f"Protocol adapter {config['protocol']} not found!")
     else:
         return await protocols_adapters[config["protocol"]](
             base_url, model, key, messages, max_tokens, config

@@ -31,6 +31,8 @@ Chat plugin/framework for **Nonebot2** with **Onebot V11 adapter**.
 - [模型预设](#模型预设)
 - [预设使用方法](#预设使用方法)
 - [指令](#指令使用方法)
+- [API](#api)
+- [适配器规范](#适配器规范)
 - [实验功能](#实验功能)
 - [交流/反馈](#讨论)
 
@@ -236,6 +238,7 @@ pdm add nonebot-plugin-suggarchat
 | `session_control`       | bool   | false  | 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果超时则裁切上下文并询问是否继续对话） |
 | `session_control_time`  | int    | 60     | 会话控制时间间隔（单位：分钟）                                                           |
 | `session_control_history` | int  | 10     | 储存的会话历史最大条数                                                                   |
+| `procotol` | str  | __main__     | 协议适配器（__main__为默认值，即使用默认的OpenAI适配器，第三方适配器请参考对应文档）                                   |
 
 
 </details>
@@ -251,7 +254,8 @@ pdm add nonebot-plugin-suggarchat
     "model":"auto",
     "name":"",
     "base_url":"",
-    "api_key":""
+    "api_key":"",
+    "procotol":"__main__"
     }
 ```
 ### 解释：
@@ -259,6 +263,7 @@ pdm add nonebot-plugin-suggarchat
 - `name`: 预设的名字，用于在插件中选择使用。
 - `base_url`: OpenAI协议 API URL，默认为空。
 - `api_key`: OpenAI协议 API 密钥，默认为空。
+- `procotol`: 预设的协议，默认为__main__，其他协议请阅读对应的文档。
 ## 预设使用方法
 1. 在控制台打印的models文件夹下，创建一个json文件，文件名必须与预设的名字一致。
 2. 在json文件中，填写预设的内容。
@@ -289,6 +294,208 @@ pdm add nonebot-plugin-suggarchat
 
 
 </details>
+
+## API
+
+<details>
+
+### API 文档
+
+### 概述
+该 API 提供了配置管理、适配器注册、菜单管理、管理员操作和聊天消息处理等功能。以下是各个类的详细说明。
+
+---
+
+### 类说明
+
+### `Config`
+用于处理配置注册和管理的类。
+
+#### 方法
+- **`get_config(value: str | None)`**  
+  获取配置信息。  
+  - 参数：  
+    - `value` (str | None): 配置项的名称。如果为 `None`，返回所有配置。  
+  - 返回：  
+    - 配置值或整个配置字典。
+
+- **`get_models()`**  
+  获取模型配置。  
+  - 返回：  
+    - 模型配置字典。
+
+- **`reg_config(key: str)`**  
+  注册一个新的配置项。  
+  - 参数：  
+    - `key` (str): 配置项的名称。  
+  - 异常：  
+    - 如果配置项已存在，抛出 `Exception`。
+
+- **`reg_model_config(key: str)`**  
+  注册一个新的模型配置项。  
+  - 参数：  
+    - `key` (str): 模型配置项的名称。  
+  - 异常：  
+    - 如果配置项已存在，抛出 `Exception`。
+
+---
+
+### `Adapter`
+用于处理适配器注册的类。
+
+#### 方法
+- **`register_adapter(func: callable, protocol: str)`**  
+  注册一个适配器。  
+  - 参数：  
+    - `func` (callable): 适配器函数。  
+    - `protocol` (str): 协议名称。  
+  - 异常：  
+    - 如果协议适配器已存在，抛出 `ValueError`。
+
+---
+
+### `Menu`
+用于注册菜单项的类。
+
+#### 方法
+- **`reg_menu(cmd_name: str, describe: str)`**  
+  注册一个新的菜单项。  
+  - 参数：  
+    - `cmd_name` (str): 菜单项的命令名称。  
+    - `describe` (str): 菜单项的描述。  
+  - 返回：  
+    - `Menu` 实例，支持链式调用。
+
+---
+
+### `Admin`
+管理员管理类，用于处理与管理员相关的操作。
+
+#### 方法
+- **`send_with(msg: str)`**  
+  异步发送消息给管理员。  
+  - 参数：  
+    - `msg` (str): 要发送的消息内容。  
+  - 返回：  
+    - `Admin` 实例，支持链式调用。
+
+- **`send_error(msg: str)`**  
+  异步发送错误消息给管理员，并记录错误日志。  
+  - 参数：  
+    - `msg` (str): 要发送的错误消息内容。  
+  - 返回：  
+    - `Admin` 实例，支持链式调用。
+
+- **`is_admin(user_id: int)`**  
+  检查用户是否是管理员。  
+  - 参数：  
+    - `user_id` (int): 用户 ID。  
+  - 返回：  
+    - `bool`: 用户是否是管理员。
+
+- **`add_admin(user_id: int)`**  
+  添加新的管理员用户 ID。  
+  - 参数：  
+    - `user_id` (int): 要添加的用户 ID。  
+  - 返回：  
+    - `Admin` 实例，支持链式调用。
+
+- **`set_admin_group(group_id: int)`**  
+  设置管理员组 ID。  
+  - 参数：  
+    - `group_id` (int): 管理员组 ID。  
+  - 返回：  
+    - `Admin` 实例，支持链式调用。
+
+---
+
+### `Chat`
+用于处理与 LLM（大语言模型）相关的操作。
+
+#### 方法
+- **`get_msg(prompt: str, message: list)`**  
+  获取聊天消息。  
+  - 参数：  
+    - `prompt` (str): 提示语。  
+    - `message` (list): 消息列表。  
+  - 返回：  
+    - 聊天消息。
+
+- **`get_msg_on_list(message: list)`**  
+  根据消息列表获取聊天消息。  
+  - 参数：  
+    - `message` (list): 消息列表。  
+  - 返回：  
+    - 聊天消息。
+
+---
+
+## 示例代码
+
+### 配置管理
+```python
+config = Config()
+config_value = config.get_config("some_key")
+```
+
+### 注册适配器
+```python
+adapter = Adapter()
+adapter.register_adapter(my_func, "my_protocol")
+```
+
+### 注册菜单项
+```python
+menu = Menu()
+menu.reg_menu("help", "显示帮助信息")
+```
+
+### 发送消息给管理群组
+```python
+admin = Admin()
+await admin.send_with("Hello, Admin!")
+```
+
+### 说明
+- 该文档基于代码中的类和方法编写，涵盖了主要功能和用法。
+- 代码中标记为“施工中”的部分未包含在文档中，待功能完善后可补充。
+
+</details>
+
+## 适配器规范
+适配器规范定义了适配器应该实现的功能，包括消息处理、事件处理、群组管理、用户管理等。
+
+上文已经提及了API接口如何注册适配器，下面将进行详细介绍。
+
+exapmle:
+
+```python
+from nonebot import get_driver
+from nonebot.plugin import require
+
+require("nonebot_plugin_suggarchat")
+from nonebot_plugin_suggarchat.API import Adapter
+
+#必须实现的形式参数说明：
+#base_url: api地址（来自配置文件）
+#model: 模型名称
+#key: api key（来自配置文件）
+#messages: 消息列表
+#max_tokens: 最大token数（来自配置文件）
+#config 配置文件
+async def example_adapter(base_url:str, model:str, key:str, messages:list, max_tokens:int, config:dict)->str:
+    # 你的逻辑,必须返回一个字符串
+    # todo
+    return string
+@get_driver().on_startup
+async def startup():
+    adapter = Adapter()
+    adapter.register_adapter(example_adapter, "example")
+
+```
+
+### 上架Nonebot商店：
+推荐的命名格式：nonebot_plugin_suggaradapter_yourpluginname
 
 ## 实验功能
 ### SuggarMatcher

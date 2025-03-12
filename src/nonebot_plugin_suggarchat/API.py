@@ -31,7 +31,7 @@ class Config:
             get_config()
             reload_from_memory()
         else:
-            raise Exception(f"Key {key} already exists!")
+            raise Exception(f"Config key {key} already exists!")
 
     def reg_model_config(self, key: str):
         if not key in resources.__default_model_conf__:
@@ -39,7 +39,7 @@ class Config:
             get_models()
             reload_from_memory()
         else:
-            raise Exception(f"Key {key} already exists!")
+            raise Exception(f"Config key {key} already exists!")
 
 
 class Adapter:
