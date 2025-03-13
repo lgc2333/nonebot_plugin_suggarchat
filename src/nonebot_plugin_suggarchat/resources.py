@@ -47,7 +47,7 @@ __default_config__ = {
     "preset": "__main__",
     "memory_lenth_limit": 50,
     "enable": False,
-    "fake_people": True,  # 是否启用无人触发自动回复
+    "fake_people": False,  # 是否启用无人触发自动回复
     "probability": 1e-2,  # 无人触发自动回复概率
     "keyword": "at",  # 触发bot对话关键词,at为to_me,其他为startwith
     "nature_chat_style": True,  # 是否启用更加自然的对话风格(使用Jieba分词+回复输出)
@@ -67,9 +67,9 @@ __default_config__ = {
     "session_max_tokens": 5000,  # 上下文长度限制，单位为tokens（可能有+-15%左右误差）
     "enable_tokens_limit": True,  # 是否启用上下文长度限制，如果启用，则上下文长度将不会超过session_max_tokens
     "model": "auto",
-    "say_after_self_msg_be_deleted": True,
+    "say_after_self_msg_be_deleted": False,
     "group_added_msg": "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
-    "send_msg_after_be_invited": True,
+    "send_msg_after_be_invited": False,
     "after_deleted_say_what": [
         "Suggar说错什么话了吗～下次我会注意的呢～",
         "抱歉啦，不小心说错啦～",
@@ -88,7 +88,7 @@ __default_config__ = {
     ],
     "parse_segments": True,
     "protocol": "__main__",
-    "matcher_function": False,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
+    "matcher_function": True,  # 启用matcher,当这一项启用,SuggaeMatcher将会运行。
     # 启用会话控制机制（根据设定的会话时间差自动裁切上下文，如果和上一次聊天时间超过预设时间间隔，就裁切上下文，并询问用户是否继续上一次对话。）
     "session_control": False,
     "session_control_time": 60,  # 预设的射时间间隔，单位分钟，默认60min
