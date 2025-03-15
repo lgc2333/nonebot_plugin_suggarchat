@@ -23,6 +23,7 @@ from .resources import (
     split_message_into_chats,
     format_datetime_timestamp,
     hybrid_token_count,
+    __default_config__,
 )
 import time
 from nonebot.adapters.onebot.v11 import (
@@ -47,7 +48,7 @@ from nonebot.exception import NoneBotException
 
 session_clear_group = []
 session_clear_user = []
-config = get_config()
+config = __default_config__
 ifenable = config["enable"]
 random_reply = config["fake_people"]
 random_reply_rate = config["probability"]
@@ -115,6 +116,7 @@ def reload_from_memory():
     private_memory = get_private_memory_dir()
     group_memory = get_group_memory_dir()
     config = get_config()
+
 
 async def send_to_admin(msg: str) -> None:
     """
@@ -904,16 +906,16 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     logger.debug(f"{event.group_id} disabled")
 
     # 获取并更新记忆中的数据结构
-    datag = get_memory_data(event)
-    if datag["id"] == event.group_id:
-        if not datag["enable"]:
+    data = get_memory_data(event)
+    if data["id"] == event.group_id:
+        if not data["enable"]:
             await disable.send("聊天禁用")
         else:
-            datag["enable"] = False
+            data["enable"] = False
             await disable.send("聊天已经禁用")
 
     # 将更新后的数据结构写回记忆
-    write_memory_data(event, datag)
+    write_memory_data(event, data)
 
 
 @enable.handle()
@@ -948,18 +950,18 @@ async def _(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     # 记录日志
     logger.debug(f"{event.group_id}enabled")
     # 获取记忆中的数据
-    datag = get_memory_data(event)
+    data = get_memory_data(event)
     # 检查记忆数据是否与当前群组相关
-    if datag["id"] == event.group_id:
+    if data["id"] == event.group_id:
         # 如果聊天功能已启用，则发送提示信息
-        if datag["enable"]:
+        if data["enable"]:
             await enable.send("聊天启用")
         else:
             # 如果聊天功能未启用，则启用并发送提示信息
-            datag["enable"] = True
+            data["enable"] = True
             await enable.send("聊天启用")
     # 更新记忆数据
-    write_memory_data(event, datag)
+    write_memory_data(event, data)
 
 
 @del_memory.handle()
@@ -1119,35 +1121,35 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
             if isinstance(event, GroupMessageEvent):
                 if not config["enable_group_chat"]:
                     matcher.skip()
-                datag = Group_Data
-                if datag["enable"]:
-                    if datag.get("sessions") is None:
-                        datag["sessions"] = []
-                    if datag.get("timestamp") is None:
-                        datag["timestamp"] = time.time()
+                data = Group_Data
+                if data["enable"]:
+                    if data.get("sessions") is None:
+                        data["sessions"] = []
+                    if data.get("timestamp") is None:
+                        data["timestamp"] = time.time()
                     if config["session_control"]:
                         for session in session_clear_group:
                             if session["id"] == event.group_id:
                                 if not event.reply:
                                     session_clear_group.remove(session)
                                 break
-                        if (time.time() - datag["timestamp"]) >= (
+                        if (time.time() - data["timestamp"]) >= (
                             config["session_control_time"] * 60
                         ):
-                            datag["sessions"].append(
+                            data["sessions"].append(
                                 {
-                                    "messages": datag["memory"]["messages"],
+                                    "messages": data["memory"]["messages"],
                                     "time": time.time(),
                                 }
                             )
                             while (
-                                len(datag["sessions"])
+                                len(data["sessions"])
                                 > config["session_control_history"]
                             ):
-                                datag["sessions"].remove(datag["sessions"][0])
-                            datag["memory"]["messages"] = []
-                            datag["timestamp"] = time.time()
-                            write_memory_data(event, datag)
+                                data["sessions"].remove(data["sessions"][0])
+                            data["memory"]["messages"] = []
+                            data["timestamp"] = time.time()
+                            write_memory_data(event, data)
                             chated = await chat.send(
                                 f"如果想和我继续用刚刚的上下文聊天，快回复我✨\"继续\"✨吧！\n（超过{config['session_control_time']}分钟没理我我就会被系统抱走存档哦！）"
                             )
@@ -1170,11 +1172,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                     except:
                                         pass
                                     session_clear_group.remove(session)
-                                    datag["memory"]["messages"] = datag["sessions"][
-                                        len(datag["sessions"]) - 1
+                                    data["memory"]["messages"] = data["sessions"][
+                                        len(data["sessions"]) - 1
                                     ]
-                                    datag["sessions"].remove(
-                                        datag["sessions"][len(datag["sessions"]) - 1]
+                                    data["sessions"].remove(
+                                        data["sessions"][len(data["sessions"]) - 1]
                                     )
                                     await chat.send("让我们继续聊天吧～")
 
@@ -1236,19 +1238,19 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
                         )
 
-                    datag["memory"]["messages"].append(
+                    data["memory"]["messages"].append(
                         {
                             "role": "user",
                             "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config['parse_segments'] else event.message.extract_plain_text()}",
                         }
                     )
-                    while (len(datag["memory"]["messages"]) > memory_lenth_limit) or (
-                        datag["memory"]["messages"][0]["role"] != "user"
+                    while (len(data["memory"]["messages"]) > memory_lenth_limit) or (
+                        data["memory"]["messages"][0]["role"] != "user"
                     ):
-                        del datag["memory"]["messages"][0]
+                        del data["memory"]["messages"][0]
                     if enable_tokens_limit:
                         full_string = ""
-                        memory_l = [group_train.copy()] + datag["memory"][
+                        memory_l = [group_train.copy()] + data["memory"][
                             "messages"
                         ].copy()
                         for st in memory_l:
@@ -1257,28 +1259,28 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         logger.debug(f"tokens:{tokens}")
                         logger.debug(f"tokens_limit:{session_max_tokens}")
                         while tokens > session_max_tokens:
-                            del datag["memory"]["messages"][0]
+                            del data["memory"]["messages"][0]
                             full_string = ""
-                            for st in [group_train.copy()] + datag["memory"][
+                            for st in [group_train.copy()] + data["memory"][
                                 "messages"
                             ].copy():
                                 full_string += st["content"]
                             tokens = hybrid_token_count(full_string, tokens_count_mode)
 
                     send_messages = []
-                    send_messages = datag["memory"]["messages"].copy()
+                    send_messages = data["memory"]["messages"].copy()
                     train = group_train.copy()
 
                     train[
                         "content"
-                    ] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{datag.get('prompt', '无')}"
+                    ] += f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{data.get('prompt', '无')}"
                     send_messages.insert(0, train)
                     try:
                         if config["matcher_function"]:
                             _matcher = SuggarMatcher(
                                 event_type=EventType().before_chat()
                             )
-                            # todo send_messages传参改为datag['memory']['messages']
+                            # todo send_messages传参改为data['memory']['messages']
                             chat_event = ChatEvent(
                                 nbevent=event,
                                 send_message=send_messages,
@@ -1307,11 +1309,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             await send_to_admin(
                                 f"{event.group_id}/{event.user_id}\n{event.message.extract_plain_text()}\n{type(event)}\nRESPONSE:\n{str(response)}\nraw:{debug_response}"
                             )
-                            logger.debug(datag["memory"]["messages"])
+                            logger.debug(data["memory"]["messages"])
                             logger.debug(str(response))
                             await send_to_admin(f"response:{response}")
 
-                        datag["memory"]["messages"].append(
+                        data["memory"]["messages"].append(
                             {"role": "assistant", "content": str(response)}
                         )
 
@@ -1335,7 +1337,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         random.randint(1, 3)
                                         + int(len(message) / random.randint(80, 100))
                                     )
-
+                    except NoneBotException as e:
+                        raise e
                     except Exception as e:
                         await chat.send(f"出错了，稍后试试（错误已反馈")
 
@@ -1351,7 +1354,6 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
                         )
 
-                    write_memory_data(event, datag)
                 else:
                     await chat.send("聊天没有启用")
                     return
@@ -1523,7 +1525,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                     random.randint(1, 3)
                                     + int(len(message) / random.randint(80, 100))
                                 )
-
+                    except NoneBotException as e:
+                        raise e
                     except Exception as e:
                         exc_type, exc_value, exc_traceback = sys.exc_info()
                         await chat.send(f"出错了稍后试试（错误已反馈")
@@ -1537,6 +1540,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
                         )
                     write_memory_data(event, data)
+        except NoneBotException as e:
+            write_memory_data(event, data)
+            raise e
         except Exception as e:
             await chat.send(f"出错了稍后试试吧（错误已反馈 ")
 
@@ -1550,5 +1556,3 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
             logger.error(
                 f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
             )
-    else:
-        pass
