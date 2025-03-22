@@ -54,8 +54,8 @@ random_reply = config["fake_people"]
 random_reply_rate = config["probability"]
 keyword = config["keyword"]
 admins = config["admins"]
-private_train = get_private_prompt()
-group_train = get_group_prompt()
+private_train = {}
+group_train = {}
 enable_matcher = config["matcher_function"]
 nature_chat_mode = config["nature_chat_style"]
 tokens_count_mode = config["tokens_count_mode"]
@@ -109,13 +109,15 @@ protocols_adapters = {"openai-builtin": openai_get_chat}
 
 def reload_from_memory():
     """从内存重载配置文件"""
-    global config_dir, main_config, custom_models_dir, private_memory, group_memory, config
+    global config_dir, main_config, custom_models_dir, private_memory, group_memory, config, group_train, private_train
     config_dir = get_config_dir()
     main_config = get_config_file_path()
     custom_models_dir = get_custom_models_dir()
     private_memory = get_private_memory_dir()
     group_memory = get_group_memory_dir()
     config = get_config()
+    group_train = get_group_prompt()
+    private_train = get_private_prompt()
 
 
 async def send_to_admin(msg: str) -> None:
