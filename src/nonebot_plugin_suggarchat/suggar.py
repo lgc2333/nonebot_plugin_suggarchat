@@ -61,7 +61,7 @@ nature_chat_mode = config["nature_chat_style"]
 tokens_count_mode = config["tokens_count_mode"]
 session_max_tokens = config["session_max_tokens"]
 enable_tokens_limit = config["enable_tokens_limit"]
-
+models: list = []
 debug = False
 custom_menu = []
 
@@ -109,7 +109,7 @@ protocols_adapters = {"openai-builtin": openai_get_chat}
 
 def reload_from_memory():
     """从内存重载配置文件"""
-    global config_dir, main_config, custom_models_dir, private_memory, group_memory, config, group_train, private_train, ifenable, random_reply, random_reply_rate, keyword, admins, enable_matcher, nature_chat_mode, tokens_count_mode, session_max_tokens, enable_tokens_limit
+    global config_dir, main_config, custom_models_dir, private_memory, group_memory, config, group_train, private_train, ifenable, random_reply, random_reply_rate, keyword, admins, enable_matcher, nature_chat_mode, tokens_count_mode, session_max_tokens, enable_tokens_limit, models
     config_dir = get_config_dir()
     main_config = get_config_file_path()
     custom_models_dir = get_custom_models_dir()
@@ -128,6 +128,7 @@ def reload_from_memory():
     tokens_count_mode = config["tokens_count_mode"]
     session_max_tokens = config["session_max_tokens"]
     enable_tokens_limit = config["enable_tokens_limit"]
+    models = get_models()
 
 
 async def send_to_admin(msg: str) -> None:
@@ -300,7 +301,7 @@ async def get_chat(messages: list) -> str:
     """
 
     # 声明全局变量，用于访问配置和判断是否启用
-    global config, ifenable, debug, protocols_adapters
+    global config, ifenable, debug, protocols_adapters, models
     # 从配置中获取最大token数量
     max_tokens = config["max_tokens"]
 
@@ -312,7 +313,6 @@ async def get_chat(messages: list) -> str:
         model = config["model"]
     else:
         # 如果是其他预设，从模型列表中查找匹配的设置
-        models = get_models()
         for i in models:
             if i["name"] == config["preset"]:
                 base_url = i["base_url"]
@@ -368,29 +368,54 @@ recall = on_notice()
 
 @sessions.handle()
 async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
+    """处理会话管理命令的入口函数
+
+    Args:
+        bot: 机器人实例，用于执行API调用
+        event: 消息事件对象，包含事件上下文信息
+        args: 用户输入的命令参数，通过Message类型接收
+
+    功能说明：
+        实现历史会话的查看、覆盖、删除、归档等管理操作
+        支持群组管理员和配置中的管理员用户操作
+    """
     global config
+    # 检查全局会话控制开关
     if not config["session_control"]:
         sessions.skip()
+
+    # 获取当前用户/群组的记忆数据
     data = get_memory_data(event)
+
+    # 权限验证流程（仅群组消息需要验证）
     if isinstance(event, GroupMessageEvent):
+        # 检查用户是否为普通成员且不在管理员列表
         if (
             await bot.get_group_member_info(
                 group_id=event.group_id, user_id=event.user_id
             )
         )["role"] == "member" and not event.user_id in config["admins"]:
             await sessions.finish("你没有操作历史会话的权限")
-        id = event.group_id
+        id = event.group_id  # 群组场景使用群号作为标识
     else:
-        id = event.user_id
+        id = event.user_id  # 私聊场景使用用户ID作为标识
+
+    # 解析输入参数
     arg_list = args.extract_plain_text().strip().split()
+
+    # 无参数时显示会话列表
     if args.extract_plain_text().strip() == "":
         message_content = "历史会话\n"
         if data.get("sessions") == None:
             await sessions.finish("没有历史会话")
+        # 构建会话列表消息
         for msg in data["sessions"]:
             message_content += f"编号：{data['sessions'].index(msg)} ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
         await sessions.finish(message_content)
+
+    # 处理带参数的命令
     if len(arg_list) >= 1:
+        # 覆盖当前会话命令
         if arg_list[0] == "set":
             try:
                 if len(arg_list) >= 2:
@@ -404,6 +429,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
                 raise e
             except:
                 await sessions.finish("覆盖记忆文件失败。")
+
+        # 删除会话命令
         elif arg_list[0] == "del":
             try:
                 if len(arg_list) >= 2:
@@ -415,9 +442,10 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
                 raise e
             except:
                 await sessions.finish("删除指定编号会话失败。")
+
+        # 归档当前会话命令
         elif arg_list[0] == "archive":
             try:
-
                 data["sessions"].append(data["memory"]["messages"])
                 data["memory"]["messages"] = []
                 data["timestamp"] = time.time()
@@ -427,6 +455,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
                 raise e
             except:
                 await sessions.finish("归档当前会话失败。")
+
+        # 清空会话命令
         elif arg_list[0] == "clear":
             try:
                 data["sessions"] = []
@@ -437,6 +467,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
                 raise e
             except:
                 await sessions.finish("清空当前会话失败。")
+
+        # 帮助命令
         elif arg_list[0] == "help":
             await sessions.finish(
                 "Sessions指令帮助：\nset：覆盖当前会话为指定编号的会话\ndel：删除指定编号的会话\narchive：归档当前会话\nclear：清空所有会话\n"
@@ -456,7 +488,7 @@ async def del_all_memory_handle(bot:Bot,event:MessageEvent):
 @set_preset.handle()
 async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     # 声明全局变量
-    global admins, config, ifenable
+    global admins, config, ifenable, models
 
     # 检查插件是否启用
     if not ifenable:
@@ -471,8 +503,6 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
 
     # 如果参数不为空
     if not arg == "":
-        # 获取模型列表
-        models = get_models()
 
         # 遍历模型列表
         for i in models:
@@ -515,7 +545,7 @@ async def _(bot: Bot, event: MessageEvent):
 
     """
     # 声明全局变量
-    global admins, config, ifenable
+    global admins, config, ifenable, models
 
     # 检查功能是否已启用，未启用则跳过处理
     if not ifenable:
@@ -524,9 +554,6 @@ async def _(bot: Bot, event: MessageEvent):
     # 检查用户是否为管理员，非管理员则发送消息并结束处理
     if not event.user_id in admins:
         await presets.finish("只有管理员才能查看模型预设。")
-
-    # 获取模型列表
-    models = get_models()
 
     # 构建消息字符串，包含当前模型预设信息
     msg = f"模型预设:\n当前：{'主配置文件' if config['preset'] == '__main__' else config['preset']}\n主配置文件：{config['model']}"
@@ -1365,6 +1392,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         logger.error(
                             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
                         )
+                    finally:
+                        write_memory_data(event, data)
 
                 else:
                     await chat.send("聊天没有启用")
@@ -1551,9 +1580,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         logger.error(
                             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
                         )
-                    write_memory_data(event, data)
+                    finally:
+                        write_memory_data(event, data)
         except NoneBotException as e:
-            write_memory_data(event, data)
             raise e
         except Exception as e:
             await chat.send(f"出错了稍后试试吧（错误已反馈 ")
