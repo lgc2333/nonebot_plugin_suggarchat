@@ -67,6 +67,7 @@ __default_config__ = {
     "session_max_tokens": 5000,  # 上下文长度限制，单位为tokens（可能有+-15%左右误差）
     "enable_tokens_limit": True,  # 是否启用上下文长度限制，如果启用，则上下文长度将不会超过session_max_tokens
     "model": "auto",
+    "llm_timeout": 60,  # LLM的请求超时时间，单位为秒。
     "say_after_self_msg_be_deleted": False,
     "group_added_msg": "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人，你可以向我提问任何问题，我会尽力回答你的问题，如果你需要帮助，你可以向我发送“帮助”",
     "send_msg_after_be_invited": False,

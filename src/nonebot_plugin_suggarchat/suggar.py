@@ -81,7 +81,9 @@ async def openai_get_chat(base_url, model, key, messages, max_tokens, config) ->
     logger.debug(f"Key：{key[:7]}...")
     logger.debug(f"API base_url：{base_url}")
 
-    client = openai.AsyncOpenAI(base_url=base_url, api_key=key)
+    client = openai.AsyncOpenAI(
+        base_url=base_url, api_key=key, timeout=config["llm_timeout"]
+    )
     # 创建聊天完成请求
     completion = await client.chat.completions.create(
         model=model, messages=messages, max_tokens=max_tokens, stream=config["stream"]
@@ -321,8 +323,8 @@ async def get_chat(messages: list) -> str:
                 break
         else:
             # 如果未找到匹配的预设，记录错误并重置预设为主配置文件
-            logger.error(f"Preset {config['preset']} not found")
-            logger.info("Found：Main config，Model：" + config["model"])
+            logger.error(f"预设 {config['preset']} 未找到，已重置为主配置文件")
+            logger.info("找到：模型：" + config["model"])
             config["preset"] = "__main__"
             key = config["open_ai_api_key"]
             model = config["model"]
@@ -332,7 +334,7 @@ async def get_chat(messages: list) -> str:
     if config["protocol"] == "__main__":
         return await openai_get_chat(base_url, model, key, messages, max_tokens, config)
     elif config["protocol"] not in protocols_adapters:
-        raise Exception(f"Protocol adapter {config['protocol']} not found!")
+        raise Exception(f"协议 {config['protocol']} 的适配器未找到!")
     else:
         return await protocols_adapters[config["protocol"]](
             base_url, model, key, messages, max_tokens, config
