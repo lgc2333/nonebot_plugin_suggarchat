@@ -93,9 +93,10 @@ async def openai_get_chat(base_url, model, key, messages, max_tokens, config) ->
         # 流式接收响应并构建最终的聊天文本
         async for chunk in completion:
             try:
-                response += chunk.choices[0].delta.content
-                if debug:
-                    logger.debug(chunk.choices[0].delta.content)
+                if chunk.choices[0].delta.content is not None:
+                    response += chunk.choices[0].delta.content
+                    if debug:
+                        logger.debug(chunk.choices[0].delta.content)
             except IndexError:
                 break
         # 记录生成的响应日志
