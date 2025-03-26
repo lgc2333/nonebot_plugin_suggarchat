@@ -80,7 +80,11 @@ async def openai_get_chat(base_url, model, key, messages, max_tokens, config) ->
     logger.debug(f"Preset：{config['preset']}")
     logger.debug(f"Key：{key[:7]}...")
     logger.debug(f"API base_url：{base_url}")
-
+    if (
+        str(config["openai_api_key"]).strip() == ""
+        or str(config["openai_api_key"]).strip() == ""
+    ):
+        raise RuntimeError("错误！OpenAI Url或Key为空！")
     client = openai.AsyncOpenAI(
         base_url=base_url, api_key=key, timeout=config["llm_timeout"]
     )
@@ -155,7 +159,7 @@ async def send_to_admin(msg: str) -> None:
     if config["admin_group"] == 0:
         try:
             # 如果未配置管理员群号但尝试发送消息，抛出警告
-            raise RuntimeWarning("Error!Admin group not set!")
+            raise RuntimeWarning("错误！管理员群组没有被设定！")
         except Exception:
             # 记录警告日志并捕获异常信息
             logger.warning(f'Admin 群组没有被设定，"{msg}"不会被推送！')
