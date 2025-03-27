@@ -73,7 +73,6 @@ custom_models_dir: Path
 private_memory: Path
 group_memory: Path
 
-
 async def openai_get_chat(base_url, model, key, messages, max_tokens, config) -> str:
     # 记录日志，开始获取对话
     logger.debug(f"Start to get response with model {model}")
@@ -81,8 +80,8 @@ async def openai_get_chat(base_url, model, key, messages, max_tokens, config) ->
     logger.debug(f"Key：{key[:7]}...")
     logger.debug(f"API base_url：{base_url}")
     if (
-        str(config["openai_api_key"]).strip() == ""
-        or str(config["openai_api_key"]).strip() == ""
+        str(config["open_ai_api_key"]).strip() == ""
+        or str(config["open_ai_api_key"]).strip() == ""
     ):
         raise RuntimeError("错误！OpenAI Url或Key为空！")
     client = openai.AsyncOpenAI(
