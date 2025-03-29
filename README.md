@@ -13,5 +13,5 @@
 
 </div>
 
-#开始
+# 开始
 [点我前往Wiki](https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/wiki)
