@@ -334,7 +334,7 @@ def get_group_prompt() -> dict:
     if convert_to_utf8(str(group_prompt)):
         with open(str(group_prompt), "r", encoding="utf-8") as f:
             prompt = f.read()
-        return {"role": "system", "content": prompt}
+        return {"role": "system", "content": __base_group_prompt__ + prompt}
     else:
         raise EncodingWarning(f"提示词文件{group_prompt}编码错误！")
 
@@ -356,7 +356,7 @@ def get_private_prompt() -> dict:
     if convert_to_utf8(str(private_prompt)):
         with open(str(private_prompt), "r", encoding="utf-8") as f:
             prompt = f.read()
-        return {"role": "system", "content": prompt}
+        return {"role": "system", "content": __base_private_prompt__ + prompt}
     else:
         raise EncodingWarning(f"{private_prompt}编码错误！")
 
