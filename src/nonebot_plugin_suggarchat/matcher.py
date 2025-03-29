@@ -28,7 +28,7 @@ class SuggarMatcher:
         self.handler_infos = handler_infos
         self.event_type = event_type
         self.event: SuggarEvent
-        self.processing_message: MessageSegment
+        self.processing_message: list
         self.priority = priority
 
     def handle(self, event_type=None, priority_value: int = 10, block=False):

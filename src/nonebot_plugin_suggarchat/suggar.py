@@ -1412,59 +1412,55 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                     data["sessions"] = []
                 if data.get("timestamp") is None:
                     data["timestamp"] = time.time()
-                if True:
-                    if config["session_control"]:
-                        for session in session_clear_user:
-                            if session["id"] == event.user_id:
-                                if not event.reply:
-                                    session_clear_user.remove(session)
-                                break
-                        if (time.time() - data["timestamp"]) >= (
-                            config["session_control_time"] * 60
-                        ):
-                            data["sessions"].append(
-                                {
-                                    "messages": data["memory"]["messages"],
-                                    "time": time.time(),
-                                }
-                            )
-                            while (
-                                len(data["sessions"])
-                                > config["session_control_history"]
-                            ):
-                                data["sessions"].remove(data["sessions"][0])
-                            data["memory"]["messages"] = []
-                            data["timestamp"] = time.time()
-                            write_memory_data(event, data)
-                            chated = await chat.send(
-                                f"如果想和我继续用刚刚的上下文聊天，快回复我✨\"继续\"✨吧！\n（超过{config['session_control_time']}分钟没理我我就会被系统抱走存档哦！）"
-                            )
-                            session_clear_user.append(
-                                {
-                                    "id": event.user_id,
-                                    "message_id": chated["message_id"],
-                                    "timestamp": time.time(),
-                                }
-                            )
-                            return
-                        elif event.reply:
-                            if session["id"] == event.user_id:
-                                if "继续" in event.reply.message.extract_plain_text():
-                                    try:
-                                        if time.time() - session["timestamp"] < 100:
-                                            await bot.delete_msg(
-                                                message_id=session["message_id"]
-                                            )
-                                    except:
-                                        pass
-                                    session_clear_user.remove(session)
-                                    data["memory"]["messages"] = data["sessions"][
-                                        len(data["sessions"]) - 1
-                                    ]
-                                    data["sessions"].remove(
-                                        data["sessions"][len(data["sessions"]) - 1]
-                                    )
-                                    await chat.send("让我们继续聊天吧～")
+                if config["session_control"]:
+                    for session in session_clear_user:
+                        if session["id"] == event.user_id:
+                            if not event.reply:
+                                session_clear_user.remove(session)
+                            break
+                    if (time.time() - data["timestamp"]) >= (
+                        config["session_control_time"] * 60
+                    ):
+                        data["sessions"].append(
+                            {
+                                "messages": data["memory"]["messages"],
+                                "time": time.time(),
+                            }
+                        )
+                        while len(data["sessions"]) > config["session_control_history"]:
+                            data["sessions"].remove(data["sessions"][0])
+                        data["memory"]["messages"] = []
+                        data["timestamp"] = time.time()
+                        write_memory_data(event, data)
+                        chated = await chat.send(
+                            f"如果想和我继续用刚刚的上下文聊天，快回复我✨\"继续\"✨吧！\n（超过{config['session_control_time']}分钟没理我我就会被系统抱走存档哦！）"
+                        )
+                        session_clear_user.append(
+                            {
+                                "id": event.user_id,
+                                "message_id": chated["message_id"],
+                                "timestamp": time.time(),
+                            }
+                        )
+                        return
+                    elif event.reply:
+                        if session["id"] == event.user_id:
+                            if "继续" in event.reply.message.extract_plain_text():
+                                try:
+                                    if time.time() - session["timestamp"] < 100:
+                                        await bot.delete_msg(
+                                            message_id=session["message_id"]
+                                        )
+                                except:
+                                    pass
+                                session_clear_user.remove(session)
+                                data["memory"]["messages"] = data["sessions"][
+                                    len(data["sessions"]) - 1
+                                ]
+                                data["sessions"].remove(
+                                    data["sessions"][len(data["sessions"]) - 1]
+                                )
+                                await chat.send("让我们继续聊天吧～")
                 if data["id"] == event.user_id:
                     content = ""
                     rl = ""
@@ -1546,7 +1542,6 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             response = chat_event.model_response
                         debug_response = response
                         if debug:
-                            if debug:
                                 await send_to_admin(
                                     f"{event.user_id}\n{type(event)}\n{event.message.extract_plain_text()}\nRESPONSE:\n{str(response)}\nraw:{debug_response}"
                                 )

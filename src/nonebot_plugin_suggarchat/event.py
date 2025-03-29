@@ -6,6 +6,7 @@ from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     GroupMessageEvent,
     PokeNotifyEvent,
+    Event,
 )
 
 
@@ -105,9 +106,9 @@ class SuggarEvent(BasicEvent):
     def __init__(
         self,
         model_response: list,
-        nbevent: BaseEvent,
+        nbevent: Event,
         user_id: int,
-        send_message: MessageSegment,
+        send_message: list,
     ):
         """
         初始化SuggarEvent对象
@@ -172,7 +173,7 @@ class SuggarEvent(BasicEvent):
         """
         return self._event_type
 
-    def get_nonebot_event(self) -> MessageEvent:
+    def get_nonebot_event(self) -> Event:
         """
         获取NoneBot事件对象
 
@@ -237,14 +238,6 @@ class SuggarEvent(BasicEvent):
         :return: 模型响应文本
         """
         return self._modelResponse[0]
-
-    def get_nonebot_event(self) -> BaseEvent:
-        """
-        获取NoneBot事件对象
-
-        :return: NoneBot事件对象
-        """
-        return self._nbevent
 
     def get_user_id(self) -> int:
         """
@@ -314,7 +307,6 @@ class ChatEvent(SuggarEvent):
         """
         return EventType().chat()
 
-    @override
     @property
     def event_type(self) -> str:
         """
@@ -370,7 +362,6 @@ class PokeEvent(SuggarEvent):
         # 重写__str__方法，返回PokeEvent的字符串表示
         return f"SUGGARPOKEEVENT({self._event_type},{self._nbevent},{self._modelResponse},{self._user_id},{self._send_message})"
 
-    @override
     @property
     def event_type(self) -> str:
         # event_type属性，返回戳一戳事件类型
@@ -416,7 +407,6 @@ class BeforePokeEvent(PokeEvent):
         )
         self._event_type = EventType().before_poke()
 
-    @override
     @property
     def event_type(self) -> str:
         # event_type属性，返回戳一戳事件类型
@@ -455,7 +445,6 @@ class BeforeChatEvent(ChatEvent):
         )
         self._event_type = EventType().before_chat()
 
-    @override
     @property
     def event_type(self) -> str:
         # event_type属性，返回聊天事件类型
@@ -476,5 +465,5 @@ class FinalObject:
         self.__message = send_message
 
     @property
-    def message(self) -> MessageSegment:
+    def message(self) -> list:
         return self.__message

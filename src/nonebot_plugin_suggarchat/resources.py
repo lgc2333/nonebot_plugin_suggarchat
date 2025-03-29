@@ -267,7 +267,7 @@ def save_config(conf: dict):
         json.dump(conf, f, ensure_ascii=False, indent=4)
 
 
-def replace_env_vars(data):
+def replace_env_vars(data: dict | list | str) -> dict | list | str:
     """递归替换环境变量占位符，但不修改原始数据"""
     data_copy = copy.deepcopy(data)  # 创建原始数据的深拷贝[4,5](@ref)
     if isinstance(data_copy, dict):
@@ -312,7 +312,7 @@ def get_config(no_base_prompt: bool = False) -> dict:
             json.dump(__default_config__, f, ensure_ascii=False, indent=4)
     convert_to_utf8(main_config)
     with open(str(main_config), "r", encoding="utf-8") as f:
-        conf = json.load(f)
+        conf: dict = json.load(f)
     if not no_base_prompt:
         conf = replace_env_vars(conf)
     conf = update_dict(__default_config__, conf)
