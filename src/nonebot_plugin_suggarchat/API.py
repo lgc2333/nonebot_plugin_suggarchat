@@ -1,8 +1,9 @@
 # 施工中。。。。。。敬请期待
 from typing_extensions import Callable
+import json
+from nonebot_plugin_suggarchat.conf import get_custom_models_dir
 from .suggar import send_to_admin, get_chat, reload_from_memory
 from . import suggar
-import threading
 from nonebot import logger
 from .resources import get_config, save_config, get_models
 from . import resources
@@ -17,16 +18,56 @@ class Config:
         """
         pass
 
-    def get_config(self, value: str | None):
+    def get_config(self, value: str | None = None):
+        """
+        获取配置。
+
+        参数:
+
+        :param value: (str|None): 配置键（不填则返回所有配置）。
+        """
         if value == None:
             return get_config()
         else:
             return (get_config())[value]
 
+    def set_config(self, key: str, value: str):
+        """
+        设置配置。
+
+        :param key[str]: 配置键。
+        :param value[str]: 配置值。
+        """
+        config = get_config()
+        config[key] = value
+        save_config(config)
+
+    def add_model(self, file_name: str, data: dict):
+        """
+        添加模型。
+        """
+        path = get_custom_models_dir()
+        file = path / f"{file_name}.json"
+        if file.exists():
+            raise FileExistsError("模型文件已存在")
+        with open(file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
     def get_models(self):
+        """
+        获取模型列表。
+
+        返回:
+        - list: 模型列表
+        """
         return get_models()
 
     def reg_config(self, key: str):
+        """
+        注册一个配置项。
+
+        :param key:
+        """
         if not key in resources.__default_config__:
             resources.__default_config__[key] = None
             get_config()
@@ -35,6 +76,11 @@ class Config:
             raise Exception(f"Config key {key} already exists!")
 
     def reg_model_config(self, key: str):
+        """
+        注册配置项到模型配置
+
+        :param key: 配置项名
+        """
         if not key in resources.__default_model_conf__:
             resources.__default_model_conf__[key] = None
             get_models()
@@ -187,8 +233,19 @@ class Chat:
         self.config = get_config()
 
     async def get_msg(self, prompt: str, message: list):
+        """
+        获取LLM响应
+
+        :param prompt[str]: 提示词
+        :param message[list]: 消息列表
+        """
         message.insert(0, {"role": "assistant", "content": prompt})
         return await get_chat(messages=message)
 
     async def get_msg_on_list(self, message: list):
+        """
+        获取LLM响应
+
+        :param message[list]: 消息列表
+        """
         return await get_chat(messages=message)
