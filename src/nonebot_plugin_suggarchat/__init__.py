@@ -1,7 +1,6 @@
 from nonebot.plugin import PluginMetadata
 from nonebot.plugin import require
 require("nonebot_plugin_localstore")
-require("nonebot_plugin_uninfo")
 from .conf import *
 from .resources import *
 from .suggar import *

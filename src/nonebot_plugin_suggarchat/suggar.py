@@ -1,5 +1,4 @@
 from nonebot import on_command, on_notice, on_message, get_driver
-from nonebot_plugin_uninfo import Uninfo
 from nonebot.adapters import Event
 import nonebot.adapters
 from nonebot.rule import to_me
@@ -31,6 +30,7 @@ from nonebot.adapters.onebot.v11 import (
     MessageSegment,
     GroupMessageEvent,
     GroupIncreaseNoticeEvent,
+    PrivateMessageEvent,
     Bot,
     PokeNotifyEvent,
     GroupRecallNoticeEvent,
@@ -171,13 +171,13 @@ async def send_to_admin(msg: str) -> None:
 
 
 # fakepeople rule
-async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
+async def rule(event: MessageEvent, bot: Bot) -> bool:
     """
     根据配置和消息事件判断是否触发回复的规则。
 
     参数:
     - event: MessageEvent 类型的事件，包含消息事件的详细信息。
-    - session: Uninfo 类型的会话信息，可能包含与当前会话相关的上下文或配置信息。
+
     - bot: Bot 类型的机器人实例，用于调用机器人相关方法。
 
     返回值:
@@ -208,7 +208,7 @@ async def rule(event: MessageEvent, session: Uninfo, bot: Bot) -> bool:
         return False
     else:
         # 私聊消息不进行随机回复
-        if event.is_tome() and not session.group:
+        if event.is_tome() and isinstance(event, PrivateMessageEvent):
             """私聊过滤"""
             return False
 

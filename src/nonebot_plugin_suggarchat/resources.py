@@ -227,7 +227,7 @@ def update_dict(default: dict, to_update: dict) -> dict:
     return to_update
 
 
-async def synthesize_message(message: Message, bot: Bot = None) -> str:
+async def synthesize_message(message: Message, bot: Bot | None = None) -> str:
     content = ""
     for segment in message:
         if segment.type == "text":
@@ -237,7 +237,7 @@ async def synthesize_message(message: Message, bot: Bot = None) -> str:
             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
             if bot is None:
-                bot = nonebot.get_bot()
+                bot: Bot = nonebot.get_bot()
             forward = await bot.get_forward_msg(id=segment.data["id"])
             logger.debug(forward)
             content += (
