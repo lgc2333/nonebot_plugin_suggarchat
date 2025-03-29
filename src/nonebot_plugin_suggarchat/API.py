@@ -1,4 +1,5 @@
 # 施工中。。。。。。敬请期待
+from typing_extensions import Callable
 from .suggar import send_to_admin, get_chat, reload_from_memory
 from . import suggar
 import threading
@@ -51,10 +52,12 @@ class Adapter:
         """
         pass
 
-    def register_adapter(self, func: callable, protocol: str):
+    def register_adapter(self, func: Callable, protocol: str):
         """
         注册一个适配器。
         """
+        if not callable(func):
+            raise TypeError("适配器必须是可调用的")
         if protocol in suggar.protocols_adapters:
             raise ValueError("协议适配器已存在")
         suggar.protocols_adapters[protocol] = func

@@ -100,7 +100,7 @@ class SuggarMatcher:
         """
         raise PassException()
 
-    async def trigger_event(self, event: SuggarEvent, *args, **kwargs) -> SuggarEvent:
+    async def trigger_event(self, event: SuggarEvent, *args, **kwargs):
         """
         触发特定类型的事件，并调用该类型的所有注册事件处理程序。
 
@@ -202,4 +202,3 @@ class SuggarMatcher:
                     break
         else:
             logger.info(f"没有为这个事件: {event_type} 注册的处理器，跳过处理。")
-        return FinalObject(self.processing_message)
