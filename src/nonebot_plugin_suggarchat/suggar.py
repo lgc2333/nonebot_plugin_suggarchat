@@ -88,9 +88,20 @@ async def openai_get_chat(base_url, model, key, messages, max_tokens, config) ->
         base_url=base_url, api_key=key, timeout=config["llm_timeout"]
     )
     # 创建聊天完成请求
-    completion = await client.chat.completions.create(
-        model=model, messages=messages, max_tokens=max_tokens, stream=config["stream"]
-    )
+    for i in range(3):
+        try:
+            completion = await client.chat.completions.create(
+                model=model,
+                messages=messages,
+                max_tokens=max_tokens,
+                stream=config["stream"],
+            )
+            break
+        except Exception as e:
+            logger.error(f"发生了错误: {e}")
+            await send_to_admin(f"在获取对话时发生了错误: {e}")
+            logger.info(f"尝试第{i+1}次重试")
+            continue
     response = ""
     if config["stream"]:
         # 流式接收响应并构建最终的聊天文本
