@@ -524,7 +524,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
                 break
         else:
             # 如果未找到预设，提示用户
-            set_preset.finish("未找到预设，请输入/presets查看预设列表。")
+            await set_preset.finish("未找到预设，请输入/presets查看预设列表。")
     else:
         # 如果参数为空，重置预设为默认
         config["preset"] = "__main__"
@@ -805,7 +805,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                     poke_event = PokeEvent(
                         nbevent=event,
                         send_message=send_messages,
-                        model_response=None,
+                        model_response=[""],
                         user_id=event.user_id,
                     )
                     await _matcher.trigger_event(poke_event, _matcher)
@@ -869,7 +869,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                 poke_event = PokeEvent(
                     nbevent=event,
                     send_message=send_messages,
-                    model_response=None,
+                    model_response=[""],
                     user_id=event.user_id,
                 )
                 await _matcher.trigger_event(poke_event, _matcher)
@@ -1329,7 +1329,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             chat_event = ChatEvent(
                                 nbevent=event,
                                 send_message=send_messages,
-                                model_response=None,
+                                model_response=[""],
                                 user_id=event.user_id,
                             )
                             await _matcher.trigger_event(chat_event, _matcher)
@@ -1528,7 +1528,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             chat_event = ChatEvent(
                                 nbevent=event,
                                 send_message=send_messages,
-                                model_response=None,
+                                model_response=[""],
                                 user_id=event.user_id,
                             )
                             await _matcher.trigger_event(chat_event, _matcher)

@@ -238,7 +238,7 @@ async def synthesize_message(message: Message, bot: Bot = None) -> str:
         elif segment.type == "forward":
             if bot is None:
                 bot = nonebot.get_bot()
-            forward = await bot.get_forward_msg(message_id=segment.data["id"])
+            forward = await bot.get_forward_msg(id=segment.data["id"])
             logger.debug(forward)
             content += (
                 " \\（合并转发\n" + await synthesize_forward_message(forward) + "）\\\n"
