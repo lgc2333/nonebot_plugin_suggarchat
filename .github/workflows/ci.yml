@@ -6,7 +6,7 @@ on:
   pull_request: {}              # 监听 PR
 
 jobs:
-  test-and-publish:
+  test:
     runs-on: ubuntu-latest
     steps:
       # 检出代码
@@ -40,7 +40,7 @@ jobs:
       # 运行测试
       - name: Run tests
         run: |
-          pytest -v --cov=your_package tests/
+          pytest -v --cov=nonebot_plugin_suggarchat tests/
 
       # 构建包
       - name: Build package
