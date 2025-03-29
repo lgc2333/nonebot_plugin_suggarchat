@@ -13,6 +13,8 @@ dependencies = [
     "chardet>=5.1.0",
     "typing-extensions>=4.6.0",
     "pytz>=2025.1",
+    "tomli>=2.0.0",
+    "tomli-w>=1.0.0",
 ]
 requires-python = ">=3.9, <4.0"
 readme = "README.md"
