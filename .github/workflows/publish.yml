@@ -1,11 +1,8 @@
-name: Publish to PyPI and GitHub Releases
+name: Publish to PyPI on Release
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - pyproject.toml
+  release:
+    types: [created]  # 当有新Release创建时触发
 
 jobs:
   release:
@@ -32,10 +29,3 @@ jobs:
         run: |
           uv build
           uv publish --token ${{ secrets.PYPI_API_TOKEN }}
-
-      - name: Release
-        if: ${{ steps.versioncheck.outputs.local_version_is_higher == 'true' }}
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.versioncheck.outputs.local_version }}
-          name: ${{ steps.versioncheck.outputs.local_version }}
