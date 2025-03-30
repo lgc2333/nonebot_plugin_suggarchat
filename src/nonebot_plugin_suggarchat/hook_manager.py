@@ -16,8 +16,8 @@ async def run_hooks(bot: Bot):
     for hook in hook_registry:
         if callable(hook):
             if asyncio.iscoroutinefunction(hook):
-                await hook(bot)
+                await hook()
             else:
-                hook(bot)
+                hook()
         else:
             logger.warning(f"钩子 {hook} 不是可调用的")
