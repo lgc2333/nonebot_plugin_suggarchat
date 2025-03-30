@@ -115,14 +115,6 @@ class Config(BaseModel, extra="allow"):
             f"'{self.__class__.__name__}' object has no attribute '{item}'"
         )
 
-    def __setattr__(self, key, value):
-        if key in self.__dict__:
-            self.__dict__[key] = value
-        else:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{key}'"
-            )
-
 
 @dataclass
 class ConfigManager:
