@@ -2,14 +2,11 @@ from nonebot import get_bot
 from nonebot.plugin import require
 
 require("nonebot_plugin_suggarchat")
-from nonebot_plugin_suggarchat.on_event import (
-    on_chat,
-    on_poke,
-    on_before_chat,
-    on_before_poke,
-)
-from nonebot_plugin_suggarchat.event import BeforeChatEvent, BeforePokeEvent
+from nonebot_plugin_suggarchat.event import BeforeChatEvent
 from nonebot_plugin_suggarchat.matcher import SuggarMatcher
+from nonebot_plugin_suggarchat.on_event import (
+    on_before_chat,
+)
 
 
 @on_before_chat().handle()

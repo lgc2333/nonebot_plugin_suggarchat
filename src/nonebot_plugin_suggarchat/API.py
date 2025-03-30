@@ -4,8 +4,27 @@ from collections.abc import Callable
 from nonebot import logger
 
 from . import suggar
-from .config import Config, config_manager
+from .config import Config as Conf
+from .config import ConfigManager, config_manager
 from .suggar import get_chat, send_to_admin
+
+
+class Config(ConfigManager):
+    def __init__(self):
+        """
+        初始化 Config 类的新实例。
+        """
+        pass
+
+    def reg_config(self, key: str):
+        """
+        注册配置项
+
+        :param key: 配置项的名称
+
+        :raises KeyError: 如果配置项已存在，则抛出异常
+        """
+        return super().register_config(key)
 
 
 class Adapter:
@@ -58,7 +77,8 @@ class Admin:
     """
     管理员管理类，负责处理与管理员相关的操作，如发送消息、错误处理和管理员权限管理。
     """
-    config: Config
+
+    config: Conf
 
     def __init__(self):
         """
@@ -141,7 +161,8 @@ class Chat:
     """
     Chat 类用于处理与LLM相关操作，如获取消息。
     """
-    config: Config
+
+    config: Conf
 
     def __init__(self):
         """
