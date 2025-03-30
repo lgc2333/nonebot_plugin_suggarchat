@@ -1,9 +1,8 @@
 from nonebot.plugin import PluginMetadata, require
 
-from . import API, config, connection, event, resources, suggar
-
 require("nonebot_plugin_localstore")
 
+from . import API, config, connection, event, resources, suggar
 
 __all__ = [
     "API",
