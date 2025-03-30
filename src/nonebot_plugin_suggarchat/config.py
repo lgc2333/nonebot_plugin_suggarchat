@@ -108,6 +108,21 @@ class Config(BaseModel, extra="allow"):
         with path.open("wb") as f:
             tomli_w.dump(self.model_dump(), f)
 
+    def __getattr__(self, item):
+        if item in self.__dict__:
+            return self.__dict__[item]
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{item}'"
+        )
+
+    def __setattr__(self, key, value):
+        if key in self.__dict__:
+            self.__dict__[key] = value
+        else:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{key}'"
+            )
+
 
 @dataclass
 class ConfigManager:
