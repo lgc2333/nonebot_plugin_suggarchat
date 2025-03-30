@@ -90,17 +90,15 @@ class Config(BaseModel, extra="allow"):
     @classmethod
     def load_from_toml(cls, path: Path) -> "Config":
         """从 TOML 文件加载配置"""
-        if path.exists():
-            with path.open("rb") as f:
-                data = tomli.load(f)
-            return cls(**data)
-        return cls()
+        with path.open("rb") as f:
+            data: dict = tomli.load(f)
+        return cls(**data)
 
     @classmethod
     def load_from_json(cls, path: Path) -> "Config":
         """从 JSON 文件加载配置"""
         with path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+            data: dict = json.load(f)
         return cls(**data)
 
     def save_to_toml(self, path: Path):
@@ -111,17 +109,11 @@ class Config(BaseModel, extra="allow"):
     def __getattr__(self, item):
         if item in self.__dict__:
             return self.__dict__[item]
+        if self.__pydantic_extra__ and item in self.__pydantic_extra__:
+            return self.__pydantic_extra__[item]
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{item}'"
         )
-
-    def __setattr__(self, key, value):
-        if key in self.__dict__:
-            self.__dict__[key] = value
-        else:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{key}'"
-            )
 
 
 @dataclass
@@ -211,9 +203,7 @@ class ConfigManager:
             return self.models
         self.models.clear()
         for file in self.custom_models_dir.glob("*.json"):
-            with open(file, encoding="utf-8") as f:
-                model: dict = json.load(f)
-            self.models.append(ModelPreset(**model))
+            self.models.append(ModelPreset.load(file))
         return self.models
 
     def reload_config(self):
@@ -247,7 +237,11 @@ class ConfigManager:
         :param key: 配置项的名称
 
         """
-        self._register_config_key(key, "配置项 ", default_value=default_value)
+        if default_value is None:
+            default_value = "null"
+        if not hasattr(self.config, key):
+            setattr(self.config, key, default_value)
+        self.save_config()
 
     def reg_model_config(self, key: str, default_value=None):
         """
@@ -256,13 +250,12 @@ class ConfigManager:
         :param key: 配置项的名称
 
         """
-        self._register_config_key(key, "模型配置项 ", default_value=default_value)
-
-    def _register_config_key(self, key, arg1, default_value=None):
         if default_value is None:
             default_value = "null"
-        setattr(self.config, key, default_value)
-        self.save_config()
+        for model in self.models:
+            if not hasattr(model, key):
+                setattr(model, key, default_value)
+            model.save(self.custom_models_dir / f"{model.model}.json")
 
 
 config_manager = ConfigManager()
