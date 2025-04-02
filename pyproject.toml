@@ -29,9 +29,9 @@ build-backend = "pdm.backend"
 distribution = true
 
 [project.urls]
-"Homepage" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat"
-"Source" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat"
-"Issue Tracker" = "https://github.com/JohnRichard4096/nonebot_plugin_suggarchat/issues"
+"Homepage" = "https://github.com/LiteSuggarDEV/nonebot_plugin_suggarchat"
+"Source" = "https://github.com/LiteSuggarDEV/nonebot_plugin_suggarchat"
+"Issue Tracker" = "https://github.com/LiteSuggarDEV/nonebot_plugin_suggarchat/issues"
 
 
 [tool.ruff]
