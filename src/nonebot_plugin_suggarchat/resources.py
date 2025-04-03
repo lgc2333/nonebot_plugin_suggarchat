@@ -67,10 +67,9 @@ def hybrid_token_count(text: str, mode: str = "word") -> int:
 
 def split_message_into_chats(text):
     sentence_delimiters = re.compile(
-        r'(?<=[a-zA-Z])\.|([。！？!?~]+)[”"’\']*',  # 关键修改：仅匹配字母后的英文句号
+        r'([。！？!?~]+)[”"’\']*',  # 仅匹配中文标点符号
         re.UNICODE,
     )
-
     sentences = []
     start = 0
     for match in sentence_delimiters.finditer(text):
@@ -156,12 +155,13 @@ def get_memory_data(event: Event) -> dict:
 
     # 根据事件类型判断是私聊还是群聊
     if (
-        (not isinstance(event, PrivateMessageEvent)
+        not isinstance(event, PrivateMessageEvent)
         and not isinstance(event, GroupMessageEvent)
         and isinstance(event, PokeNotifyEvent)
-        and event.group_id)
-        or (not isinstance(event, PrivateMessageEvent)
-        and isinstance(event, GroupMessageEvent))
+        and event.group_id
+    ) or (
+        not isinstance(event, PrivateMessageEvent)
+        and isinstance(event, GroupMessageEvent)
     ):
         group_id = event.group_id
         conf_path = Path(group_memory / f"{group_id}.json")
@@ -179,10 +179,9 @@ def get_memory_data(event: Event) -> dict:
                     indent=0,
                 )
     elif (
-        (not isinstance(event, PrivateMessageEvent)
-        and isinstance(event, PokeNotifyEvent))
-        or isinstance(event, PrivateMessageEvent)
-    ):
+        not isinstance(event, PrivateMessageEvent)
+        and isinstance(event, PokeNotifyEvent)
+    ) or isinstance(event, PrivateMessageEvent):
         user_id = event.user_id
         conf_path = Path(private_memory / f"{user_id}.json")
         if not conf_path.exists():
