@@ -393,7 +393,7 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
             await sessions.finish("没有历史会话")
         # 构建会话列表消息
         for index, msg in enumerate(data["sessions"]):
-            message_content += f"编号：{index}) ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
+            message_content += f"编号：{index}) ：{msg[0]['content'][9:]}... \n"
         await sessions.finish(message_content)
 
     # 处理带参数的命令
