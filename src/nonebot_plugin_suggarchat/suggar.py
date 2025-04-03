@@ -1117,22 +1117,28 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             )
                             return
                         elif event.reply:
-                            if session["id"] == event.group_id and "继续" in event.reply.message.extract_plain_text():
-                                try:
-                                    if time.time() - session["timestamp"] < 100:
-                                        await bot.delete_msg(
-                                            message_id=session["message_id"]
-                                        )
-                                except Exception:
-                                    pass
-                                session_clear_group.remove(session)
-                                data["memory"]["messages"] = data["sessions"][
-                                    len(data["sessions"]) - 1
-                                ]
-                                data["sessions"].remove(
-                                    data["sessions"][len(data["sessions"]) - 1]
-                                )
-                                await chat.send("让我们继续聊天吧～")
+                            for session in session_clear_group:
+                                if (
+                                    session["id"] == event.group_id
+                                    and "继续"
+                                    in event.reply.message.extract_plain_text()
+                                ):
+                                    try:
+                                        if time.time() - session["timestamp"] < 100:
+                                            await bot.delete_msg(
+                                                message_id=session["message_id"]
+                                            )
+                                    except Exception:
+                                        pass
+                                    session_clear_group.remove(session)
+                                    data["memory"]["messages"] = data["sessions"][
+                                        len(data["sessions"]) - 1
+                                    ]
+                                    data["sessions"].remove(
+                                        data["sessions"][len(data["sessions"]) - 1]
+                                    )
+                                    await chat.send("让我们继续聊天吧～")
+                                    break
 
                     group_id = event.group_id
                     user_id = event.user_id
