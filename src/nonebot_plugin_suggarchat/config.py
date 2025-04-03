@@ -8,6 +8,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
+__KERNEL_VERSION__: str = "V2.0.4.post1-Public"
 __KERNEL_VERSION__: str = "V2.0.3.1.post2-Public"
 
 # 配置目录
