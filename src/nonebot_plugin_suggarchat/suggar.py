@@ -392,8 +392,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
         if data.get("sessions") is None:
             await sessions.finish("没有历史会话")
         # 构建会话列表消息
-        for msg in data["sessions"]:
-            message_content += f"编号：{data['sessions'].index(msg)} ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
+        for index, msg in enumerate(data["sessions"]):
+            message_content += f"编号：{index}) ：{msg['messages'][0][9:]}... 时间：{format_datetime_timestamp(msg['time'])}\n"
         await sessions.finish(message_content)
 
     # 处理带参数的命令
@@ -429,11 +429,14 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
         # 归档当前会话命令
         elif arg_list[0] == "archive":
             try:
-                data["sessions"].append(data["memory"]["messages"])
-                data["memory"]["messages"] = []
-                data["timestamp"] = time.time()
-                write_memory_data(event, data)
-                await sessions.finish("当前会话已归档。")
+                if data["memory"]["messages"] != []:
+                    data["sessions"].append(data["memory"]["messages"])
+                    data["memory"]["messages"] = []
+                    data["timestamp"] = time.time()
+                    write_memory_data(event, data)
+                    await sessions.finish("当前会话已归档。")
+                else:
+                    await sessions.finish("当前对话为空！")
             except NoneBotException as e:
                 raise e
             except Exception:
@@ -1087,7 +1090,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 break
                         if (time.time() - data["timestamp"]) >= (
                             config_manager.config.session_control_time * 60
-                        ):
+                        ) and data["memory"]["messages"] != []:
                             data["sessions"].append(
                                 {
                                     "messages": data["memory"]["messages"],
