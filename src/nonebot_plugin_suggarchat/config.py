@@ -1,4 +1,4 @@
-import json
+import ujson as json
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,6 +33,15 @@ class ModelPreset(BaseModel):
     def save(self, path: Path):
         with path.open("w", encoding="utf-8") as f:
             json.dump(self.model_dump(), f, indent=4, ensure_ascii=False)
+
+    def __getattr__(self, item):
+        if item in self.__dict__:
+            return self.__dict__[item]
+        if self.__pydantic_extra__ and item in self.__pydantic_extra__:
+            return self.__pydantic_extra__[item]
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{item}'"
+        )
 
 
 class Config(BaseModel, extra="allow"):

@@ -1,4 +1,3 @@
-import json
 import re
 from datetime import datetime
 from pathlib import Path
@@ -6,6 +5,7 @@ from pathlib import Path
 import chardet
 import jieba
 import pytz
+import ujson as json
 from nonebot.adapters import Bot
 from nonebot.adapters.onebot.v11 import (
     Event,
