@@ -8,7 +8,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-__KERNEL_VERSION__: str = "V2.0.3.post.2-Public"
+__KERNEL_VERSION__: str = "V2.0.3.1.post2-Public"
 
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
