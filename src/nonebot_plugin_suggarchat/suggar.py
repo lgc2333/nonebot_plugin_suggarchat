@@ -104,7 +104,6 @@ async def openai_get_chat(
     return response or ""
 
 
-
 protocols_adapters: dict[
     str, Callable[[str, str, str, list, int, Config, Bot], Coroutine[Any, Any, str]]
 ] = {"openai-builtin": openai_get_chat}
@@ -286,7 +285,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
         model = config_manager.config.model
     else:
         # 如果是其他预设，从模型列表中查找匹配的设置
-        for i in config_manager.models:
+        for i in config_manager.get_models():
             if i.name == config_manager.config.preset:
                 base_url = i.base_url
                 key = i.api_key
@@ -376,11 +375,15 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
     data = get_memory_data(event)
 
     # 权限验证流程（仅群组消息需要验证）
-    if isinstance(event, GroupMessageEvent) and ((
-                await bot.get_group_member_info(
-                    group_id=event.group_id, user_id=event.user_id
-                )
-            )["role"] == "member" and event.user_id not in config_manager.config.admins):
+    if isinstance(event, GroupMessageEvent) and (
+        (
+            await bot.get_group_member_info(
+                group_id=event.group_id, user_id=event.user_id
+            )
+        )["role"]
+        == "member"
+        and event.user_id not in config_manager.config.admins
+    ):
         await sessions.finish("你没有操作历史会话的权限")
     # 解析输入参数
     arg_list = args.extract_plain_text().strip().split()
@@ -485,7 +488,7 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
     # 如果参数不为空
     if arg != "":
         # 遍历模型列表
-        for i in config_manager.models:
+        for i in config_manager.get_models():
             # 如果模型名称与参数匹配
             if i.name == arg:
                 # 设置预设并保存配置
@@ -502,7 +505,9 @@ async def _(bot: Bot, event: MessageEvent, args: Message = CommandArg()):
         config_manager.config.preset = "__main__"
         config_manager.save_config()
         # 回复重置成功
-        await set_preset.finish(f"已重置预设为：主配置文件，模型：{config_manager.config.model}")
+        await set_preset.finish(
+            f"已重置预设为：主配置文件，模型：{config_manager.config.model}"
+        )
 
 
 @presets.handle()
@@ -535,7 +540,7 @@ async def _(bot: Bot, event: MessageEvent):
     msg = f"模型预设:\n当前：{'主配置文件' if config_manager.config.preset == '__main__' else config_manager.config.preset}\n主配置文件：{config_manager.config.model}"
 
     # 遍历模型列表，添加每个预设的名称和模型到消息字符串
-    for i in config_manager.models:
+    for i in config_manager.get_models():
         msg += f"\n预设名称：{i.name}，模型：{i.model}"
 
     # 发送消息给用户并结束处理
@@ -862,8 +867,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
                 for message in response_list:
                     await poke.send(message)
                     await asyncio.sleep(
-                            random.randint(1, 3)
-                            + len(message) // random.randint(80, 100)
+                        random.randint(1, 3) + len(message) // random.randint(80, 100)
                     )
 
     except Exception:
@@ -1373,7 +1377,10 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         )
                         return
                     elif event.reply:
-                        if session["id"] == event.user_id and "继续" in event.reply.message.extract_plain_text():
+                        if (
+                            session["id"] == event.user_id
+                            and "继续" in event.reply.message.extract_plain_text()
+                        ):
                             try:
                                 if time.time() - session["timestamp"] < 100:
                                     await bot.delete_msg(

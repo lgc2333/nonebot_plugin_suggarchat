@@ -139,7 +139,7 @@ class ConfigManager:
     private_train: dict = field(default_factory=dict)
     group_train: dict = field(default_factory=dict)
     config: Config = field(default_factory=Config)
-    models: list[ModelPreset] = field(default_factory=list)
+    models: list[tuple[ModelPreset, str]] = field(default_factory=list)
 
     def load(self, bot_id: str):
         """初始化配置目录"""
@@ -209,11 +209,11 @@ class ConfigManager:
     def get_models(self, cache: bool = True) -> list[ModelPreset]:
         """获取模型列表"""
         if cache and self.models:
-            return self.models
+            return [model[0] for model in self.models]
         self.models.clear()
         for file in self.custom_models_dir.glob("*.json"):
-            self.models.append(ModelPreset.load(file))
-        return self.models
+            self.models.append((ModelPreset.load(file), file.name))
+        return [model[0] for model in self.models]
 
     def reload_config(self):
         """重加载配置"""
@@ -262,9 +262,9 @@ class ConfigManager:
         if default_value is None:
             default_value = "null"
         for model in self.models:
-            if not hasattr(model, key):
-                setattr(model, key, default_value)
-            model.save(self.custom_models_dir / f"{model.model}.json")
+            if not hasattr(model[0], key):
+                setattr(model[0], key, default_value)
+            model[0].save(self.custom_models_dir / model[1])
 
 
 config_manager = ConfigManager()

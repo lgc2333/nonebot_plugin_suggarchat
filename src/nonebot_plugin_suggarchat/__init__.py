@@ -1,6 +1,4 @@
-from nonebot.plugin import PluginMetadata, require
-
-require("nonebot_plugin_localstore")
+from nonebot.plugin import PluginMetadata
 
 from . import API, config, connection, event, resources, suggar
 
