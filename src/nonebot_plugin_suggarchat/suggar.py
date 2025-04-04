@@ -308,11 +308,11 @@ async def get_chat(
             protocol = config_manager.config.protocol
             # 保存更新后的配置
             config_manager.save_config()
-    if config_manager.config.protocol == "__main__":
+    if protocol == "__main__":
         func = openai_get_chat
 
     elif protocol not in protocols_adapters:
-        raise Exception(f"协议 {config_manager.config.protocol} 的适配器未找到!")
+        raise Exception(f"协议 {protocol} 的适配器未找到!")
     else:
         func = protocols_adapters[protocol]
     # 记录日志，开始获取对话
