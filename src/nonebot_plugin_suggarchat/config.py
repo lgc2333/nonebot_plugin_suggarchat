@@ -34,7 +34,7 @@ class ModelPreset(BaseModel, extra="allow"):
         with path.open("w", encoding="utf-8") as f:
             json.dump(self.model_dump(), f, indent=4, ensure_ascii=False)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> str:
         if item in self.__dict__:
             return self.__dict__[item]
         if self.__pydantic_extra__ and item in self.__pydantic_extra__:
@@ -115,7 +115,7 @@ class Config(BaseModel, extra="allow"):
         with path.open("wb") as f:
             tomli_w.dump(self.model_dump(), f)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> str:
         if item in self.__dict__:
             return self.__dict__[item]
         if self.__pydantic_extra__ and item in self.__pydantic_extra__:
