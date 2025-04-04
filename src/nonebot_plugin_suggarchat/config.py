@@ -8,7 +8,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-__KERNEL_VERSION__: str = "V2.0.4.post5-Public"
+__KERNEL_VERSION__: str = "V2.0.4.post6-Public"
 
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
@@ -20,7 +20,7 @@ class ModelPreset(BaseModel, extra="allow"):
     name: str = ""
     base_url: str = ""
     api_key: str = ""
-    procotol: str = "__main__"
+    protocol: str = "__main__"
 
     @classmethod
     def load(cls, path: Path):

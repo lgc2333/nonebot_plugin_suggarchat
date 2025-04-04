@@ -66,7 +66,7 @@ async def openai_get_chat(
         base_url=base_url, api_key=key, timeout=config.llm_timeout
     )
     # 创建聊天完成请求
-    for i in range(3):
+    for index, i in enumerate(range(3)):
         try:
             completion: (
                 ChatCompletion | openai.AsyncStream[ChatCompletionChunk]
@@ -79,9 +79,13 @@ async def openai_get_chat(
             break
         except Exception as e:
             logger.error(f"发生了错误: {e}")
-            await send_to_admin(f"在获取对话时发生了错误: {e}", bot)
             logger.info(f"尝试第{i + 1}次重试")
+            if index == 2:
+                logger.error("获取对话失败，请检查你的API Key和API base_url是否正确！")
+                await send_to_admin(f"在获取对话时发生了错误: {e}", bot)
+                raise e
             continue
+
     response = ""
     if config.stream and isinstance(completion, openai.AsyncStream):
         # 流式接收响应并构建最终的聊天文本
@@ -283,6 +287,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
         base_url = config_manager.config.open_ai_base_url
         key = config_manager.config.open_ai_api_key
         model = config_manager.config.model
+        protocol = config_manager.config.protocol
     else:
         # 如果是其他预设，从模型列表中查找匹配的设置
         for i in config_manager.get_models():
@@ -290,6 +295,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
                 base_url = i.base_url
                 key = i.api_key
                 model = i.model
+                protocol = i.protocol
                 break
         else:
             # 如果未找到匹配的预设，记录错误并重置预设为主配置文件
@@ -301,6 +307,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
             key = config_manager.config.open_ai_api_key
             model = config_manager.config.model
             base_url = config_manager.config.open_ai_base_url
+            protocol = config_manager.config.protocol
             # 保存更新后的配置
             config_manager.save_config()
     if config_manager.config.protocol == "__main__":
@@ -313,7 +320,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
             config_manager.config,
             bot or nonebot.get_bot(),
         )
-    elif config_manager.config.protocol not in protocols_adapters:
+    elif protocol not in protocols_adapters:
         raise Exception(f"协议 {config_manager.config.protocol} 的适配器未找到!")
     else:
         return await protocols_adapters[config_manager.config.protocol](
@@ -395,7 +402,7 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
             await sessions.finish("没有历史会话")
         # 构建会话列表消息
         for index, msg in enumerate(data["sessions"]):
-            message_content += f"编号：{index}) ：{msg[0]['content'][9:]}... \n"
+            message_content += f"编号：{index}) ：{msg['messages'][0]['content'][9:]}... 时间：{datetime.fromtimestamp(msg['time']).strftime('%Y-%m-%d %I:%M:%S %p')}\n"
         await sessions.finish(message_content)
 
     # 处理带参数的命令
@@ -404,7 +411,9 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
         if arg_list[0] == "set":
             try:
                 if len(arg_list) >= 2:
-                    data["memory"]["messages"] = data["sessions"][int(arg_list[1])]
+                    data["memory"]["messages"] = data["sessions"][int(arg_list[1])][
+                        "messages"
+                    ]
                     data["timestamp"] = time.time()
                     write_memory_data(event, data)
                     await sessions.send("完成记忆覆盖。")
@@ -413,7 +422,7 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
             except NoneBotException as e:
                 raise e
             except Exception:
-                await sessions.finish("覆盖记忆文件失败。")
+                await sessions.finish("覆盖记忆文件失败，这个对话可能损坏了。")
 
         # 删除会话命令
         elif arg_list[0] == "del":
@@ -432,7 +441,9 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
         elif arg_list[0] == "archive":
             try:
                 if data["memory"]["messages"] != []:
-                    data["sessions"].append(data["memory"]["messages"])
+                    data["sessions"].append(
+                        {"messages": data["memory"]["messages"], "time": time.time()}
+                    )
                     data["memory"]["messages"] = []
                     data["timestamp"] = time.time()
                     write_memory_data(event, data)
@@ -1136,12 +1147,12 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                     session_clear_group.remove(session)
                                     data["memory"]["messages"] = data["sessions"][
                                         len(data["sessions"]) - 1
-                                    ]
+                                    ]["messages"]
                                     data["sessions"].remove(
                                         data["sessions"][len(data["sessions"]) - 1]
                                     )
                                     await chat.send("让我们继续聊天吧～")
-                                    break
+                                    return write_memory_data(event, data)
 
                     group_id = event.group_id
                     user_id = event.user_id
@@ -1391,7 +1402,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             session_clear_user.remove(session)
                             data["memory"]["messages"] = data["sessions"][
                                 len(data["sessions"]) - 1
-                            ]
+                            ]["messages"]
                             data["sessions"].remove(
                                 data["sessions"][len(data["sessions"]) - 1]
                             )
