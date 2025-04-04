@@ -4,7 +4,7 @@ import sys
 import time
 from collections.abc import Callable, Coroutine
 from datetime import datetime
-from typing import Any
+from typing import Any, Awaitable
 
 import nonebot.adapters
 import openai
@@ -52,11 +52,6 @@ running_messages_poke = {}
 async def openai_get_chat(
     base_url, model, key, messages, max_tokens, config: Config, bot: Bot
 ) -> str:
-    # 记录日志，开始获取对话
-    logger.debug(f"Start to get response with model {model}")
-    logger.debug(f"Preset：{config.preset}")
-    logger.debug(f"Key：{key[:7]}...")
-    logger.debug(f"API base_url：{base_url}")
     if (
         not str(config.open_ai_base_url).strip()
         or not str(config.open_ai_api_key).strip()
@@ -262,7 +257,10 @@ async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
     return user_role == "member"
 
 
-async def get_chat(messages: list, bot: Bot | None = None) -> str:
+async def get_chat(
+    messages: list,
+    bot: Bot | None = None,
+) -> str:
     """
     异步获取聊天响应函数
 
@@ -280,7 +278,7 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
     # 声明全局变量，用于访问配置和判断是否启用
     # 从配置中获取最大token数量
     max_tokens = config_manager.config.max_tokens
-
+    func = openai_get_chat
     # 根据配置中的预设值，选择不同的API密钥和基础URL
     if config_manager.config.preset == "__main__":
         # 如果是主配置，直接使用配置文件中的设置
@@ -311,27 +309,27 @@ async def get_chat(messages: list, bot: Bot | None = None) -> str:
             # 保存更新后的配置
             config_manager.save_config()
     if config_manager.config.protocol == "__main__":
-        return await openai_get_chat(
-            base_url,
-            model,
-            key,
-            messages,
-            max_tokens,
-            config_manager.config,
-            bot or nonebot.get_bot(),
-        )
+        func = openai_get_chat
+
     elif protocol not in protocols_adapters:
         raise Exception(f"协议 {config_manager.config.protocol} 的适配器未找到!")
     else:
-        return await protocols_adapters[config_manager.config.protocol](
-            base_url,
-            model,
-            key,
-            messages,
-            max_tokens,
-            config_manager.config,
-            bot or nonebot.get_bot(),
-        )
+        func = protocols_adapters[protocol]
+    # 记录日志，开始获取对话
+    logger.debug(f"开始获取 {model} 的对话")
+    logger.debug(f"预设：{config_manager.config.preset}")
+    logger.debug(f"密钥：{key[:7]}...")
+    logger.debug(f"协议：{protocol}")
+    logger.debug(f"API地址：{base_url}")
+    return await func(
+        base_url,
+        model,
+        key,
+        messages,
+        max_tokens,
+        config_manager.config,
+        bot or nonebot.get_bot(),
+    )
 
 
 # 创建响应器实例
