@@ -8,14 +8,14 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-__KERNEL_VERSION__: str = "V2.0.4-Public"
+__KERNEL_VERSION__: str = "V2.0.4.post4-Public"
 
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
 DATA_DIR: Path = store.get_plugin_data_dir()
 
 
-class ModelPreset(BaseModel):
+class ModelPreset(BaseModel, extra="allow"):
     model: str = "__main__"
     name: str = ""
     base_url: str = ""
