@@ -4,9 +4,9 @@ import sys
 import time
 from collections.abc import Callable, Coroutine
 from datetime import datetime
-from typing import Any, Awaitable
+from typing import Any
 
-import nonebot.adapters
+import nonebot
 import openai
 from nonebot import logger, on_command, on_message, on_notice
 from nonebot.adapters import Bot, Message
