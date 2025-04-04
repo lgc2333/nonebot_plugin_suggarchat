@@ -1,7 +1,9 @@
+import asyncio
+
 from nonebot import get_driver, logger
 from nonebot.adapters import Bot
 
-from .config import __KERNEL_VERSION__, config_manager
+from .config import config_manager
 from .hook_manager import run_hooks
 
 driver = get_driver()
@@ -24,11 +26,27 @@ async def onConnect(bot: Bot):
 
 @driver.on_startup
 async def onEnable():
-    logger.info(
-        f"""
-NONEBOT PLUGIN SUGGARCHAT
-{__KERNEL_VERSION__}
-"""
-    )
+    import subprocess
+    import sys
 
+    try:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-m",
+            "pip",
+            "show",
+            "nonebot-plugin-suggarchat",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await process.communicate()
+        try:
+            version = stdout.decode("utf-8").split("\n")[1].split(": ")[1]
+        except IndexError:
+            version = "unknown"
+    except subprocess.CalledProcessError:
+        version = "unknown"
+    except Exception:
+        version = "unknown"
+    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {version}")
     logger.info("Start successfully!Waitting for bot connection...")
