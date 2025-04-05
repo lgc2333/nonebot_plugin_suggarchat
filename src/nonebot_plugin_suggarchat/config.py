@@ -9,7 +9,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-__KERNEL_VERSION = "unknow"
+__KERNEL_VERSION__ = "unknow"
 
 # 保留为其他插件提供的引用
 

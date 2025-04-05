@@ -50,6 +50,6 @@ async def onEnable():
         __KERNEL_VERSION__ = "unknown"
     except Exception:
         __KERNEL_VERSION__ = "unknown"
-    config.__KERNEL_VERSION = __KERNEL_VERSION__
+    config.__KERNEL_VERSION__ = __KERNEL_VERSION__
     logger.info(f"NONEBOT PLUGIN SUGGARCHAT {__KERNEL_VERSION__}")
     logger.info("Start successfully!Waitting for bot connection...")
