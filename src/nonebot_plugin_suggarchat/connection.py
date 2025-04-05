@@ -7,7 +7,7 @@ from .config import config_manager
 from .hook_manager import run_hooks
 
 driver = get_driver()
-__KERNEL_VERSION = "unknown"
+__KERNEL_VERSION__ = "unknown"
 
 @driver.on_bot_connect
 async def onConnect(bot: Bot):
@@ -26,6 +26,7 @@ async def onConnect(bot: Bot):
 
 @driver.on_startup
 async def onEnable():
+    global __KERNEL_VERSION__
     import subprocess
     import sys
 

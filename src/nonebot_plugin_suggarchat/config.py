@@ -9,7 +9,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-from .connection import __KERNEL_VERSION  # noqa: F401
+from .connection import __KERNEL_VERSION__  # noqa: F401
 
 # 保留为其他插件提供的引用
 
