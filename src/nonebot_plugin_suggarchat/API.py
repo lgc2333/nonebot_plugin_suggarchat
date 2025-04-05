@@ -1,4 +1,3 @@
-# 施工中。。。。。。敬请期待
 from collections.abc import Callable
 
 from nonebot import logger
@@ -28,6 +27,27 @@ class Adapter:
             raise ValueError("协议适配器已存在")
         suggar.protocols_adapters[protocol] = func
 
+    def get_adapter(self, protocol: str) -> Callable:
+        """
+        获取适配器方法。
+        """
+        if protocol not in suggar.protocols_adapters:
+            raise ValueError("协议适配器不存在")
+        return suggar.protocols_adapters[protocol]
+
+    def get_adapters(self) -> dict:
+        """
+        获取适配器方法。
+        """
+        return suggar.protocols_adapters
+
+    @property
+    def adapters(self) -> dict:
+        """
+        获取适配器方法。
+        """
+        return suggar.protocols_adapters
+
 
 class Menu:
     """
@@ -40,7 +60,7 @@ class Menu:
         """
         pass
 
-    def reg_menu(self, cmd_name: str, describe: str):
+    def reg_menu(self, cmd_name: str, describe: str, args: str = "") -> "Menu":
         """
         注册一个新的菜单项。
 
@@ -51,8 +71,15 @@ class Menu:
         返回:
         - Menu: 返回 Menu 类的实例，支持方法链式调用。
         """
-        suggar.menu_msg += f"{cmd_name} \n"
+        suggar.menu_msg += f"/{cmd_name} {args} 说明：{describe} \n"
         return self
+
+    @property
+    def menu(self) -> str:
+        """
+        获取菜单项。
+        """
+        return suggar.menu_msg
 
 
 class Admin:
@@ -68,7 +95,7 @@ class Admin:
         """
         self.config = config_manager.config
 
-    async def send_with(self, msg: str):
+    async def send_with(self, msg: str) -> "Admin":
         """
         异步发送消息给管理员。
 
@@ -81,7 +108,7 @@ class Admin:
         await send_to_admin(msg)
         return self
 
-    async def send_error(self, msg: str):
+    async def send_error(self, msg: str) -> "Admin":
         """
         异步发送错误消息给管理员，并记录错误日志。
 
@@ -120,7 +147,7 @@ class Admin:
         self.config.admins.append(user_id)
         return self._save_config_to_toml()
 
-    def set_admin_group(self, group_id: int):
+    def set_admin_group(self, group_id: int) -> "Admin":
         """
         设置管理员组ID。
 
@@ -159,8 +186,9 @@ class Chat:
         :param prompt[str]: 提示词
         :param message[list]: 消息列表
         """
+
         message.insert(0, {"role": "assistant", "content": prompt})
-        return await get_chat(messages=message)
+        return await self.get_msg_on_list(message)
 
     async def get_msg_on_list(self, message: list):
         """
@@ -168,4 +196,5 @@ class Chat:
 
         :param message[list]: 消息列表
         """
+
         return await get_chat(messages=message)

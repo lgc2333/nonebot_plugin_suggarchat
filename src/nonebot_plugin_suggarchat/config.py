@@ -204,6 +204,9 @@ class ConfigManager:
         self.custom_models_dir = self.config_dir / "models"
         os.makedirs(self.custom_models_dir, exist_ok=True)
 
+        prompt_private_temp: str = ""
+        prompt_group_temp: str = ""
+
         # 处理配置文件转换
         if self.json_config.exists():
             with self.json_config.open("r", encoding="utf-8") as f:
@@ -239,26 +242,24 @@ class ConfigManager:
             self.config.save_to_toml(self.toml_config)
 
         # private_train
-        prompt = ""
         if self.private_prompt.is_file():
             with self.private_prompt.open("r", encoding="utf-8") as f:
-                prompt = f.read()
+                prompt_private_temp = f.read()
             os.rename(self.private_prompt, self.private_prompt.with_suffix(".old"))
         if not (self.private_prompts / "default.txt").is_file():
             with (self.private_prompts / "default.txt").open(
                 "w", encoding="utf-8"
             ) as f:
-                f.write(prompt)
+                f.write(prompt_private_temp)
 
         # group_train
-        prompt = ""
         if self.group_prompt.is_file():
             with self.group_prompt.open("r", encoding="utf-8") as f:
-                prompt = f.read()
+                prompt_group_temp = f.read()
             os.rename(self.group_prompt, self.group_prompt.with_suffix(".old"))
         if not (self.group_prompts / "default.txt").is_file():
             with (self.group_prompts / "default.txt").open("w", encoding="utf-8") as f:
-                f.write(prompt)
+                f.write(prompt_group_temp)
 
         self.get_models(cache=False)
         self.get_prompts(cache=False)
