@@ -3,6 +3,7 @@ import asyncio
 from nonebot import get_driver, logger
 from nonebot.adapters import Bot
 
+from . import config
 from .config import config_manager
 from .hook_manager import run_hooks
 
@@ -42,12 +43,13 @@ async def onEnable():
         )
         stdout, _ = await process.communicate()
         try:
-            __KERNEL_VERSION = stdout.decode("utf-8").split("\n")[1].split(": ")[1]
+            __KERNEL_VERSION__ = stdout.decode("utf-8").split("\n")[1].split(": ")[1]
         except IndexError:
-            __KERNEL_VERSION = "unknown"
+            __KERNEL_VERSION__ = "unknown"
     except subprocess.CalledProcessError:
-        __KERNEL_VERSION = "unknown"
+        __KERNEL_VERSION__ = "unknown"
     except Exception:
-        __KERNEL_VERSION = "unknown"
-    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {__KERNEL_VERSION}")
+        __KERNEL_VERSION__ = "unknown"
+    config.__KERNEL_VERSION = __KERNEL_VERSION__
+    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {__KERNEL_VERSION__}")
     logger.info("Start successfully!Waitting for bot connection...")

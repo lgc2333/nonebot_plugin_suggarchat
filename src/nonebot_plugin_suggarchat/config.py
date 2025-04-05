@@ -9,7 +9,7 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
-from .connection import __KERNEL_VERSION__  # noqa: F401
+__KERNEL_VERSION = "unknow"
 
 # 保留为其他插件提供的引用
 
@@ -336,7 +336,6 @@ class ConfigManager:
             self.save_config()
         else:
             raise KeyError(f"配置项 {key} 不存在")
-
     def register_config(self, key: str, default_value=None):
         """
         注册配置项
@@ -349,6 +348,15 @@ class ConfigManager:
         if not hasattr(self.config, key):
             setattr(self.config, key, default_value)
         self.save_config()
+
+    def reg_config(self, key: str, default_value=None):
+        """
+        注册配置项
+
+        :param key: 配置项的名称
+
+        """
+        return self.register_config(key, default_value)
 
     def reg_model_config(self, key: str, default_value=None):
         """
