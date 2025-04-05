@@ -7,7 +7,7 @@ from .config import config_manager
 from .hook_manager import run_hooks
 
 driver = get_driver()
-
+__KERNEL_VERSION = "unknown"
 
 @driver.on_bot_connect
 async def onConnect(bot: Bot):
@@ -41,12 +41,12 @@ async def onEnable():
         )
         stdout, _ = await process.communicate()
         try:
-            version = stdout.decode("utf-8").split("\n")[1].split(": ")[1]
+            __KERNEL_VERSION = stdout.decode("utf-8").split("\n")[1].split(": ")[1]
         except IndexError:
-            version = "unknown"
+            __KERNEL_VERSION = "unknown"
     except subprocess.CalledProcessError:
-        version = "unknown"
+        __KERNEL_VERSION = "unknown"
     except Exception:
-        version = "unknown"
-    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {version}")
+        __KERNEL_VERSION = "unknown"
+    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {__KERNEL_VERSION}")
     logger.info("Start successfully!Waitting for bot connection...")

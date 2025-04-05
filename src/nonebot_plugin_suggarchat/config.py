@@ -8,6 +8,10 @@ import tomli
 import tomli_w
 from pydantic import BaseModel
 
+from .connection import __KERNEL_VERSION  # noqa: F401
+
+# 保留为其他插件提供的引用
+
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
 DATA_DIR: Path = store.get_plugin_data_dir()
