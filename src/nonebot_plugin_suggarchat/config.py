@@ -104,17 +104,17 @@ class Config(BaseModel, extra="allow"):
     @classmethod
     def load_from_toml(cls, path: Path) -> "Config":
         """从 TOML 文件加载配置"""
-        if path.exists():
-            with path.open("rb") as f:
-                data: dict[str, Any] = tomli.load(f)
-            # 自动更新配置文件
-            current_config = cls().model_dump()
-            updated_config = {**current_config, **data}
-            config_instance = cls(**updated_config)
-            if current_config != updated_config:
-                config_instance.save_to_toml(path)
-            return config_instance
-        return cls()
+        if not path.exists():
+            return cls()
+        with path.open("rb") as f:
+            data: dict[str, Any] = tomli.load(f)
+        # 自动更新配置文件
+        current_config = cls().model_dump()
+        updated_config = {**current_config, **data}
+        config_instance = cls(**updated_config)
+        if current_config != updated_config:
+            config_instance.save_to_toml(path)
+        return config_instance
 
     @classmethod
     def load_from_json(cls, path: Path) -> "Config":

@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import random
 import sys
 import time
@@ -390,11 +391,9 @@ async def _(event: MessageEvent, args: Message = CommandArg()):
                         await choose_prompt.finish(
                             f"已设置群组的提示词预设为：{i.name}"
                         )
-                else:
-                    # 如果未找到匹配的预设名称，提示用户
-                    await choose_prompt.finish(
-                        "未找到预设，请输入/choose_prompt group查看预设列表"
-                    )
+                await choose_prompt.finish(
+                    "未找到预设，请输入/choose_prompt group查看预设列表"
+                )
             else:
                 # 输出可选的预设名称
                 msg = "可选的预设名称：\n"
@@ -418,11 +417,9 @@ async def _(event: MessageEvent, args: Message = CommandArg()):
                         await choose_prompt.finish(
                             f"已设置私聊的提示词预设为：{i.name}"
                         )
-                else:
-                    # 如果未找到匹配的预设名称，提示用户
-                    await choose_prompt.finish(
-                        "未找到预设，请输入/choose_prompt private查看预设列表"
-                    )
+                await choose_prompt.finish(
+                    "未找到预设，请输入/choose_prompt private查看预设列表"
+                )
             else:
                 # 输出可选的预设名称
                 msg = "可选的预设名称：\n"
@@ -1215,13 +1212,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                                     and "继续"
                                     in event.reply.message.extract_plain_text()
                                 ):
-                                    try:
+                                    with contextlib.suppress(Exception):
                                         if time.time() - session["timestamp"] < 100:
                                             await bot.delete_msg(
                                                 message_id=session["message_id"]
                                             )
-                                    except Exception:
-                                        pass
                                     session_clear_group.remove(session)
                                     data["memory"]["messages"] = data["sessions"][
                                         len(data["sessions"]) - 1
@@ -1273,10 +1268,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             elif event.reply.sender.user_id == event.self_id:
                                 rl = "自己"
                         except Exception:
-                            if event.reply.sender.user_id == event.self_id:
-                                rl = "自己"
-                            else:
-                                rl = "[获取身份失败]"
+                            rl = "自己" if event.reply.sender.user_id == event.self_id else "[获取身份失败]"
                         formatted_time = dt_object.strftime("%Y-%m-%d %I:%M:%S %p")
                         DT = f"{formatted_time} {weekday} [{rl}]{event.reply.sender.nickname}（QQ:{event.reply.sender.user_id}）说："
                         reply += DT
@@ -1379,24 +1371,25 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
 
                         if not config_manager.config.nature_chat_style:
                             await chat.send(message)
-                        else:
-                            response_list = split_message_into_chats(response)
-                            if response_list:  # 确保消息列表非空
-                                # 将@用户添加到第一条消息
-                                first_message = (
-                                    MessageSegment.at(event.user_id)
-                                    + MessageSegment.text(" ")
-                                    + response_list[0]
-                                )
-                                await chat.send(first_message)
+                        elif response_list := split_message_into_chats(
+                                response
+                            ):
+                            # 将@用户添加到第一条消息
+                            first_message = (
+                                MessageSegment.at(event.user_id)
+                                + MessageSegment.text(" ")
+                                + response_list[0]
+                            )
+                            await chat.send(first_message)
 
-                                # 发送剩余消息并保持原有延迟逻辑
-                                for message in response_list[1:]:
-                                    await chat.send(message)
-                                    await asyncio.sleep(
-                                        random.randint(1, 3)
-                                        + int(len(message) / random.randint(80, 100))
-                                    )
+                            # 发送剩余消息并保持原有延迟逻辑
+                            for message in response_list[1:]:
+                                await chat.send(message)
+                                await asyncio.sleep(
+                                    random.randint(1, 3)
+                                    + len(message)
+                                    // random.randint(80, 100)
+                                )
                     except NoneBotException as e:
                         raise e
                     except Exception:
@@ -1470,13 +1463,11 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             session["id"] == event.user_id
                             and "继续" in event.reply.message.extract_plain_text()
                         ):
-                            try:
+                            with contextlib.suppress(Exception):
                                 if time.time() - session["timestamp"] < 100:
                                     await bot.delete_msg(
                                         message_id=session["message_id"]
                                     )
-                            except Exception:
-                                pass
                             session_clear_user.remove(session)
                             data["memory"]["messages"] = data["sessions"][
                                 len(data["sessions"]) - 1
@@ -1596,8 +1587,9 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                             for response in response_list:
                                 await chat.send(response)
                                 await asyncio.sleep(
-                                    random.randint(1, 3)
-                                    + int(len(message) / random.randint(80, 100))
+                                        random.randint(1, 3)
+                                        + len(message)
+                                        // random.randint(80, 100)
                                 )
                     except NoneBotException as e:
                         raise e
