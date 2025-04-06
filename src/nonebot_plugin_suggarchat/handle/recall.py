@@ -1,3 +1,4 @@
+# 当有消息撤回时触发处理函数
 import random
 
 from nonebot.adapters import Bot

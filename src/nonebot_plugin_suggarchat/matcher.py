@@ -11,7 +11,7 @@ from .exception import BlockException, CancelException, PassException
 
 """
 suggar matcher
-用于触发Suggar中间件事件
+用于触发Suggar扩展事件循环
 """
 
 

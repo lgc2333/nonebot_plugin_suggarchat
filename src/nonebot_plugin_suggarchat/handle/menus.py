@@ -1,4 +1,3 @@
-# 当有消息撤回时触发处理函数
 # 处理菜单命令的函数
 from nonebot.matcher import Matcher
 
