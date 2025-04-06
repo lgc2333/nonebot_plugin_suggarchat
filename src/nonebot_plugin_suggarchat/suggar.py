@@ -522,6 +522,8 @@ async def sessions_handle(bot: Bot, event: MessageEvent, args: Message = Command
             data["timestamp"] = time.time()
             write_memory_data(event, data)
             await sessions.finish("会话已清空。")
+        except NoneBotException as e:
+            raise e
         except Exception:
             await sessions.finish("清空当前会话失败。")
 
@@ -1265,7 +1267,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                 if isinstance(event, GroupMessageEvent)
                 else MessageSegment.text("")
                 + MessageSegment.text(" ")
-                + response_list[0]
+                + MessageSegment.text(response_list[0])
             )
             await chat.send(first_message)
             for message in response_list[1:]:
