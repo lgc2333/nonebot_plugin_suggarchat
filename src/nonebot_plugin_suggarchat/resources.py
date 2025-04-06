@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import chardet
 import jieba
@@ -132,7 +133,7 @@ async def synthesize_message(message: Message, bot: Bot) -> str:
     return content
 
 
-def get_memory_data(event: Event) -> dict:
+def get_memory_data(event: Event) -> dict[str, Any]:
     logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     """
     根据消息事件获取记忆数据，如果用户或群组的记忆数据不存在，则创建初始数据结构
@@ -285,7 +286,7 @@ async def get_friend_info(qq_number: int, bot: Bot) -> str:
     )
 
 
-def split_list(lst: list, threshold: int) -> list:
+def split_list(lst: list, threshold: int) -> list[Any]:
     """
     将列表分割成多个子列表，每个子列表的最大长度不超过threshold。
 

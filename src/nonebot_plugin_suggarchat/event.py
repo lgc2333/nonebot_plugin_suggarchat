@@ -102,10 +102,10 @@ class SuggarEvent(BasicEvent):
 
     def __init__(
         self,
-        model_response: list,
+        model_response: list[str],
         nbevent: Event,
         user_id: int,
-        send_message: list,
+        send_message: list[str],
     ):
         """
         初始化SuggarEvent对象
@@ -269,8 +269,8 @@ class ChatEvent(SuggarEvent):
     def __init__(
         self,
         nbevent: MessageEvent,
-        send_message: list,
-        model_response: list,
+        send_message: list[str],
+        model_response: list[str],
         user_id: int,
     ):
         """

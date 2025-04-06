@@ -876,6 +876,7 @@ async def _(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
         )
 
+    # 函数进入运行点
     if not config_manager.config.enable or not config_manager.config.poke_reply:
         matcher.skip()
         return
@@ -1265,7 +1266,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
             for message in response_list[1:]:
                 await chat.send(message)
                 await asyncio.sleep(
-                    random.randint(1, 3) + len(message) // random.randint(80, 100)
+                    random.randint(1, 3) + (len(message) // random.randint(80, 100))
                 )
 
     async def handle_exception():
@@ -1285,12 +1286,12 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
             f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
         )
 
+    # 函数进入运行点
     if not config_manager.config.enable:
         matcher.skip()
 
     memory_length_limit = config_manager.config.memory_lenth_limit
     Date = get_current_datetime_timestamp()
-    bot = nonebot.get_bot()
 
     if event.message.extract_plain_text().strip().startswith("/"):
         matcher.skip()
@@ -1298,15 +1299,14 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
     if event.message.extract_plain_text().startswith("菜单"):
         await matcher.finish(chat_manager.menu_msg)
 
-    group_data = get_memory_data(event)
-    private_data = get_memory_data(event)
-
     try:
         if isinstance(event, GroupMessageEvent):
+            group_data = get_memory_data(event)
             await handle_group_message(
                 event, matcher, bot, group_data, memory_length_limit, Date
             )
         elif isinstance(event, PrivateMessageEvent):
+            private_data = get_memory_data(event)
             await handle_private_message(
                 event, matcher, bot, private_data, memory_length_limit, Date
             )
