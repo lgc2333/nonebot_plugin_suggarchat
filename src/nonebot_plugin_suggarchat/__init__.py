@@ -1,5 +1,6 @@
-from nonebot.plugin import PluginMetadata
+from nonebot.plugin import PluginMetadata, require
 
+require("nonebot_plugin_localstore")
 from . import API, config, connection, event, resources, suggar
 
 __all__ = [
