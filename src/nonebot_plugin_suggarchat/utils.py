@@ -10,11 +10,8 @@ from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from openai.types.chat.chat_completion import ChatCompletion
 from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
-from nonebot_plugin_suggarchat.chatmanager import chat_manager
-from nonebot_plugin_suggarchat.config import Config
-
-from .config import config_manager
-from .utils import openai_get_chat
+from .chatmanager import chat_manager
+from .config import Config, config_manager
 
 
 async def send_to_admin(msg: str, bot: Bot | None = None) -> None:
@@ -41,12 +38,6 @@ async def send_to_admin(msg: str, bot: Bot | None = None) -> None:
         await (nonebot.get_bot()).send_group_msg(
             group_id=config_manager.config.admin_group, message=msg
         )
-
-
-# 协议适配器映射
-protocols_adapters: dict[
-    str, Callable[[str, str, str, list, int, Config, Bot], Coroutine[Any, Any, str]]
-] = {"openai-builtin": openai_get_chat}
 
 
 async def get_chat(
@@ -177,3 +168,9 @@ async def is_member(event: GroupMessageEvent, bot: Bot) -> bool:
     # 判断角色是否为普通成员
     user_role = user_role.get("role")
     return user_role == "member"
+
+
+# 协议适配器映射
+protocols_adapters: dict[
+    str, Callable[[str, str, str, list, int, Config, Bot], Coroutine[Any, Any, str]]
+] = {"openai-builtin": openai_get_chat}

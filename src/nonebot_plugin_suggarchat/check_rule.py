@@ -7,8 +7,8 @@ from nonebot.adapters.onebot.v11.event import (
     PrivateMessageEvent,
 )
 
-from nonebot_plugin_suggarchat.config import config_manager
-from nonebot_plugin_suggarchat.resources import (
+from .config import config_manager
+from .resources import (
     get_current_datetime_timestamp,
     get_memory_data,
     synthesize_message,
