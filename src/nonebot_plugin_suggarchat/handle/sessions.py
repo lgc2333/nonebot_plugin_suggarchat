@@ -14,7 +14,7 @@ from ..resources import get_memory_data, write_memory_data
 async def sessions(
     bot: Bot, event: MessageEvent, matcher: Matcher, args: Message = CommandArg()
 ):
-    """处理会话管理命令的入口函数"""
+    """会话管理命令处理入口"""
 
     async def display_sessions(data: dict) -> None:
         """显示历史会话列表"""
@@ -26,7 +26,7 @@ async def sessions(
         await matcher.finish(message_content)
 
     async def set_session(data: dict, arg_list: list[str], event: MessageEvent) -> None:
-        """覆盖当前会话为指定编号的会话"""
+        """将当前会话覆盖为指定编号的会话"""
         try:
             if len(arg_list) >= 2:
                 data["memory"]["messages"] = data["sessions"][int(arg_list[1])][
@@ -81,11 +81,14 @@ async def sessions(
         except Exception:
             await matcher.finish("清空当前会话失败。")
 
+    # 检查是否启用了会话管理功能
     if not config_manager.config.session_control:
         matcher.skip()
 
+    # 获取当前用户的会话数据
     data = get_memory_data(event)
 
+    # 检查用户权限，普通成员无权操作历史会话
     if isinstance(event, GroupMessageEvent) and (
         (
             await bot.get_group_member_info(
@@ -97,11 +100,14 @@ async def sessions(
     ):
         await matcher.finish("你没有操作历史会话的权限")
 
+    # 解析用户输入的命令参数
     arg_list = args.extract_plain_text().strip().split()
 
+    # 如果没有参数，显示历史会话
     if not arg_list:
         await display_sessions(data)
 
+    # 根据命令执行对应操作
     command = arg_list[0]
     if command == "set":
         await set_session(data, arg_list, event)

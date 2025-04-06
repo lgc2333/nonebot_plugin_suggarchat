@@ -10,29 +10,29 @@ from ..resources import get_memory_data, write_memory_data
 async def disable(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
     """处理禁用聊天功能的异步函数"""
     if not config_manager.config.enable:
-        matcher.skip()
+        matcher.skip()  # 如果功能未启用，跳过处理
 
-    # 获取发送消息的成员信息
+    # 获取群成员信息
     member = await bot.get_group_member_info(
         group_id=event.group_id, user_id=event.user_id
     )
 
-    # 检查成员是否为普通成员且不在管理员列表中，如果是则发送提示消息并返回
+    # 检查是否为普通成员且不在管理员列表中
     if member["role"] == "member" and event.user_id not in config_manager.config.admins:
-        await matcher.send("你没有这样的力量呢～（管理员/管理员+）")
+        await matcher.send("你没有这样的权限哦～（需要管理员权限）")
         return
 
-    # 记录禁用操作的日志
+    # 记录禁用操作日志
     logger.debug(f"{event.group_id} disabled")
 
-    # 获取并更新记忆中的数据结构
+    # 获取并更新群聊状态数据
     data = get_memory_data(event)
     if data["id"] == event.group_id:
         if not data["enable"]:
-            await matcher.send("聊天禁用")
+            await matcher.send("聊天功能已禁用")
         else:
             data["enable"] = False
-            await matcher.send("聊天已经禁用")
+            await matcher.send("聊天功能已成功禁用")
 
-    # 将更新后的数据结构写回记忆
+    # 保存更新后的群聊状态数据
     write_memory_data(event, data)

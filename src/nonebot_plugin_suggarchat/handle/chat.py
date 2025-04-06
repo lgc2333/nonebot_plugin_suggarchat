@@ -38,7 +38,9 @@ from ..utils import get_chat, send_to_admin
 
 
 async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
-    """处理聊天事件"""
+    """
+    聊天处理主函数，根据消息类型（群聊或私聊）调用对应的处理逻辑。
+    """
 
     async def handle_group_message(
         event: GroupMessageEvent,
@@ -48,6 +50,14 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         memory_length_limit: int,
         Date: str,
     ):
+        """
+        处理群聊消息：
+        - 检查是否启用群聊功能。
+        - 管理会话上下文。
+        - 处理消息内容和引用消息。
+        - 控制记忆长度和 token 限制。
+        - 调用聊天模型生成回复并发送。
+        """
         if not config_manager.config.enable_group_chat:
             matcher.skip()
 
@@ -55,6 +65,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             await matcher.send("聊天没有启用")
             return
 
+        # 管理会话上下文
         await manage_sessions(event, group_data, chat_manager.session_clear_group)
 
         group_id = event.group_id
@@ -67,12 +78,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         if content.strip() == "":
             content = ""
 
+        # 获取用户角色
         role = await get_user_role(bot, group_id, user_id)
         logger.debug(f"{Date}{user_name}（{user_id}）说:{content}")
 
+        # 处理引用消息
         if event.reply:
             content = await handle_reply(event.reply, bot, group_id, content)
 
+        # 记录用户消息
         group_data["memory"]["messages"].append(
             {
                 "role": "user",
@@ -80,17 +94,21 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             }
         )
 
+        # 控制记忆长度和 token 限制
         await enforce_memory_limit(group_data, memory_length_limit)
         await enforce_token_limit(group_data, config_manager.group_train)
 
+        # 准备发送给模型的消息
         send_messages = prepare_send_messages(group_data, config_manager.group_train)
         response = await process_chat(event, send_messages)
 
+        # 记录模型回复
         group_data["memory"]["messages"].append(
             {"role": "assistant", "content": str(response)}
         )
         await send_response(event, response)
 
+        # 写入记忆数据
         write_memory_data(event, group_data)
 
     async def handle_private_message(
@@ -101,9 +119,18 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         memory_length_limit: int,
         Date: str,
     ):
+        """
+        处理私聊消息：
+        - 检查是否启用私聊功能。
+        - 管理会话上下文。
+        - 处理消息内容和引用消息。
+        - 控制记忆长度和 token 限制。
+        - 调用聊天模型生成回复并发送。
+        """
         if not config_manager.config.enable_private_chat:
             matcher.skip()
 
+        # 管理会话上下文
         await manage_sessions(event, private_data, chat_manager.session_clear_user)
 
         content = await synthesize_message(event.get_message(), bot)
@@ -111,9 +138,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         if content.strip() == "":
             content = ""
 
+        # 处理引用消息
         if event.reply:
             content = await handle_reply(event.reply, bot, None, content)
 
+        # 记录用户消息
         private_data["memory"]["messages"].append(
             {
                 "role": "user",
@@ -121,19 +150,23 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             }
         )
 
+        # 控制记忆长度和 token 限制
         await enforce_memory_limit(private_data, memory_length_limit)
         await enforce_token_limit(private_data, config_manager.private_train)
 
+        # 准备发送给模型的消息
         send_messages = prepare_send_messages(
             private_data, config_manager.private_train
         )
         response = await process_chat(event, send_messages)
 
+        # 记录模型回复
         private_data["memory"]["messages"].append(
             {"role": "assistant", "content": str(response)}
         )
         await send_response(event, response)
 
+        # 写入记忆数据
         write_memory_data(event, private_data)
 
     async def manage_sessions(
@@ -141,6 +174,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         data: dict,
         session_clear_list: list,
     ):
+        """
+        管理会话上下文：
+        - 控制会话超时和历史记录。
+        - 提供“继续”功能以恢复上下文。
+        """
         if data.get("sessions") is None:
             data["sessions"] = []
         if data.get("timestamp") is None:
@@ -158,6 +196,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                         return
                     break
 
+            # 检查会话超时
             if (time.time() - data["timestamp"]) >= (
                 config_manager.config.session_control_time * 60
             ):
@@ -211,6 +250,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
     async def handle_reply(
         reply: Reply, bot: Bot, group_id: int | None, content: str
     ) -> str:
+        """
+        处理引用消息：
+        - 提取引用消息的内容和时间信息。
+        - 格式化为可读的引用内容。
+        """
         if not reply.sender.user_id:
             return content
         dt_object = datetime.fromtimestamp(reply.time)
@@ -223,6 +267,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         return f"{content}\n（（（引用的消息）））：\n{formatted_time} {weekday} [{role}]{reply.sender.nickname}（QQ:{reply.sender.user_id}）说：{reply_content}"
 
     async def get_user_role(bot: Bot, group_id: int, user_id: int) -> str:
+        """
+        获取用户在群聊中的身份（群主、管理员或普通成员）。
+        """
         role = (await bot.get_group_member_info(group_id=group_id, user_id=user_id))[
             "role"
         ]
@@ -231,12 +278,18 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         )
 
     async def enforce_memory_limit(data: dict, memory_length_limit: int):
+        """
+        控制记忆长度，删除超出限制的旧消息。
+        """
         while len(data["memory"]["messages"]) > memory_length_limit or (
             data["memory"]["messages"][0]["role"] != "user"
         ):
             del data["memory"]["messages"][0]
 
     async def enforce_token_limit(data: dict, train: dict):
+        """
+        控制 token 数量，删除超出限制的旧消息。
+        """
         if config_manager.config.enable_tokens_limit:
             memory_l = [train.copy(), *data["memory"]["messages"].copy()]
             full_string = "".join(st["content"] for st in memory_l)
@@ -254,6 +307,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 )
 
     def prepare_send_messages(data: dict, train: dict) -> list:
+        """
+        准备发送给聊天模型的消息列表，包括训练数据和上下文。
+        """
         train["content"] += (
             f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{data.get('prompt', '无')}"
         )
@@ -262,6 +318,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         return send_messages
 
     async def process_chat(event: MessageEvent, send_messages: list) -> str:
+        """
+        调用聊天模型生成回复，并触发相关事件。
+        """
         if config_manager.config.matcher_function:
             _matcher = SuggarMatcher(event_type=EventType().before_chat())
             chat_event = ChatEvent(
@@ -289,6 +348,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         return response
 
     async def send_response(event: MessageEvent, response: str):
+        """
+        发送聊天模型的回复，根据配置选择不同的发送方式。
+        """
         if not config_manager.config.nature_chat_style:
             await matcher.send(
                 MessageSegment.reply(event.message_id) + MessageSegment.text(response)
@@ -310,6 +372,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 )
 
     async def handle_exception():
+        """
+        处理异常：
+        - 通知用户出错。
+        - 记录日志并通知管理员。
+        """
         await matcher.send("出错了稍后试试吧（错误已反馈）")
 
         exc_type, exc_value, _ = sys.exc_info()
