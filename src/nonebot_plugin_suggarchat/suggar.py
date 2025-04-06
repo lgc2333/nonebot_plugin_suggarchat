@@ -33,6 +33,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from .config import Config, config_manager
 from .event import ChatEvent, EventType, PokeEvent
+from .exception import CancelException
 from .matcher import SuggarMatcher
 from .resources import (
     get_current_datetime_timestamp,
@@ -1120,6 +1121,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                 ):
                     if not event.reply:
                         session_clear_list.remove(session)
+                        return
                     break
 
             if (time.time() - data["timestamp"]) >= (
@@ -1150,7 +1152,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         "timestamp": time.time(),
                     }
                 )
-                return
+                raise CancelException()
             elif event.reply:
                 for session in session_clear_list:
                     if (
@@ -1169,7 +1171,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                         data["memory"]["messages"] = data["sessions"][-1]["messages"]
                         data["sessions"].pop()
                         await chat.send("让我们继续聊天吧～")
-                        return write_memory_data(event, data)
+                        write_memory_data(event, data)
+                        raise CancelException()
 
     async def handle_reply(
         reply: Reply, bot: Bot, group_id: int | None, content: str
@@ -1259,6 +1262,8 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
         elif response_list := split_message_into_chats(response):
             first_message = (
                 MessageSegment.at(event.user_id)
+                if isinstance(event, GroupMessageEvent)
+                else MessageSegment.text("")
                 + MessageSegment.text(" ")
                 + response_list[0]
             )
@@ -1314,5 +1319,7 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
             matcher.skip()
     except NoneBotException as e:
         raise e
+    except CancelException:
+        return
     except Exception:
         await handle_exception()
