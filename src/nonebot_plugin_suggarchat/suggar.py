@@ -116,7 +116,7 @@ async def openai_get_chat(
             response = completion.choices[0].message.content
         else:
             raise RuntimeError("Unexpected completion type received.")
-    return response or ""
+    return response if response is not None else ""
 
 
 protocols_adapters: dict[
@@ -1262,16 +1262,17 @@ async def _(event: MessageEvent, matcher: Matcher, bot: Bot):
                 MessageSegment.reply(event.message_id) + MessageSegment.text(response)
             )
         elif response_list := split_message_into_chats(response):
-            first_message = (
-                MessageSegment.at(event.user_id)
-                if isinstance(event, GroupMessageEvent)
-                else MessageSegment.text("")
-                + MessageSegment.text(" ")
-                + MessageSegment.text(response_list[0])
-            )
-            await chat.send(first_message)
-            for message in response_list[1:]:
-                await chat.send(message)
+            for index, message in enumerate(response_list):
+                if index == 0:
+                    if isinstance(event, GroupMessageEvent):
+                        await chat.send(
+                            MessageSegment.at(event.user_id)
+                            + MessageSegment.text(message)
+                        )
+                    else:
+                        await chat.send(MessageSegment.text(message))
+                else:
+                    await chat.send(MessageSegment.text(message))
                 await asyncio.sleep(
                     random.randint(1, 3) + (len(message) // random.randint(80, 100))
                 )
