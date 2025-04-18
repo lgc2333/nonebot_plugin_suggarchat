@@ -166,6 +166,7 @@ class Prompts:
 class ConfigManager:
     config_dir: Path = CONFIG_DIR
     data_dir: Path = DATA_DIR
+    bot_config_dir: Path | None = None
     group_memory: Path = data_dir / "group"
     private_memory: Path = data_dir / "private"
     json_config: Path = config_dir / "config.json"  # 兼容旧版本
@@ -202,7 +203,7 @@ class ConfigManager:
         self.group_prompts = self.bot_config_dir / "group_prompts"
         os.makedirs(self.private_prompts, exist_ok=True)
         os.makedirs(self.group_prompts, exist_ok=True)
-        self.custom_models_dir = self.config_dir / "models"
+        self.custom_models_dir = self.bot_config_dir / "models"
         os.makedirs(self.custom_models_dir, exist_ok=True)
 
         prompt_private_temp: str = ""
@@ -319,8 +320,10 @@ class ConfigManager:
 
     def reload_config(self):
         """重加载配置"""
-        self.load(self.config_dir.name)
-
+        if self.bot_config_dir:
+            self.load(self.bot_config_dir.name)
+        else:
+            raise RuntimeWarning("未初始化 Bot 配置")
     def save_config(self):
         """保存配置"""
         if self.config:
