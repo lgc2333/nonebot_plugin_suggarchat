@@ -184,9 +184,9 @@ class ConfigManager:
 
     def load(self, bot_id: str):
         """初始化配置目录"""
-        self.config_dir = self.config_dir / bot_id
+        self.bot_config_dir = self.config_dir / bot_id
         self.data_dir = self.data_dir / bot_id
-        os.makedirs(self.config_dir, exist_ok=True)
+        os.makedirs(self.bot_config_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
 
         self.group_memory = self.data_dir / "group"
@@ -194,12 +194,12 @@ class ConfigManager:
         os.makedirs(self.group_memory, exist_ok=True)
         os.makedirs(self.private_memory, exist_ok=True)
 
-        self.json_config = self.config_dir / "config.json"
-        self.toml_config = self.config_dir / "config.toml"
-        self.group_prompt = self.config_dir / "prompt_group.txt"
-        self.private_prompt = self.config_dir / "prompt_private.txt"
-        self.private_prompts = self.config_dir / "private_prompts"
-        self.group_prompts = self.config_dir / "group_prompts"
+        self.json_config = self.bot_config_dir / "config.json"
+        self.toml_config = self.bot_config_dir / "config.toml"
+        self.group_prompt = self.bot_config_dir / "prompt_group.txt"
+        self.private_prompt = self.bot_config_dir / "prompt_private.txt"
+        self.private_prompts = self.bot_config_dir / "private_prompts"
+        self.group_prompts = self.bot_config_dir / "group_prompts"
         os.makedirs(self.private_prompts, exist_ok=True)
         os.makedirs(self.group_prompts, exist_ok=True)
         self.custom_models_dir = self.config_dir / "models"
