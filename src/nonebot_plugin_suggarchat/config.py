@@ -167,6 +167,7 @@ class ConfigManager:
     config_dir: Path = CONFIG_DIR
     data_dir: Path = DATA_DIR
     bot_config_dir: Path | None = None
+    bot_data_dir: Path | None = None
     group_memory: Path = data_dir / "group"
     private_memory: Path = data_dir / "private"
     json_config: Path = config_dir / "config.json"  # 兼容旧版本
@@ -324,6 +325,7 @@ class ConfigManager:
             self.load(self.bot_config_dir.name)
         else:
             raise RuntimeWarning("未初始化 Bot 配置")
+
     def save_config(self):
         """保存配置"""
         if self.config:
