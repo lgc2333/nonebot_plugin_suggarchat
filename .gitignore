@@ -179,3 +179,5 @@ private/
 bot.py
 .env.dev
 .vscode/settings.json
+pdm.lock
+Pipfile
