@@ -24,6 +24,7 @@ class ModelPreset(BaseModel, extra="allow"):
     base_url: str = ""
     api_key: str = ""
     protocol: str = "__main__"
+    # thought_chain_model: bool = False
 
     @classmethod
     def load(cls, path: Path):
@@ -99,6 +100,7 @@ class Config(BaseModel, extra="allow"):
     session_control_history: int = 10
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
+    # thought_chain_model: bool = False
 
     # Toml配置文件路径
     @classmethod

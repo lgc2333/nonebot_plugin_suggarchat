@@ -37,6 +37,8 @@ async def sessions(
                 await matcher.send("完成记忆覆盖。")
             else:
                 await matcher.finish("请输入正确编号")
+        except NoneBotException as e:
+            raise e
         except Exception:
             await matcher.finish("覆盖记忆文件失败，这个对话可能损坏了。")
 
@@ -50,6 +52,8 @@ async def sessions(
                 write_memory_data(event, data)
             else:
                 await matcher.finish("请输入正确编号")
+        except NoneBotException as e:
+            raise e
         except Exception:
             await matcher.finish("删除指定编号会话失败。")
 
@@ -66,6 +70,8 @@ async def sessions(
                 await matcher.finish("当前会话已归档。")
             else:
                 await matcher.finish("当前对话为空！")
+        except NoneBotException as e:
+            raise e
         except Exception:
             await matcher.finish("归档当前会话失败。")
 

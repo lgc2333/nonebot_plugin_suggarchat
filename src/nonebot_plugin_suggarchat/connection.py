@@ -52,5 +52,5 @@ async def onEnable():
         kernel_version = "unknown"
 
     config.__KERNEL_VERSION__ = kernel_version
-    logger.info(f"NONEBOT PLUGIN SUGGARCHAT {kernel_version}")
+    logger.info(f"NONEBOT PLUGIN SUGGARCHAT V{kernel_version}")
     logger.info("Start successfully!Waitting for bot connection...")
