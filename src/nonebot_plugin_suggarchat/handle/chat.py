@@ -296,9 +296,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             while tokens > config_manager.config.session_max_tokens:
                 try:
                     del data["memory"]["messages"][0]
-                except Exception as e:
+                except Exception:
                     await send_to_admin_as_error(
-                        "上下文限制清理失败！请调整提示词长度或增大会话tokens限制！"
+                        "上下文限制清理出现异常！请调整提示词长度或增大会话tokens限制！"
                     )
 
                     exc_type, exc_value, exc_traceback = sys.exc_info()

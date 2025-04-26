@@ -143,7 +143,7 @@ async def openai_get_chat(
                 raise e
             continue
 
-    response = ""
+    response: str = ""
     # 处理流式响应
     if config.stream and isinstance(completion, openai.AsyncStream):
         async for chunk in completion:
