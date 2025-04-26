@@ -36,7 +36,7 @@ async def del_memory(bot: Bot, event: MessageEvent, matcher: Matcher):
             GData["memory"]["messages"] = []
             await matcher.send("群聊上下文已清除")
             write_memory_data(event, GData)
-            logger.debug(f"{event.group_id} 的记忆已清除")
+            logger.info(f"{event.group_id} 的记忆已清除")
 
     else:
         # 获取私聊记忆数据
@@ -46,5 +46,5 @@ async def del_memory(bot: Bot, event: MessageEvent, matcher: Matcher):
         if FData["id"] == event.user_id:
             FData["memory"]["messages"] = []
             await matcher.send("私聊上下文已清除")
-            logger.debug(f"{event.user_id} 的记忆已清除")
+            logger.info(f"{event.user_id} 的记忆已清除")
             write_memory_data(event, FData)

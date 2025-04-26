@@ -80,7 +80,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 获取用户角色
         role = await get_user_role(bot, group_id, user_id)
-        logger.debug(f"{Date}{user_name}（{user_id}）说:{content}")
+        if chat_manager.debug:
+            logger.debug(f"{Date}{user_name}（{user_id}）说:{content}")
 
         # 处理引用消息
         if event.reply:

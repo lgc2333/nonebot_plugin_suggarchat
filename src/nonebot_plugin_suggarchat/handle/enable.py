@@ -23,7 +23,7 @@ async def enable(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
         return
 
     # 记录日志
-    logger.debug(f"{event.group_id}enabled")
+    logger.debug(f"{event.group_id} enabled")
     # 获取当前群组的记忆数据
     data = get_memory_data(event)
     # 检查记忆数据是否与当前群组匹配

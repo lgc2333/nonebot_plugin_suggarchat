@@ -18,6 +18,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.log import logger
 
 from .config import config_manager
+from .chatmanager import chat_manager
 
 
 def format_datetime_timestamp(time: int) -> str:
@@ -107,7 +108,8 @@ async def synthesize_message(message: Message, bot: Bot) -> str:
             content += f"\\（at: @{segment.data.get('name')}(QQ:{segment.data['qq']}))"
         elif segment.type == "forward":
             forward = await bot.get_forward_msg(id=segment.data["id"])
-            logger.debug(forward)
+            if chat_manager.debug:
+                logger.debug(forward)
             content += (
                 " \\（合并转发\n" + await synthesize_forward_message(forward) + "）\\\n"
             )
@@ -116,7 +118,8 @@ async def synthesize_message(message: Message, bot: Bot) -> str:
 
 def get_memory_data(event: Event) -> dict[str, Any]:
     """获取事件对应的记忆数据，如果不存在则创建初始数据"""
-    logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
+    if chat_manager.debug:
+        logger.debug(f"获取{event.get_type()} {event.get_session_id()} 的记忆数据")
     private_memory = config_manager.private_memory
     group_memory = config_manager.group_memory
 
@@ -171,14 +174,16 @@ def get_memory_data(event: Event) -> dict[str, Any]:
     convert_to_utf8(conf_path)
     with open(str(conf_path), encoding="utf-8") as f:
         conf = json.load(f)
-        logger.debug(f"读取到记忆数据{conf}")
+        if chat_manager.debug:
+            logger.debug(f"读取到记忆数据{conf}")
         return conf
 
 
 def write_memory_data(event: Event, data: dict) -> None:
     """将记忆数据写入对应的文件"""
-    logger.debug(f"写入记忆数据{data}")
-    logger.debug(f"事件：{type(event)}")
+    if chat_manager.debug:
+        logger.debug(f"写入记忆数据{data}")
+        logger.debug(f"事件：{type(event)}")
     group_memory = config_manager.group_memory
     private_memory = config_manager.private_memory
 

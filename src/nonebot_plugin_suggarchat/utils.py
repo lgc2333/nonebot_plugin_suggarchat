@@ -31,7 +31,7 @@ async def send_to_admin(msg: str, bot: Bot | None = None) -> None:
         except Exception:
             # 记录警告日志
             logger.warning(f'管理员群组未设定，消息 "{msg}" 不会被发送！')
-            exc_type, exc_value, exc_tb = sys.exc_info()
+            exc_type, exc_value, _ = sys.exc_info()
             logger.exception(f"{exc_type}:{exc_value}")
         return
     # 发送消息到管理员群
@@ -91,7 +91,7 @@ async def get_chat(
     logger.debug(f"协议：{protocol}")
     logger.debug(f"API地址：{base_url}")
     # 调用适配器获取聊天响应
-    return await func(
+    response = await func(
         base_url,
         model,
         key,
@@ -100,6 +100,9 @@ async def get_chat(
         config_manager.config,
         bot or nonebot.get_bot(),
     )
+    if chat_manager.debug:
+        logger.debug(response)
+    return response
 
 
 async def openai_get_chat(
@@ -138,8 +141,9 @@ async def openai_get_chat(
             logger.error(f"发生错误: {e}")
             logger.info(f"第 {i + 1} 次重试")
             if index == 2:
-                logger.error("获取对话失败，请检查API Key和API base_url！")
-                await send_to_admin(f"获取对话时发生错误: {e}", bot)
+                await send_to_admin_as_error(
+                    f"请检查API Key和API base_url！获取对话时发生错误: {e}", bot
+                )
                 raise e
             continue
 
