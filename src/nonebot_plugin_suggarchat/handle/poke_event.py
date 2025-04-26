@@ -62,7 +62,7 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
 
     async def handle_private_poke(event: PokeNotifyEvent, bot: Bot):
         """处理私聊中的戳一戳事件"""
-        name = get_friend_info(event.user_id, bot)  # 获取好友信息
+        name = await get_friend_info(event.user_id, bot)  # 获取好友信息
         send_messages = [
             {"role": "system", "content": f"{config_manager.private_train}"},
             {
