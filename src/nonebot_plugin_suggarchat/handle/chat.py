@@ -34,7 +34,7 @@ from ..resources import (
     synthesize_message,
     write_memory_data,
 )
-from ..utils import get_chat, send_to_admin
+from ..utils import get_chat, send_to_admin, send_to_admin_as_error
 
 
 async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
@@ -87,12 +87,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, group_id, content)
 
         # 记录用户消息
-        group_data["memory"]["messages"].append(
-            {
-                "role": "user",
-                "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config_manager.config.parse_segments else event.message.extract_plain_text()}",
-            }
-        )
+        group_data["memory"]["messages"].append({
+            "role": "user",
+            "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config_manager.config.parse_segments else event.message.extract_plain_text()}",
+        })
 
         # 控制记忆长度和 token 限制
         await enforce_memory_limit(group_data, memory_length_limit)
@@ -103,9 +101,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages)
 
         # 记录模型回复
-        group_data["memory"]["messages"].append(
-            {"role": "assistant", "content": str(response)}
-        )
+        group_data["memory"]["messages"].append({
+            "role": "assistant",
+            "content": str(response),
+        })
         await send_response(event, response)
 
         # 写入记忆数据
@@ -143,12 +142,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, None, content)
 
         # 记录用户消息
-        private_data["memory"]["messages"].append(
-            {
-                "role": "user",
-                "content": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {str(content) if config_manager.config.parse_segments else event.message.extract_plain_text()}",
-            }
-        )
+        private_data["memory"]["messages"].append({
+            "role": "user",
+            "content": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {str(content) if config_manager.config.parse_segments else event.message.extract_plain_text()}",
+        })
 
         # 控制记忆长度和 token 限制
         await enforce_memory_limit(private_data, memory_length_limit)
@@ -161,9 +158,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages)
 
         # 记录模型回复
-        private_data["memory"]["messages"].append(
-            {"role": "assistant", "content": str(response)}
-        )
+        private_data["memory"]["messages"].append({
+            "role": "assistant",
+            "content": str(response),
+        })
         await send_response(event, response)
 
         # 写入记忆数据
@@ -200,9 +198,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             if (time.time() - data["timestamp"]) >= (
                 config_manager.config.session_control_time * 60
             ):
-                data["sessions"].append(
-                    {"messages": data["memory"]["messages"], "time": time.time()}
-                )
+                data["sessions"].append({
+                    "messages": data["memory"]["messages"],
+                    "time": time.time(),
+                })
                 while (
                     len(data["sessions"])
                     > config_manager.config.session_control_history
@@ -214,17 +213,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 chated = await matcher.send(
                     f'如果想和我继续用刚刚的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
                 )
-                session_clear_list.append(
-                    {
-                        "id": (
-                            event.group_id
-                            if isinstance(event, GroupMessageEvent)
-                            else event.user_id
-                        ),
-                        "message_id": chated["message_id"],
-                        "timestamp": time.time(),
-                    }
-                )
+                session_clear_list.append({
+                    "id": (
+                        event.group_id
+                        if isinstance(event, GroupMessageEvent)
+                        else event.user_id
+                    ),
+                    "message_id": chated["message_id"],
+                    "timestamp": time.time(),
+                })
                 raise CancelException()
             elif event.reply:
                 for session in session_clear_list:
@@ -242,7 +239,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 await bot.delete_msg(message_id=session["message_id"])
                         session_clear_list.remove(session)
                         data["memory"]["messages"] = data["sessions"][-1]["messages"]
-                        data["sessions"].pop()
+                        data["sessions"].pop
                         await matcher.send("让我们继续聊天吧～")
                         write_memory_data(event, data)
                         raise CancelException()
@@ -300,11 +297,24 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 try:
                     del data["memory"]["messages"][0]
                 except Exception as e:
-                    logger.error(
+                    await send_to_admin_as_error(
                         "上下文限制清理失败！请调整提示词长度或增大会话tokens限制！"
                     )
-                    await send_to_admin("上下文管理出现异常！")
-                    await send_to_admin(str(e))
+
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+
+                    await send_to_admin_as_error(
+                        f"Exception type: {exc_type.__name__}"
+                        if exc_type
+                        else "Exception type: None"
+                    )
+                    await send_to_admin_as_error(f"Exception message: {exc_value!s}")
+                    import traceback
+
+                    await send_to_admin_as_error(
+                        f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
+                    )
+                    break
                 full_string = "".join(
                     st["content"]
                     for st in [train.copy(), *data["memory"]["messages"].copy()]

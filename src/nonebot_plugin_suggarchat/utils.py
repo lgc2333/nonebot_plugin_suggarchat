@@ -14,6 +14,11 @@ from .chatmanager import chat_manager
 from .config import Config, config_manager
 
 
+async def send_to_admin_as_error(msg: str, bot: Bot | None = None) -> None:
+    logger.error(msg)
+    await send_to_admin(msg, bot)
+
+
 async def send_to_admin(msg: str, bot: Bot | None = None) -> None:
     """发送消息给管理员"""
     # 检查是否允许发送消息给管理员
