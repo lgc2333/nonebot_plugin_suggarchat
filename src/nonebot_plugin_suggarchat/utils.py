@@ -12,6 +12,7 @@ from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
 
 from .chatmanager import chat_manager
 from .config import Config, config_manager
+from .resources import remove_think_tag
 
 
 async def send_to_admin_as_error(msg: str, bot: Bot | None = None) -> None:
@@ -59,6 +60,7 @@ async def get_chat(
         key = config_manager.config.open_ai_api_key
         model = config_manager.config.model
         protocol = config_manager.config.protocol
+        is_thought_chain_model = config_manager.config.thought_chain_model
     else:
         # 查找匹配的预设
         for i in config_manager.get_models():
@@ -67,6 +69,7 @@ async def get_chat(
                 key = i.api_key
                 model = i.model
                 protocol = i.protocol
+                is_thought_chain_model = i.thought_chain_model
                 break
         else:
             # 未找到匹配预设，重置为主配置
@@ -76,6 +79,7 @@ async def get_chat(
             model = config_manager.config.model
             base_url = config_manager.config.open_ai_base_url
             protocol = config_manager.config.protocol
+            is_thought_chain_model = config_manager.config.thought_chain_model
             config_manager.save_config()
     # 检查协议适配器
     if protocol == "__main__":
@@ -102,7 +106,7 @@ async def get_chat(
     )
     if chat_manager.debug:
         logger.debug(response)
-    return response
+    return response if not is_thought_chain_model else remove_think_tag(response)
 
 
 async def openai_get_chat(

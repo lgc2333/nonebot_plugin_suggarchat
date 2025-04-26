@@ -24,7 +24,7 @@ class ModelPreset(BaseModel, extra="allow"):
     base_url: str = ""
     api_key: str = ""
     protocol: str = "__main__"
-    # thought_chain_model: bool = False
+    thought_chain_model: bool = False
 
     @classmethod
     def load(cls, path: Path):
@@ -100,7 +100,7 @@ class Config(BaseModel, extra="allow"):
     session_control_history: int = 10
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
-    # thought_chain_model: bool = False
+    thought_chain_model: bool = False
 
     # Toml配置文件路径
     @classmethod
@@ -194,7 +194,6 @@ class ConfigManager:
     group_train: dict = field(default_factory=dict)
     config: Config = field(default_factory=Config)
     models: list[tuple[ModelPreset, str]] = field(default_factory=list)
-
     prompts: Prompts = field(default_factory=Prompts)
 
     def load(self, bot_id: str):

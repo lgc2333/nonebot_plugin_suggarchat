@@ -17,8 +17,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 from nonebot.log import logger
 
-from .config import config_manager
 from .chatmanager import chat_manager
+from .config import config_manager
 
 
 def format_datetime_timestamp(time: int) -> str:
@@ -284,3 +284,19 @@ def get_current_datetime_timestamp():
     formatted_weekday = now.strftime("%A")
     formatted_time = now.strftime("%H:%M:%S")
     return f"[{formatted_date} {formatted_weekday} {formatted_time}]"
+
+
+def remove_think_tag(text: str) -> str:
+    """移除第一次出现的think标签
+
+    Args:
+        text (str): 处理的参数
+
+    Returns:
+        str: 处理后的文本
+    """
+    # 使用非贪婪匹配，匹配第一次出现的<think>标签及其内容
+    pattern = r"<think>.*?</think>"
+    # 替换为空字符串，且只替换第一个匹配项
+    result = re.sub(pattern, "", text, count=1, flags=re.DOTALL)
+    return result
