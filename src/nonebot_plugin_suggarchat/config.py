@@ -116,16 +116,16 @@ class Config(BaseModel, extra="allow"):
         config_instance = cls(**updated_config)
         if current_config != updated_config:
             config_instance.save_to_toml(path)
-        if not cls.max_tokens > 0:
+        if config_instance.max_tokens <= 0:
             raise ValueError("max_tokens必须大于零!")
-        if not cls.llm_timeout > 0:
+        if config_instance.llm_timeout <= 0:
             raise ValueError("LLM请求超时时间必须大于零！")
-        if not cls.session_max_tokens > 0:
+        if config_instance.session_max_tokens <= 0:
             raise ValueError("上下文最大Tokens限制必须大于零！")
-        if cls.session_control:
-            if not cls.session_control_history > 0:
+        if config_instance.session_control:
+            if config_instance.session_control_history <= 0:
                 raise ValueError("会话历史最大值不能为0！")
-            if not cls.session_control_time > 0:
+            if config_instance.session_control_time <= 0:
                 raise ValueError("会话生命周期时间不能小于零！")
         return config_instance
 
