@@ -25,6 +25,7 @@ class ModelPreset(BaseModel, extra="allow"):
     api_key: str = ""
     protocol: str = "__main__"
     thought_chain_model: bool = False
+    multimodal: bool = False
 
     @classmethod
     def load(cls, path: Path):
@@ -101,6 +102,7 @@ class Config(BaseModel, extra="allow"):
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
     thought_chain_model: bool = False
+    multimodal: bool = False
 
     # Toml配置文件路径
     @classmethod

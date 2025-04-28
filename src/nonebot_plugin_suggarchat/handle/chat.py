@@ -88,9 +88,34 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, group_id, content)
 
         # 记录用户消息
+        for i in config_manager.get_models():
+            if i.name == config_manager.config.preset:
+                is_multimodal = i.multimodal
+        else:
+            is_multimodal = config_manager.config.multimodal
+
+        if config_manager.config.parse_segments:
+            text = (
+                f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
+                if not is_multimodal
+                else [
+                    {
+                        "type": "input_text",
+                        "text": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}",
+                    },
+                ]
+                + [
+                    {"type": "input_image", "url": seg.data.get("url")}
+                    for seg in event.message
+                    if seg.data.get("type") == "image"
+                ]
+            )
+        else:
+            text = event.message.extract_plain_text()
+
         group_data["memory"]["messages"].append({
             "role": "user",
-            "content": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content if config_manager.config.parse_segments else event.message.extract_plain_text()}",
+            "content": text,
         })
 
         # 控制记忆长度和 token 限制
@@ -143,10 +168,32 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, None, content)
 
         # 记录用户消息
-        private_data["memory"]["messages"].append({
-            "role": "user",
-            "content": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {str(content) if config_manager.config.parse_segments else event.message.extract_plain_text()}",
-        })
+        for i in config_manager.get_models():
+            if i.name == config_manager.config.preset:
+                is_multimodal = i.multimodal
+                break
+        else:
+            is_multimodal = config_manager.config.multimodal
+
+        if config_manager.config.parse_segments:
+            text = (
+                f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}"
+                if not is_multimodal
+                else [
+                    {
+                        "type": "input_text",
+                        "text": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}",
+                    },
+                ]
+                + [
+                    {"type": "input_image", "url": seg.data.get("url")}
+                    for seg in event.message
+                    if seg.data.get("type") == "image"
+                ]
+            )
+        else:
+            text = event.message.extract_plain_text()
+        private_data["memory"]["messages"].append({"role": "user", "content": text})
 
         # 控制记忆长度和 token 限制
         await enforce_memory_limit(private_data, memory_length_limit)
