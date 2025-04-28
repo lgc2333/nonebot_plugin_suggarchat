@@ -55,32 +55,13 @@ async def get_chat(
     max_tokens = config_manager.config.max_tokens
     func = openai_get_chat
     # 根据预设选择API密钥和基础URL
-    if config_manager.config.preset == "__main__":
-        base_url = config_manager.config.open_ai_base_url
-        key = config_manager.config.open_ai_api_key
-        model = config_manager.config.model
-        protocol = config_manager.config.protocol
-        is_thought_chain_model = config_manager.config.thought_chain_model
-    else:
-        # 查找匹配的预设
-        for i in config_manager.get_models():
-            if i.name == config_manager.config.preset:
-                base_url = i.base_url
-                key = i.api_key
-                model = i.model
-                protocol = i.protocol
-                is_thought_chain_model = i.thought_chain_model
-                break
-        else:
-            # 未找到匹配预设，重置为主配置
-            logger.error(f"预设 {config_manager.config.preset} 未找到，重置为主配置")
-            config_manager.config.preset = "__main__"
-            key = config_manager.config.open_ai_api_key
-            model = config_manager.config.model
-            base_url = config_manager.config.open_ai_base_url
-            protocol = config_manager.config.protocol
-            is_thought_chain_model = config_manager.config.thought_chain_model
-            config_manager.save_config()
+    i = config_manager.get_preset(config_manager.config.preset, fix=True, cache=False)
+    base_url = i.base_url
+    key = i.api_key
+    model = i.model
+    protocol = i.protocol
+    is_thought_chain_model = i.thought_chain_model
+    
     # 检查协议适配器
     if protocol == "__main__":
         func = openai_get_chat

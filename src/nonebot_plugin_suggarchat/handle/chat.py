@@ -88,11 +88,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, group_id, content)
 
         # 记录用户消息
-        for i in config_manager.get_models():
-            if i.name == config_manager.config.preset:
-                is_multimodal = i.multimodal
-        else:
-            is_multimodal = config_manager.config.multimodal
+        is_multimodal: bool = (
+            config_manager.get_preset(
+                preset=config_manager.config.preset, fix=True, cache=False
+            )
+        ).multimodal
 
         if config_manager.config.parse_segments:
             text = (
@@ -168,12 +168,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, None, content)
 
         # 记录用户消息
-        for i in config_manager.get_models():
-            if i.name == config_manager.config.preset:
-                is_multimodal = i.multimodal
-                break
-        else:
-            is_multimodal = config_manager.config.multimodal
+        is_multimodal: bool = (
+            config_manager.get_preset(
+                preset=config_manager.config.preset, fix=True, cache=False
+            )
+        ).multimodal
 
         if config_manager.config.parse_segments:
             text = (

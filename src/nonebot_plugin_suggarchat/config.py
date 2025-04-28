@@ -8,6 +8,7 @@ import nonebot_plugin_localstore as store
 import tomli
 import tomli_w
 from pydantic import BaseModel
+from nonebot import logger
 
 __KERNEL_VERSION__ = "unknow"
 
@@ -290,6 +291,27 @@ class ConfigManager:
         for file in self.custom_models_dir.glob("*.json"):
             self.models.append((ModelPreset.load(file), file.stem))
         return [model[0] for model in self.models]
+
+    def get_preset(
+        self, preset: str, fix: bool = False, cache: bool = False
+    ) -> ModelPreset | Config:
+        if preset == "__main__":
+            return self.config
+        for i in config_manager.get_models():
+            if i.name == preset:
+                return i
+                break
+        else:
+            if fix is True:
+                # 未找到匹配预设，重置为主配置
+                logger.error(
+                    f"预设 {config_manager.config.preset} 未找到，重置为主配置"
+                )
+                config_manager.config.preset = "__main__"
+                config_manager.save_config()
+            else:
+                return self.config
+            return self.get_preset(preset, fix, cache)
 
     def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""
