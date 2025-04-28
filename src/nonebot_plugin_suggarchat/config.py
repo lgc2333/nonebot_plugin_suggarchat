@@ -309,9 +309,9 @@ class ConfigManager:
                 )
                 config_manager.config.preset = "__main__"
                 config_manager.save_config()
+                return self.get_preset(preset, fix, cache)
             else:
                 return self.config
-            return self.get_preset(preset, fix, cache)
 
     def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""
