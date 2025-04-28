@@ -7,8 +7,8 @@ from typing import Any
 import nonebot_plugin_localstore as store
 import tomli
 import tomli_w
-from pydantic import BaseModel
 from nonebot import logger
+from pydantic import BaseModel
 
 __KERNEL_VERSION__ = "unknow"
 

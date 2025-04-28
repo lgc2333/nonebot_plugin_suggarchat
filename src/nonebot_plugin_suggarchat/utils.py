@@ -61,7 +61,7 @@ async def get_chat(
     model = i.model
     protocol = i.protocol
     is_thought_chain_model = i.thought_chain_model
-    
+
     # 检查协议适配器
     if protocol == "__main__":
         func = openai_get_chat
@@ -147,7 +147,7 @@ async def openai_get_chat(
         if chat_manager.debug:
             logger.debug(response)
         if isinstance(completion, ChatCompletion):
-            response = completion.choices[0].message.content
+            response = completion.choices[0].message.content if completion.choices[0].message.content is not None else ""
         else:
             raise RuntimeError("收到意外的响应类型")
     return response if response is not None else ""

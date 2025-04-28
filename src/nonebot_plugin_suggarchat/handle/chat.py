@@ -119,7 +119,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         })
 
         # 控制记忆长度和 token 限制
-        await enforce_memory_limit(group_data, memory_length_limit)
+        enforce_memory_limit(group_data, memory_length_limit)
         await enforce_token_limit(group_data, config_manager.group_train)
 
         # 准备发送给模型的消息
@@ -195,7 +195,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         private_data["memory"]["messages"].append({"role": "user", "content": text})
 
         # 控制记忆长度和 token 限制
-        await enforce_memory_limit(private_data, memory_length_limit)
+        enforce_memory_limit(private_data, memory_length_limit)
         await enforce_token_limit(private_data, config_manager.private_train)
 
         # 准备发送给模型的消息
@@ -321,7 +321,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             role, "[获取身份失败]"
         )
 
-    async def enforce_memory_limit(data: dict, memory_length_limit: int):
+    def enforce_memory_limit(data: dict, memory_length_limit: int):
         """
         控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
@@ -403,27 +403,27 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         调用聊天模型生成回复，并触发相关事件。
         """
         if config_manager.config.matcher_function:
-            _matcher = SuggarMatcher(event_type=EventType().before_chat())
+            matcher_ = SuggarMatcher(event_type=EventType().before_chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[""],
                 user_id=event.user_id,
             )
-            await _matcher.trigger_event(chat_event, _matcher)
+            await matcher_.trigger_event(chat_event, matcher_)
             send_messages = chat_event.get_send_message()
 
         response = await get_chat(send_messages)
 
         if config_manager.config.matcher_function:
-            _matcher = SuggarMatcher(event_type=EventType().chat())
+            matcher_ = SuggarMatcher(event_type=EventType().chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[response],
                 user_id=event.user_id,
             )
-            await _matcher.trigger_event(chat_event, _matcher)
+            await matcher_.trigger_event(chat_event, matcher_)
             response = chat_event.model_response
 
         return response
