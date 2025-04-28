@@ -324,8 +324,25 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
     async def enforce_memory_limit(data: dict, memory_length_limit: int):
         """
-        控制记忆长度，删除超出限制的旧消息。
+        控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
+        for i in config_manager.get_models():
+            if i.name == config_manager.config.preset:
+                is_multimodal = i.multimodal
+                break
+        else:
+            is_multimodal = config_manager.config.multimodal
+        for iii in data["memory"]["messages"]:
+            if (
+                isinstance(iii["content"], dict)
+                and not is_multimodal
+                and iii["role"] == "user"
+            ):
+                for ii in iii["content"]:
+                    i_text = ""
+                    if ii["type"] == "input_text":
+                        i_text += ii["text"]
+                iii["content"] = i_text
         while len(data["memory"]["messages"]) > memory_length_limit or (
             data["memory"]["messages"][0]["role"] != "user"
         ):
