@@ -82,14 +82,14 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
         """处理戳一戳事件的核心逻辑"""
         if config_manager.config.matcher_function:
             # 触发自定义事件前置处理
-            _matcher = SuggarMatcher(event_type=EventType().before_poke())
+            matcher_ = SuggarMatcher(event_type=EventType().before_poke())
             poke_event = PokeEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[""],
                 user_id=event.user_id,
             )
-            await _matcher.trigger_event(poke_event, _matcher)
+            await matcher_.trigger_event(poke_event, matcher_)
             send_messages = poke_event.get_send_message()
 
         # 获取聊天模型的回复
@@ -97,14 +97,14 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
 
         if config_manager.config.matcher_function:
             # 触发自定义事件后置处理
-            _matcher = SuggarMatcher(event_type=EventType().poke())
+            matcher_ = SuggarMatcher(event_type=EventType().poke())
             poke_event = PokeEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[response],
                 user_id=event.user_id,
             )
-            await _matcher.trigger_event(poke_event, _matcher)
+            await matcher_.trigger_event(poke_event, matcher_)
             response = poke_event.model_response
 
         # 如果开启调试模式，发送调试信息给管理员

@@ -26,5 +26,4 @@ class ChatManager:
     menu_msg += "/choose_prompt <group/private> <预设名称> 设置群聊/私聊的全局提示词预设"
 
 
-
 chat_manager = ChatManager()
