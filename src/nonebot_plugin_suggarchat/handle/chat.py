@@ -325,12 +325,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         """
         控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
-        for i in config_manager.get_models():
-            if i.name == config_manager.config.preset:
-                is_multimodal = i.multimodal
-                break
-        else:
-            is_multimodal = config_manager.config.multimodal
+        is_multimodal = config_manager.get_preset(
+            config_manager.config.preset, True, False
+        )
         for iii in data["memory"]["messages"]:
             if (
                 isinstance(iii["content"], dict)
