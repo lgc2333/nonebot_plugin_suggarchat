@@ -55,31 +55,27 @@ async def get_chat(
     max_tokens = config_manager.config.max_tokens
     func = openai_get_chat
     # 根据预设选择API密钥和基础URL
-    i = config_manager.get_preset(config_manager.config.preset, fix=True)
-    base_url = i.base_url
-    key = i.api_key
-    model = i.model
-    protocol = i.protocol
-    is_thought_chain_model = i.thought_chain_model
+    preset = config_manager.get_preset(config_manager.config.preset)
+    is_thought_chain_model = preset.thought_chain_model
 
     # 检查协议适配器
-    if protocol == "__main__":
+    if preset.protocol == "__main__":
         func = openai_get_chat
-    elif protocol not in protocols_adapters:
-        raise Exception(f"协议 {protocol} 的适配器未找到!")
+    elif preset.protocol not in protocols_adapters:
+        raise ValueError(f"协议 {preset.protocol} 的适配器未找到!")
     else:
-        func = protocols_adapters[protocol]
+        func = protocols_adapters[preset.protocol]
     # 记录日志
-    logger.debug(f"开始获取 {model} 的对话")
+    logger.debug(f"开始获取 {preset.model} 的对话")
     logger.debug(f"预设：{config_manager.config.preset}")
-    logger.debug(f"密钥：{key[:7]}...")
-    logger.debug(f"协议：{protocol}")
-    logger.debug(f"API地址：{base_url}")
+    logger.debug(f"密钥：{preset.api_key[:7]}...")
+    logger.debug(f"协议：{preset.protocol}")
+    logger.debug(f"API地址：{preset.base_url}")
     # 调用适配器获取聊天响应
     response = await func(
-        base_url,
-        model,
-        key,
+        preset.base_url,
+        preset.model,
+        preset.api_key,
         messages,
         max_tokens,
         config_manager.config,
@@ -100,12 +96,6 @@ async def openai_get_chat(
     bot: Bot,
 ) -> str:
     """核心聊天响应获取函数"""
-    # 检查OpenAI配置是否为空
-    if (
-        not str(config.open_ai_base_url).strip()
-        or not str(config.open_ai_api_key).strip()
-    ):
-        raise RuntimeError("OpenAI Url或Key为空！")
     # 创建OpenAI客户端
     client = openai.AsyncOpenAI(
         base_url=base_url, api_key=key, timeout=config.llm_timeout

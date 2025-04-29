@@ -89,24 +89,22 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 记录用户消息
         is_multimodal: bool = (
-            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
+            config_manager.get_preset(preset=config_manager.config.preset)
         ).multimodel
 
         if config_manager.config.parse_segments:
             text = (
-                f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
-                if not is_multimodal
-                else [
-                    {
-                        "type": "input_text",
-                        "text": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}",
-                    },
-                ]
-                + [
-                    {"type": "input_image", "url": seg.data.get("url")}
-                    for seg in event.message
-                    if seg.data.get("type") == "image"
-                ]
+                [
+                                    {
+                   "type": "input_text",
+                   "text": f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}",
+                                    },
+                                ]
+                                + [
+                                    {"type": "input_image", "url": seg.data.get("url")}
+                                    for seg in event.message
+                                    if seg.data.get("type") == "image"
+                                ] if is_multimodal else f"[{role}][{Date}][{user_name}（{user_id}）]说:{content}"
             )
         else:
             text = event.message.extract_plain_text()
@@ -171,24 +169,22 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 记录用户消息
         is_multimodal: bool = (
-            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
+            config_manager.get_preset(preset=config_manager.config.preset)
         ).multimodel
 
         if config_manager.config.parse_segments:
             text = (
-                f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}"
-                if not is_multimodal
-                else [
-                    {
-                        "type": "input_text",
-                        "text": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}",
-                    },
-                ]
-                + [
-                    {"type": "input_image", "url": seg.data.get("url")}
-                    for seg in event.message
-                    if seg.data.get("type") == "image"
-                ]
+                [
+                                    {
+                   "type": "input_text",
+                   "text": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}",
+                                    },
+                                ]
+                                + [
+                                    {"type": "input_image", "url": seg.data.get("url")}
+                                    for seg in event.message
+                                    if seg.data.get("type") == "image"
+                                ] if is_multimodal else f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}"
             )
         else:
             text = event.message.extract_plain_text()
@@ -331,18 +327,21 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         """
         控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
-        is_multimodal = config_manager.get_preset(config_manager.config.preset, True)
-        for iii in data["memory"]["messages"]:
+        is_multimodal = config_manager.get_preset(config_manager.config.preset)
+        # Process multimodal messages when needed
+        for message in data["memory"]["messages"]:
             if (
-                isinstance(iii["content"], dict)
-                and not is_multimodal
-                and iii["role"] == "user"
+            isinstance(message["content"], dict)
+            and not is_multimodal
+            and message["role"] == "user"
             ):
-                for ii in iii["content"]:
-                    i_text = ""
-                    if ii["type"] == "input_text":
-                        i_text += ii["text"]
-                iii["content"] = i_text
+                message_text = ""
+                for content_part in message["content"]:
+                    if content_part["type"] == "input_text":
+                        message_text += content_part["text"]
+            message["content"] = message_text
+
+        # Enforce memory length limit
         while len(data["memory"]["messages"]) > memory_length_limit or (
             data["memory"]["messages"][0]["role"] != "user"
         ):
@@ -352,41 +351,42 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         """
         控制 token 数量，删除超出限制的旧消息。
         """
-        if config_manager.config.enable_tokens_limit:
-            memory_l = [train.copy(), *data["memory"]["messages"].copy()]
-            full_string = "".join(st["content"] for st in memory_l)
+        if not config_manager.config.enable_tokens_limit:
+            return
+        memory_l = [train.copy(), *data["memory"]["messages"].copy()]
+        full_string = "".join(st["content"] for st in memory_l)
+        tokens = hybrid_token_count(
+            full_string, config_manager.config.tokens_count_mode
+        )
+        while tokens > config_manager.config.session_max_tokens:
+            try:
+                del data["memory"]["messages"][0]
+            except Exception:
+                await send_to_admin_as_error(
+                    "上下文限制清理出现异常！请调整提示词长度或增大会话tokens限制！"
+                )
+
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+
+                await send_to_admin_as_error(
+                    f"Exception type: {exc_type.__name__}"
+                    if exc_type
+                    else "Exception type: None"
+                )
+                await send_to_admin_as_error(f"Exception message: {exc_value!s}")
+                import traceback
+
+                await send_to_admin_as_error(
+                    f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
+                )
+                break
+            full_string = "".join(
+                st["content"]
+                for st in [train.copy(), *data["memory"]["messages"].copy()]
+            )
             tokens = hybrid_token_count(
                 full_string, config_manager.config.tokens_count_mode
             )
-            while tokens > config_manager.config.session_max_tokens:
-                try:
-                    del data["memory"]["messages"][0]
-                except Exception:
-                    await send_to_admin_as_error(
-                        "上下文限制清理出现异常！请调整提示词长度或增大会话tokens限制！"
-                    )
-
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-
-                    await send_to_admin_as_error(
-                        f"Exception type: {exc_type.__name__}"
-                        if exc_type
-                        else "Exception type: None"
-                    )
-                    await send_to_admin_as_error(f"Exception message: {exc_value!s}")
-                    import traceback
-
-                    await send_to_admin_as_error(
-                        f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
-                    )
-                    break
-                full_string = "".join(
-                    st["content"]
-                    for st in [train.copy(), *data["memory"]["messages"].copy()]
-                )
-                tokens = hybrid_token_count(
-                    full_string, config_manager.config.tokens_count_mode
-                )
 
     def prepare_send_messages(data: dict, train: dict) -> list:
         """
@@ -404,27 +404,27 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         调用聊天模型生成回复，并触发相关事件。
         """
         if config_manager.config.matcher_function:
-            matcher_ = SuggarMatcher(event_type=EventType().before_chat())
+            eventMatcher = SuggarMatcher(event_type=EventType().before_chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[""],
                 user_id=event.user_id,
             )
-            await matcher_.trigger_event(chat_event, matcher_)
+            await eventMatcher.trigger_event(chat_event, eventMatcher)
             send_messages = chat_event.get_send_message()
 
         response = await get_chat(send_messages)
 
         if config_manager.config.matcher_function:
-            matcher_ = SuggarMatcher(event_type=EventType().chat())
+            eventMatcher = SuggarMatcher(event_type=EventType().chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[response],
                 user_id=event.user_id,
             )
-            await matcher_.trigger_event(chat_event, matcher_)
+            await eventMatcher.trigger_event(chat_event, eventMatcher)
             response = chat_event.model_response
 
         return response

@@ -16,7 +16,7 @@ async def presets(event: MessageEvent, matcher: Matcher):
         await matcher.finish("只有管理员才能查看模型预设。")
 
     # 构建包含当前模型预设信息的消息
-    msg = f"模型预设:\n当前：{'主配置文件' if config_manager.config.preset == '__main__' else config_manager.config.preset}\n主配置文件：{config_manager.config.model}"
+    msg = f"模型预设:\n当前：主配置文件：{config_manager.config.preset}"
 
     # 遍历模型列表，添加每个预设的名称和模型信息
     for i in config_manager.get_models():
@@ -24,3 +24,5 @@ async def presets(event: MessageEvent, matcher: Matcher):
 
     # 发送消息并结束处理
     await matcher.finish(msg)
+
+

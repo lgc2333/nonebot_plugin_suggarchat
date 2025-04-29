@@ -20,7 +20,7 @@ DATA_DIR: Path = store.get_plugin_data_dir()
 
 
 class ModelPreset(BaseModel, extra="allow"):
-    model: str = "__main__"
+    model: str = "default"
     name: str = ""
     base_url: str = ""
     api_key: str = ""
@@ -66,14 +66,11 @@ class Config(BaseModel, extra="allow"):
     use_base_prompt: bool = True
     admin_group: int = 0
     admins: list[int] = []
-    open_ai_base_url: str = ModelPreset().base_url
-    open_ai_api_key: str = ModelPreset().api_key
     stream: bool = False
     max_tokens: int = 100
     tokens_count_mode: str = "bpe"
     session_max_tokens: int = 5000
     enable_tokens_limit: bool = True
-    model: str = "auto"
     llm_timeout: int = 60
     say_after_self_msg_be_deleted: bool = False
     group_added_msg: str = "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人..."
@@ -95,17 +92,13 @@ class Config(BaseModel, extra="allow"):
         "希望我能继续为你提供帮助，不要太在意我的小错误哦！",
     ]
     parse_segments: bool = True
-    protocol: str = "__main__"
     matcher_function: bool = True
     session_control: bool = False
     session_control_time: int = 60
     session_control_history: int = 10
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
-    thought_chain_model: bool = False
-    multimodel: bool = False
 
-    # Toml配置文件路径
     @classmethod
     def load_from_toml(cls, path: Path) -> "Config":
         """从 TOML 文件加载配置"""
@@ -117,20 +110,22 @@ class Config(BaseModel, extra="allow"):
         current_config = cls().model_dump()
         updated_config = {**current_config, **data}
         config_instance = cls(**updated_config)
-        if current_config != updated_config:
-            config_instance.save_to_toml(path)
-        if config_instance.max_tokens <= 0:
-            raise ValueError("max_tokens必须大于零!")
-        if config_instance.llm_timeout <= 0:
-            raise ValueError("LLM请求超时时间必须大于零！")
-        if config_instance.session_max_tokens <= 0:
-            raise ValueError("上下文最大Tokens限制必须大于零！")
-        if config_instance.session_control:
-            if config_instance.session_control_history <= 0:
-                raise ValueError("会话历史最大值不能为0！")
-            if config_instance.session_control_time <= 0:
-                raise ValueError("会话生命周期时间不能小于零！")
+        config_instance.validate()  # 校验配置
         return config_instance
+
+    def validate(self):
+        """校验配置"""
+        if self.max_tokens <= 0:
+            raise ValueError("max_tokens必须大于零!")
+        if self.llm_timeout <= 0:
+            raise ValueError("LLM请求超时时间必须大于零！")
+        if self.session_max_tokens <= 0:
+            raise ValueError("上下文最大Tokens限制必须大于零！")
+        if self.session_control:
+            if self.session_control_history <= 0:
+                raise ValueError("会话历史最大值不能为0！")
+            if self.session_control_time <= 0:
+                raise ValueError("会话生命周期时间不能小于零！")
 
     @classmethod
     def load_from_json(cls, path: Path) -> "Config":
@@ -287,26 +282,33 @@ class ConfigManager:
         """获取模型列表"""
         if cache and self.models:
             return [model[0] for model in self.models]
-        self.models.clear()
+        self.models.clear()  # 清空模型列表
+
+        default_preset_exists = False
         for file in self.custom_models_dir.glob("*.json"):
-            self.models.append((ModelPreset.load(file), file.stem))
+            model_preset = ModelPreset.load(file)
+            self.models.append((model_preset, file.stem))
+            if file.stem == "default":
+                default_preset_exists = True
+
+        if not default_preset_exists:
+            main_preset = ModelPreset()
+            main_preset_path = self.custom_models_dir / "default.json"
+            main_preset.save(main_preset_path)
+            self.models.append((main_preset, "default"))
+            logger.warning("未找到默认模型配置，已创建 default.json 文件，请修改！")
+
         return [model[0] for model in self.models]
 
-    def get_preset(self, preset: str, fix: bool = False) -> ModelPreset | Config:
+    def get_preset(self, preset: str) -> ModelPreset:
         """获取预设配置"""
-        if preset == "__main__":
-            return self.config
-        for model in config_manager.get_models():
+        for model in self.get_models():
             if model.name == preset:
                 return model
-        if fix:
-            # 未找到匹配预设，重置为主配置
-            logger.error(f"预设 {config_manager.config.preset} 未找到，重置为主配置")
-            config_manager.config.preset = "__main__"
-            config_manager.save_config()
-            return self.get_preset(preset, fix)
-        else:
-            return self.config
+        logger.error(f"预设 {self.config.preset} 未找到，重置为主配置")
+        self.config.preset = "default"
+        self.save_config()
+        return self.get_preset("default")
 
     def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""

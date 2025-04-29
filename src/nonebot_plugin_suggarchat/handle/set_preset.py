@@ -25,20 +25,20 @@ async def set_preset(
     # 如果参数不为空
     if arg != "":
         # 遍历所有模型
-        for i in config_manager.get_models():
-            if i.name == arg:
+        for model in config_manager.get_models():
+            if model.name == arg:
                 # 设置预设并保存
-                config_manager.config.preset = i.name
+                config_manager.config.preset = model.name
                 config_manager.save_config()
                 # 回复设置成功
-                await matcher.finish(f"已设置预设为：{i.name}，模型：{i.model}")
+                await matcher.finish(f"已设置预设为：{model.name}，模型：{model.model}")
         # 未找到匹配的预设
         await matcher.finish("未找到预设，请输入/presets查看预设列表。")
     else:
         # 参数为空时重置为默认预设
-        config_manager.config.preset = "__main__"
+        config_manager.config.preset = "default"
         config_manager.save_config()
         # 回复重置成功
         await matcher.finish(
-            f"已重置预设为：主配置文件，模型：{config_manager.config.model}"
+            f"已重置预设为：默认预设，模型：{config_manager.get_preset(config_manager.config.preset).model}。"
         )
