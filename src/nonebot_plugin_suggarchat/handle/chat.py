@@ -89,10 +89,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 记录用户消息
         is_multimodal: bool = (
-            config_manager.get_preset(
-                preset=config_manager.config.preset, fix=True, cache=False
-            )
-        ).multimodal
+            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
+        ).multimodel
 
         if config_manager.config.parse_segments:
             text = (
@@ -113,10 +111,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         else:
             text = event.message.extract_plain_text()
 
-        group_data["memory"]["messages"].append({
-            "role": "user",
-            "content": text,
-        })
+        group_data["memory"]["messages"].append(
+            {
+                "role": "user",
+                "content": text,
+            }
+        )
 
         # 控制记忆长度和 token 限制
         enforce_memory_limit(group_data, memory_length_limit)
@@ -127,10 +127,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages)
 
         # 记录模型回复
-        group_data["memory"]["messages"].append({
-            "role": "assistant",
-            "content": str(response),
-        })
+        group_data["memory"]["messages"].append(
+            {
+                "role": "assistant",
+                "content": str(response),
+            }
+        )
         await send_response(event, response)
 
         # 写入记忆数据
@@ -169,10 +171,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 记录用户消息
         is_multimodal: bool = (
-            config_manager.get_preset(
-                preset=config_manager.config.preset, fix=True, cache=False
-            )
-        ).multimodal
+            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
+        ).multimodel
 
         if config_manager.config.parse_segments:
             text = (
@@ -205,10 +205,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages)
 
         # 记录模型回复
-        private_data["memory"]["messages"].append({
-            "role": "assistant",
-            "content": str(response),
-        })
+        private_data["memory"]["messages"].append(
+            {
+                "role": "assistant",
+                "content": str(response),
+            }
+        )
         await send_response(event, response)
 
         # 写入记忆数据
@@ -245,10 +247,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             if (time.time() - data["timestamp"]) >= (
                 config_manager.config.session_control_time * 60
             ):
-                data["sessions"].append({
-                    "messages": data["memory"]["messages"],
-                    "time": time.time(),
-                })
+                data["sessions"].append(
+                    {
+                        "messages": data["memory"]["messages"],
+                        "time": time.time(),
+                    }
+                )
                 while (
                     len(data["sessions"])
                     > config_manager.config.session_control_history
@@ -260,15 +264,17 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 chated = await matcher.send(
                     f'如果想和我继续用刚刚的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
                 )
-                session_clear_list.append({
-                    "id": (
-                        event.group_id
-                        if isinstance(event, GroupMessageEvent)
-                        else event.user_id
-                    ),
-                    "message_id": chated["message_id"],
-                    "timestamp": time.time(),
-                })
+                session_clear_list.append(
+                    {
+                        "id": (
+                            event.group_id
+                            if isinstance(event, GroupMessageEvent)
+                            else event.user_id
+                        ),
+                        "message_id": chated["message_id"],
+                        "timestamp": time.time(),
+                    }
+                )
                 raise CancelException()
             elif event.reply:
                 for session in session_clear_list:
@@ -325,9 +331,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         """
         控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
-        is_multimodal = config_manager.get_preset(
-            config_manager.config.preset, True, False
-        )
+        is_multimodal = config_manager.get_preset(config_manager.config.preset, True)
         for iii in data["memory"]["messages"]:
             if (
                 isinstance(iii["content"], dict)

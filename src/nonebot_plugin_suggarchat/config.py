@@ -26,7 +26,7 @@ class ModelPreset(BaseModel, extra="allow"):
     api_key: str = ""
     protocol: str = "__main__"
     thought_chain_model: bool = False
-    multimodal: bool = False
+    multimodel: bool = False
 
     @classmethod
     def load(cls, path: Path):
@@ -103,7 +103,7 @@ class Config(BaseModel, extra="allow"):
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
     thought_chain_model: bool = False
-    multimodal: bool = False
+    multimodel: bool = False
 
     # Toml配置文件路径
     @classmethod
@@ -292,26 +292,21 @@ class ConfigManager:
             self.models.append((ModelPreset.load(file), file.stem))
         return [model[0] for model in self.models]
 
-    def get_preset(
-        self, preset: str, fix: bool = False, cache: bool = False
-    ) -> ModelPreset | Config:
+    def get_preset(self, preset: str, fix: bool = False) -> ModelPreset | Config:
+        """获取预设配置"""
         if preset == "__main__":
             return self.config
-        for i in config_manager.get_models():
-            if i.name == preset:
-                return i
-                break
+        for model in config_manager.get_models():
+            if model.name == preset:
+                return model
+        if fix:
+            # 未找到匹配预设，重置为主配置
+            logger.error(f"预设 {config_manager.config.preset} 未找到，重置为主配置")
+            config_manager.config.preset = "__main__"
+            config_manager.save_config()
+            return self.get_preset(preset, fix)
         else:
-            if fix is True:
-                # 未找到匹配预设，重置为主配置
-                logger.error(
-                    f"预设 {config_manager.config.preset} 未找到，重置为主配置"
-                )
-                config_manager.config.preset = "__main__"
-                config_manager.save_config()
-                return self.get_preset(preset, fix, cache)
-            else:
-                return self.config
+            return self.config
 
     def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""

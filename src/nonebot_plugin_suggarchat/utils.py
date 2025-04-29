@@ -55,7 +55,7 @@ async def get_chat(
     max_tokens = config_manager.config.max_tokens
     func = openai_get_chat
     # 根据预设选择API密钥和基础URL
-    i = config_manager.get_preset(config_manager.config.preset, fix=True, cache=False)
+    i = config_manager.get_preset(config_manager.config.preset, fix=True)
     base_url = i.base_url
     key = i.api_key
     model = i.model
@@ -87,7 +87,7 @@ async def get_chat(
     )
     if chat_manager.debug:
         logger.debug(response)
-    return response if not is_thought_chain_model else remove_think_tag(response)
+    return remove_think_tag(response) if is_thought_chain_model else response
 
 
 async def openai_get_chat(
