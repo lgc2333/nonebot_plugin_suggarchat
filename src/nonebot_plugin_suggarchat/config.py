@@ -26,7 +26,7 @@ class ModelPreset(BaseModel, extra="allow"):
     api_key: str = ""
     protocol: str = "__main__"
     thought_chain_model: bool = False
-    multimodel: bool = False
+    multimodal: bool = False
 
     @classmethod
     def load(cls, path: Path):
@@ -52,6 +52,12 @@ class ModelPreset(BaseModel, extra="allow"):
 
 class Config(BaseModel, extra="allow"):
     preset: str = ModelPreset().name
+    model: str = ""
+    base_url: str = ""
+    api_key: str = ""
+    protocol: str = "__main__"
+    thought_chain_model: bool = False
+    multimodal: bool = False
     memory_lenth_limit: int = 50
     enable: bool = False
     fake_people: bool = False
@@ -73,7 +79,7 @@ class Config(BaseModel, extra="allow"):
     enable_tokens_limit: bool = True
     llm_timeout: int = 60
     say_after_self_msg_be_deleted: bool = False
-    group_added_msg: str = "你好，我是Suggar，欢迎使用Suggar的AI聊天机器人..."
+    group_added_msg: str = "你好，我是Suggar，欢迎使用SuggarAI聊天机器人..."
     send_msg_after_be_invited: bool = False
     after_deleted_say_what: list[str] = [
         "Suggar说错什么话了吗～下次我会注意的呢～",
@@ -82,7 +88,6 @@ class Config(BaseModel, extra="allow"):
         "唔，我是不是说错了什么？",
         "纠错时间到，如果我说错了请告诉我！",
         "发生了什么？我刚刚没听清楚呢~",
-        "我能帮你做点什么吗？不小心说错话了让我变得不那么尴尬~",
         "我会记住的，绝对不再说错话啦~",
         "哦，看来我又犯错了，真是不好意思！",
         "哈哈，看来我得多读书了~",
@@ -195,7 +200,11 @@ class ConfigManager:
     prompts: Prompts = field(default_factory=Prompts)
 
     def load(self, bot_id: str):
-        """初始化配置目录"""
+        """_初始化配置目录_
+
+        Args:
+            bot_id (str): _Bot的qq号_
+        """
         self.bot_config_dir = self.config_dir / bot_id
         self.bot_data_dir = self.data_dir / bot_id
         os.makedirs(self.bot_config_dir, exist_ok=True)
@@ -234,7 +243,14 @@ class ConfigManager:
                     ) as f:
                         f.write(prompt_old)
                 del data["private_train"]
-
+            if self.config.preset == "__main__":
+                self.config.preset = "default"
+            if "openai_base_url" in data:
+                data["base_url"] = data["openai_base_url"]
+                del data["openai_base_url"]
+            if "openai_api_key" in data:
+                data["api_key"] = data["openai_api_key"]
+                del data["openai_api_key"]
             if "group_train" in data:
                 prompt_old = data["group_train"]["content"]
                 if not (self.group_prompts / "default.txt").is_file():
@@ -284,31 +300,40 @@ class ConfigManager:
             return [model[0] for model in self.models]
         self.models.clear()  # 清空模型列表
 
-        default_preset_exists = False
         for file in self.custom_models_dir.glob("*.json"):
             model_preset = ModelPreset.load(file)
             self.models.append((model_preset, file.stem))
-            if file.stem == "default":
-                default_preset_exists = True
-
-        if not default_preset_exists:
-            main_preset = ModelPreset()
-            main_preset_path = self.custom_models_dir / "default.json"
-            main_preset.save(main_preset_path)
-            self.models.append((main_preset, "default"))
-            logger.warning("未找到默认模型配置，已创建 default.json 文件，请修改！")
 
         return [model[0] for model in self.models]
 
-    def get_preset(self, preset: str) -> ModelPreset:
-        """获取预设配置"""
+    def get_preset(
+        self, preset: str, fix: bool = False, cache: bool = False
+    ) -> ModelPreset:
+        """_获取预设配置_
+
+        Args:
+            preset (str): _预设的字符串名称_
+            fix (bool, optional): _是否修正不存在的预设_. Defaults to False.
+            cache (bool, optional): _是否使用缓存_. Defaults to False.
+
+        Returns:
+            ModelPreset: _模型预设对象_
+        """
+        if preset == "default":
+            p_dict = ModelPreset().dict()
+            for k, v in self.config.dict().items():
+                if k in p_dict:
+                    p_dict[k] = v
+
+            return ModelPreset(**p_dict)
         for model in self.get_models():
             if model.name == preset:
                 return model
-        logger.error(f"预设 {self.config.preset} 未找到，重置为主配置")
-        self.config.preset = "default"
-        self.save_config()
-        return self.get_preset("default")
+        if fix is True:
+            logger.error(f"预设 {self.config.preset} 未找到，重置为主配置")
+            self.config.preset = "default"
+            self.save_config()
+        return self.get_preset("default", fix, cache)
 
     def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""

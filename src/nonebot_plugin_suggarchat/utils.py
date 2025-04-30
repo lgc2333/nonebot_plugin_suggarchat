@@ -55,7 +55,9 @@ async def get_chat(
     max_tokens = config_manager.config.max_tokens
     func = openai_get_chat
     # 根据预设选择API密钥和基础URL
-    preset = config_manager.get_preset(config_manager.config.preset)
+    preset = config_manager.get_preset(
+        config_manager.config.preset, fix=True, cache=False
+    )
     is_thought_chain_model = preset.thought_chain_model
 
     # 检查协议适配器
@@ -137,7 +139,11 @@ async def openai_get_chat(
         if chat_manager.debug:
             logger.debug(response)
         if isinstance(completion, ChatCompletion):
-            response = completion.choices[0].message.content if completion.choices[0].message.content is not None else ""
+            response = (
+                completion.choices[0].message.content
+                if completion.choices[0].message.content is not None
+                else ""
+            )
         else:
             raise RuntimeError("收到意外的响应类型")
     return response if response is not None else ""
