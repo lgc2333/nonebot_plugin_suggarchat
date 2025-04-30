@@ -282,7 +282,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                                 await bot.delete_msg(message_id=session["message_id"])
                         session_clear_list.remove(session)
                         data["memory"]["messages"] = data["sessions"][-1]["messages"]
-                        data["sessions"].pop
+                        data["sessions"].pop()
                         await matcher.send("让我们继续聊天吧～")
                         write_memory_data(event, data)
                         raise CancelException()
