@@ -20,31 +20,50 @@ class Adapter:
         pass
 
     def register_adapter(self, func: Callable, protocol: str):
+        """注册一个适配器。
+
+        Args:
+            func (Callable): 适配器函数
+            protocol (str): 协议
+
+        Raises:
+            ValueError: 这个协议的适配器已经注册了。
         """
-        注册一个适配器。
-        """
-        if protocol in protocols_adapters:
+        if protocol in protocols_adapters and not config_manager.bot_config_dir:
             raise ValueError("协议适配器已存在")
-        protocols_adapters[protocol] = func
+        else:
+            protocols_adapters[protocol] = func
 
     def get_adapter(self, protocol: str) -> Callable:
-        """
-        获取适配器方法。
+        """获取适配器方法。
+
+        Args:
+            protocol (str): 协议
+
+        Raises:
+            ValueError: 不存在
+
+        Returns:
+            Callable: 返回的函数
         """
         if protocol not in protocols_adapters:
             raise ValueError("协议适配器不存在")
         return protocols_adapters[protocol]
 
-    def get_adapters(self) -> dict:
-        """
-        获取适配器方法。
+    def get_adapters(self) -> dict[str, Callable]:
+        """获取适配器方法
+
+        Returns:
+            dict[str,Callable]: 包含适配器与协议的字典
         """
         return protocols_adapters
 
     @property
-    def adapters(self) -> dict:
-        """
-        获取适配器方法。
+    def adapters(self) -> dict[str, Callable]:
+        """获取适配器方法
+
+        Returns:
+            dict[str,Callable]: 包含适配器与协议的字典
         """
         return protocols_adapters
 

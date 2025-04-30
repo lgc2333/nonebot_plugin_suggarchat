@@ -24,5 +24,3 @@ async def presets(event: MessageEvent, matcher: Matcher):
 
     # 发送消息并结束处理
     await matcher.finish(msg)
-
-

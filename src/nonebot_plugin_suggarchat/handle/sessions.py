@@ -61,9 +61,10 @@ async def sessions(
         """归档当前会话"""
         try:
             if data["memory"]["messages"]:
-                data["sessions"].append(
-                    {"messages": data["memory"]["messages"], "time": time.time()}
-                )
+                data["sessions"].append({
+                    "messages": data["memory"]["messages"],
+                    "time": time.time(),
+                })
                 data["memory"]["messages"] = []
                 data["timestamp"] = time.time()
                 write_memory_data(event, data)

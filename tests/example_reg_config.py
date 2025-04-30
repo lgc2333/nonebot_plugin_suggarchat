@@ -12,4 +12,3 @@ async def startup():
     # 在主配置文件注册一个为example的配置文件项，此操作会自动重载配置文件。
     config.reg_model_config("example_model_config")
     # 在每个模型配置文件都注册一个为example_model_config的配置项，此操作会自动重载配置文件。
-

@@ -9,8 +9,9 @@ hook_registry: list[Callable[..., None] | Callable[..., Awaitable[None]]] = []
 
 
 def register_hook(hook_func: Callable[..., None] | Callable[..., Awaitable[None]]):
-    hook_registry.append(hook_func)
-    logger.info(f"钩子注册: {hook_func.__module__}，{hook_func.__name__}")
+    if hook_func not in hook_registry:
+        hook_registry.append(hook_func)
+        logger.info(f"钩子注册: {hook_func.__module__}，{hook_func.__name__}")
 
 
 async def run_hooks(bot: Bot):

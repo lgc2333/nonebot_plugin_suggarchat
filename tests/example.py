@@ -3,17 +3,18 @@ from nonebot.plugin import require
 
 require("nonebot_plugin_suggarchat")
 from nonebot_plugin_suggarchat.event import (
-    ChatEvent,
-    PokeEvent,
     BeforeChatEvent,
     BeforePokeEvent,
+    ChatEvent,
+    PokeEvent,
 )
 from nonebot_plugin_suggarchat.on_event import (
-    on_chat,
     on_before_chat,
-    on_poke,
     on_before_poke,
+    on_chat,
+    on_poke,
 )
+
 
 @on_poke().handle(priority_value=10)
 async def _(event: PokeEvent):
