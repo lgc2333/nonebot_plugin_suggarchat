@@ -20,8 +20,8 @@ DATA_DIR: Path = store.get_plugin_data_dir()
 
 
 class ModelPreset(BaseModel, extra="allow"):
-    model: str = "default"
-    name: str = ""
+    model: str = ""
+    name: str = "default"
     base_url: str = ""
     api_key: str = ""
     protocol: str = "__main__"
@@ -51,7 +51,7 @@ class ModelPreset(BaseModel, extra="allow"):
 
 
 class Config(BaseModel, extra="allow"):
-    preset: str = ModelPreset().model
+    preset: str = ModelPreset().name
     memory_lenth_limit: int = 50
     enable: bool = False
     fake_people: bool = False
