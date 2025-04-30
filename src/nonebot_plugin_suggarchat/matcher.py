@@ -18,10 +18,12 @@ suggar matcher
 @dataclass
 class EventRegistry:
     event_handlers: dict = field(default_factory=dict)
-    handler_infos: dict= field(default_factory=dict)
+    handler_infos: dict = field(default_factory=dict)
     priority: dict = field(default_factory=dict)
 
+
 event_registry = EventRegistry()
+
 
 class SuggarMatcher:
     def __init__(self, event_type: str = ""):
