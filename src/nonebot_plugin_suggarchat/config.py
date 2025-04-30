@@ -245,12 +245,12 @@ class ConfigManager:
                 del data["private_train"]
             if self.config.preset == "__main__":
                 self.config.preset = "default"
-            if "openai_base_url" in data:
-                data["base_url"] = data["openai_base_url"]
-                del data["openai_base_url"]
-            if "openai_api_key" in data:
-                data["api_key"] = data["openai_api_key"]
-                del data["openai_api_key"]
+            if "open_ai_base_url" in data:
+                data["base_url"] = data["open_ai_base_url"]
+                del data["open_ai_base_url"]
+            if "open_ai_api_key" in data:
+                data["api_key"] = data["open_ai_api_key"]
+                del data["open_ai_api_key"]
             if "group_train" in data:
                 prompt_old = data["group_train"]["content"]
                 if not (self.group_prompts / "default.txt").is_file():
