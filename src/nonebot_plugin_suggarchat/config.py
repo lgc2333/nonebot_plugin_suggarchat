@@ -276,14 +276,6 @@ class ConfigManager:
                     ) as f:
                         f.write(prompt_old)
                 del data["private_train"]
-            if self.ins_config.preset == "__main__":
-                self.ins_config.preset = "default"
-            if "open_ai_base_url" in data:
-                data["base_url"] = data["open_ai_base_url"]
-                del data["open_ai_base_url"]
-            if "open_ai_api_key" in data:
-                data["api_key"] = data["open_ai_api_key"]
-                del data["open_ai_api_key"]
             if "group_train" in data:
                 prompt_old = data["group_train"]["content"]
                 if not (self.group_prompts / "default.txt").is_file():
@@ -299,9 +291,25 @@ class ConfigManager:
 
         elif self.toml_config.exists():
             self.ins_config = Config.load_from_toml(self.toml_config)
+
         else:
             self.ins_config = Config()
             self.ins_config.save_to_toml(self.toml_config)
+
+        def config_fix(config: Config) -> Config:
+            data = config.model_dump()
+            if "open_ai_base_url" in data:
+                data["base_url"] = data["open_ai_base_url"]
+                del data["open_ai_base_url"]
+            if "open_ai_api_key" in data:
+                data["api_key"] = data["open_ai_api_key"]
+                del data["open_ai_api_key"]
+            if config.preset == "__main__":
+                data["preset"] = "default"
+            return Config(**data)
+
+        self.ins_config = config_fix(self.ins_config)
+        self.ins_config.save_to_toml(self.toml_config)
 
         # private_train
         if self.private_prompt.is_file():
