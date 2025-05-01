@@ -24,6 +24,7 @@ DATA_DIR: Path = store.get_plugin_data_dir()
 # 加载Dotenv
 load_dotenv()
 
+
 def replace_env_vars(data: dict | list | str) -> dict | list | str:
     """递归替换环境变量占位符，但不修改原始数据"""
     data_copy = copy.deepcopy(data)  # 创建原始数据的深拷贝[4,5](@ref)
@@ -227,7 +228,7 @@ class ConfigManager:
 
     @property
     def config(self) -> Config:
-        conf_data = self.ins_config.dict()
+        conf_data: dict[str, Any] = self.ins_config.model_dump()
         conf_data = replace_env_vars(conf_data)
         return Config(**conf_data)
 
@@ -334,7 +335,7 @@ class ConfigManager:
 
         for file in self.custom_models_dir.glob("*.json"):
             preset_data: dict[str, Any] = replace_env_vars(
-                ModelPreset.load(file).dict()
+                ModelPreset.load(file).model_dump()
             )
             model_preset = ModelPreset(**preset_data)
             self.models.append((model_preset, file.stem))
@@ -355,8 +356,8 @@ class ConfigManager:
             ModelPreset: _模型预设对象_
         """
         if preset == "default":
-            p_dict = self.config.dict()
-            for k, v in self.ins_config.dict().items():
+            p_dict = self.config.model_dump()
+            for k, v in self.ins_config.model_dump().items():
                 if k in p_dict:
                     p_dict[k] = v
 

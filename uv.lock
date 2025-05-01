@@ -415,7 +415,7 @@ wheels = [
 
 [[package]]
 name = "nonebot-plugin-suggarchat"
-version = "2.4.2.post2"
+version = "2.4.2.post3"
 source = { editable = "." }
 dependencies = [
     { name = "chardet" },
