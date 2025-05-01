@@ -286,6 +286,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                         await matcher.send("让我们继续聊天吧～")
                         write_memory_data(event, data)
                         raise CancelException()
+            else:
+                data["timestamp"] = time.time()
 
     async def handle_reply(
         reply: Reply, bot: Bot, group_id: int | None, content: str
@@ -338,9 +340,10 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 message["content"] = message_text
 
         # Enforce memory length limit
-        while len(data["memory"]["messages"]) > memory_length_limit or (
-            data["memory"]["messages"][0]["role"] != "user"
-        ):
+        while (
+            len(data["memory"]["messages"]) > memory_length_limit
+            or (data["memory"]["messages"][0]["role"] != "user")
+        ) and len(data["memory"]["messages"]) > 0:
             del data["memory"]["messages"][0]
 
     async def enforce_token_limit(data: dict, train: dict):
