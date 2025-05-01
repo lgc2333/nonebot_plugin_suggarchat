@@ -1,5 +1,7 @@
+import copy
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,26 @@ __KERNEL_VERSION__ = "unknow"
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
 DATA_DIR: Path = store.get_plugin_data_dir()
+
+
+def replace_env_vars(data: dict | list | str) -> dict | list | str:
+    """递归替换环境变量占位符，但不修改原始数据"""
+    data_copy = copy.deepcopy(data)  # 创建原始数据的深拷贝[4,5](@ref)
+    if isinstance(data_copy, dict):
+        for key, value in data_copy.items():
+            data_copy[key] = replace_env_vars(value)
+    elif isinstance(data_copy, list):
+        for i in range(len(data_copy)):
+            data_copy[i] = replace_env_vars(data_copy[i])
+    elif isinstance(data_copy, str):
+        pattern = r"\$\{(\w+)\}"
+
+        def replacer(match):
+            var_name = match.group(1)
+            return os.getenv(var_name, "")  # 若未设置环境变量，返回空字符串
+
+        data_copy = re.sub(pattern, replacer, data_copy)
+    return data_copy
 
 
 class ModelPreset(BaseModel, extra="allow"):
@@ -195,9 +217,16 @@ class ConfigManager:
     custom_models_dir: Path = config_dir / "models"
     private_train: dict = field(default_factory=dict)
     group_train: dict = field(default_factory=dict)
-    config: Config = field(default_factory=Config)
+    # config: Config = field(default_factory=Config)
+    ins_config: Config = field(default_factory=Config)
     models: list[tuple[ModelPreset, str]] = field(default_factory=list)
     prompts: Prompts = field(default_factory=Prompts)
+
+    @property
+    def config(self) -> Config:
+        conf_data = self.ins_config.dict()
+        conf_data = replace_env_vars(conf_data)
+        return Config(**conf_data)
 
     def load(self, bot_id: str):
         """_初始化配置目录_
@@ -243,8 +272,8 @@ class ConfigManager:
                     ) as f:
                         f.write(prompt_old)
                 del data["private_train"]
-            if self.config.preset == "__main__":
-                self.config.preset = "default"
+            if self.ins_config.preset == "__main__":
+                self.ins_config.preset = "default"
             if "open_ai_base_url" in data:
                 data["base_url"] = data["open_ai_base_url"]
                 del data["open_ai_base_url"]
@@ -262,13 +291,13 @@ class ConfigManager:
 
             Config(**data).save_to_toml(self.toml_config)
             os.rename(self.json_config, self.json_config.with_suffix(".old"))
-            self.config = Config.load_from_toml(self.toml_config)
+            self.ins_config = Config.load_from_toml(self.toml_config)
 
         elif self.toml_config.exists():
-            self.config = Config.load_from_toml(self.toml_config)
+            self.ins_config = Config.load_from_toml(self.toml_config)
         else:
-            self.config = Config()
-            self.config.save_to_toml(self.toml_config)
+            self.ins_config = Config()
+            self.ins_config.save_to_toml(self.toml_config)
 
         # private_train
         if self.private_prompt.is_file():
@@ -301,7 +330,10 @@ class ConfigManager:
         self.models.clear()  # 清空模型列表
 
         for file in self.custom_models_dir.glob("*.json"):
-            model_preset = ModelPreset.load(file)
+            preset_data: dict[str, Any] = replace_env_vars(
+                ModelPreset.load(file).dict()
+            )
+            model_preset = ModelPreset(**preset_data)
             self.models.append((model_preset, file.stem))
 
         return [model[0] for model in self.models]
@@ -320,8 +352,8 @@ class ConfigManager:
             ModelPreset: _模型预设对象_
         """
         if preset == "default":
-            p_dict = ModelPreset().dict()
-            for k, v in self.config.dict().items():
+            p_dict = self.config.dict()
+            for k, v in self.ins_config.dict().items():
                 if k in p_dict:
                     p_dict[k] = v
 
@@ -330,8 +362,8 @@ class ConfigManager:
             if model.name == preset:
                 return model
         if fix is True:
-            logger.error(f"预设 {self.config.preset} 未找到，重置为主配置")
-            self.config.preset = "default"
+            logger.error(f"预设 {self.ins_config.preset} 未找到，重置为主配置")
+            self.ins_config.preset = "default"
             self.save_config()
         return self.get_preset("default", fix, cache)
 
@@ -361,20 +393,20 @@ class ConfigManager:
     def load_prompt(self):
         """加载提示词，匹配预设"""
         for prompt in self.prompts.group:
-            if prompt.name == self.config.group_prompt_character:
+            if prompt.name == self.ins_config.group_prompt_character:
                 self.group_train = {"role": "system", "content": prompt.text}
                 break
         else:
             raise ValueError(
-                f"没有找到名称为 {self.config.group_prompt_character} 的群组提示词"
+                f"没有找到名称为 {self.ins_config.group_prompt_character} 的群组提示词"
             )
         for prompt in self.prompts.private:
-            if prompt.name == self.config.private_prompt_character:
+            if prompt.name == self.ins_config.private_prompt_character:
                 self.private_train = {"role": "system", "content": prompt.text}
                 break
         else:
             raise ValueError(
-                f"没有找到名称为 {self.config.private_prompt_character} 的私聊提示词"
+                f"没有找到名称为 {self.ins_config.private_prompt_character} 的私聊提示词"
             )
 
     def reload_config(self):
@@ -386,8 +418,8 @@ class ConfigManager:
 
     def save_config(self):
         """保存配置"""
-        if self.config:
-            self.config.save_to_toml(self.toml_config)
+        if self.ins_config:
+            self.ins_config.save_to_toml(self.toml_config)
 
     def set_config(self, key: str, value: str):
         """
@@ -398,8 +430,8 @@ class ConfigManager:
 
         :raises KeyError: 如果配置项不存在，则抛出异常
         """
-        if hasattr(self.config, key):
-            setattr(self.config, key, value)
+        if hasattr(self.ins_config, key):
+            setattr(self.ins_config, key, value)
             self.save_config()
         else:
             raise KeyError(f"配置项 {key} 不存在")
@@ -413,8 +445,8 @@ class ConfigManager:
         """
         if default_value is None:
             default_value = "null"
-        if not hasattr(self.config, key):
-            setattr(self.config, key, default_value)
+        if not hasattr(self.ins_config, key):
+            setattr(self.ins_config, key, default_value)
         self.save_config()
 
     def reg_config(self, key: str, default_value=None):
