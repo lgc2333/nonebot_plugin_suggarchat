@@ -12,11 +12,11 @@ async def set_preset(
     """处理设置预设的事件"""
 
     # 检查插件是否启用
-    if not config_manager.config.enable:
+    if not config_manager.ins_config.enable:
         matcher.skip()
 
     # 检查用户是否为管理员
-    if event.user_id not in config_manager.config.admins:
+    if event.user_id not in config_manager.ins_config.admins:
         await matcher.finish("只有管理员才能设置预设。")
 
     # 获取命令参数并去除多余空格
@@ -28,7 +28,7 @@ async def set_preset(
         for model in config_manager.get_models():
             if model.name == arg:
                 # 设置预设并保存
-                config_manager.config.preset = model.name
+                config_manager.ins_config.preset = model.name
                 config_manager.save_config()
                 # 回复设置成功
                 await matcher.finish(f"已设置预设为：{model.name}，模型：{model.model}")
@@ -36,9 +36,9 @@ async def set_preset(
         await matcher.finish("未找到预设，请输入/presets查看预设列表。")
     else:
         # 参数为空时重置为默认预设
-        config_manager.config.preset = "default"
+        config_manager.ins_config.preset = "default"
         config_manager.save_config()
         # 回复重置成功
         await matcher.finish(
-            f"已重置预设为：默认预设，模型：{config_manager.get_preset(config_manager.config.preset).model}。"
+            f"已重置预设为：默认预设，模型：{config_manager.get_preset(config_manager.ins_config.preset).model}。"
         )

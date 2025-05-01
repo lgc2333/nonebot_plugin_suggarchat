@@ -112,7 +112,7 @@ class Admin:
         """
         构造函数
         """
-        self.config = config_manager.config
+        self.config = config_manager.ins_config
 
     async def send_with(self, msg: str) -> "Admin":
         """
@@ -181,7 +181,7 @@ class Admin:
 
     def _save_config_to_toml(self):
         self.config.save_to_toml(config_manager.toml_config)
-        self.config = config_manager.config
+        self.config = config_manager.ins_config
         return self
 
 
@@ -196,7 +196,7 @@ class Chat:
         """
         构造函数
         """
-        self.config = config_manager.config
+        self.config = config_manager.ins_config
 
     async def get_msg(self, prompt: str, message: list):
         """

@@ -9,6 +9,7 @@ from typing import Any
 import nonebot_plugin_localstore as store
 import tomli
 import tomli_w
+from dotenv import load_dotenv
 from nonebot import logger
 from pydantic import BaseModel
 
@@ -20,6 +21,8 @@ __KERNEL_VERSION__ = "unknow"
 CONFIG_DIR: Path = store.get_plugin_config_dir()
 DATA_DIR: Path = store.get_plugin_data_dir()
 
+# 加载Dotenv
+load_dotenv()
 
 def replace_env_vars(data: dict | list | str) -> dict | list | str:
     """递归替换环境变量占位符，但不修改原始数据"""
