@@ -8,7 +8,7 @@ from nonebot.adapters.onebot.v11.event import (
 )
 
 from .config import config_manager
-from .resources import (
+from .utils import (
     get_current_datetime_timestamp,
     get_memory_data,
     synthesize_message,

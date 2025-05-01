@@ -4,8 +4,7 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
 from ..config import config_manager
-from ..resources import get_memory_data, write_memory_data
-from ..utils import is_member
+from ..utils import get_memory_data, is_member, write_memory_data
 
 
 async def prompt(

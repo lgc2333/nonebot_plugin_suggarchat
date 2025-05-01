@@ -13,12 +13,13 @@ from ..chatmanager import chat_manager
 from ..config import config_manager
 from ..event import EventType, PokeEvent  # 自定义事件类型
 from ..matcher import SuggarMatcher  # 自定义匹配器
-from ..resources import (
+from ..utils import (
+    get_chat,
     get_friend_info,
     get_memory_data,
+    send_to_admin,
     split_message_into_chats,
 )
-from ..utils import get_chat, send_to_admin
 
 
 async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):

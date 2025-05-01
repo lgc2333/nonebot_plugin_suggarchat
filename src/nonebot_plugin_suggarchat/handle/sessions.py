@@ -8,7 +8,7 @@ from nonebot.matcher import Matcher
 from nonebot.params import CommandArg
 
 from ..config import config_manager
-from ..resources import get_memory_data, write_memory_data
+from ..utils import get_memory_data, write_memory_data
 
 
 async def sessions(
@@ -61,10 +61,12 @@ async def sessions(
         """归档当前会话"""
         try:
             if data["memory"]["messages"]:
-                data["sessions"].append({
-                    "messages": data["memory"]["messages"],
-                    "time": time.time(),
-                })
+                data["sessions"].append(
+                    {
+                        "messages": data["memory"]["messages"],
+                        "time": time.time(),
+                    }
+                )
                 data["memory"]["messages"] = []
                 data["timestamp"] = time.time()
                 write_memory_data(event, data)

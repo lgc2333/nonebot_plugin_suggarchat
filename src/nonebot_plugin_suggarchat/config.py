@@ -229,8 +229,10 @@ class ConfigManager:
     @property
     def config(self) -> Config:
         conf_data: dict[str, Any] = self.ins_config.model_dump()
-        conf_data = replace_env_vars(conf_data)
-        return Config(**conf_data)
+        result = replace_env_vars(conf_data)
+        if not isinstance(result, dict):
+            raise TypeError("Expected replace_env_vars to return a dict")
+        return Config(**result)
 
     def load(self, bot_id: str):
         """_初始化配置目录_
@@ -342,9 +344,10 @@ class ConfigManager:
         self.models.clear()  # 清空模型列表
 
         for file in self.custom_models_dir.glob("*.json"):
-            preset_data: dict[str, Any] = replace_env_vars(
-                ModelPreset.load(file).model_dump()
-            )
+            model_data = ModelPreset.load(file).model_dump()
+            preset_data = replace_env_vars(model_data)
+            if not isinstance(preset_data, dict):
+                raise TypeError("Expected replace_env_vars to return a dict")
             model_preset = ModelPreset(**preset_data)
             self.models.append((model_preset, file.stem))
 
@@ -373,7 +376,7 @@ class ConfigManager:
         for model in self.get_models():
             if model.name == preset:
                 return model
-        if fix is True:
+        if fix:
             logger.error(f"预设 {self.ins_config.preset} 未找到，重置为主配置")
             self.ins_config.preset = "default"
             self.save_config()

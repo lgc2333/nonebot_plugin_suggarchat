@@ -4,7 +4,7 @@ from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.matcher import Matcher
 
 from ..config import config_manager
-from ..resources import get_memory_data, write_memory_data
+from ..utils import get_memory_data, write_memory_data
 
 
 async def enable(bot: Bot, event: GroupMessageEvent, matcher: Matcher):
