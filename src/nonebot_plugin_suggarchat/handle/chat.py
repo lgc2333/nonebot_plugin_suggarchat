@@ -335,7 +335,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 for content_part in message["content"]:
                     if content_part["type"] == "input_text":
                         message_text += content_part["text"]
-            message["content"] = message_text
+                message["content"] = message_text
 
         # Enforce memory length limit
         while len(data["memory"]["messages"]) > memory_length_limit or (
