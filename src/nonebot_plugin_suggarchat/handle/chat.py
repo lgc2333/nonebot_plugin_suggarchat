@@ -122,11 +122,11 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 控制记忆长度和 token 限制
         enforce_memory_limit(group_data, memory_length_limit)
-        await enforce_token_limit(group_data, config_manager.group_train)
+        tokens = await enforce_token_limit(group_data, config_manager.group_train)
 
         # 准备发送给模型的消息
         send_messages = prepare_send_messages(group_data, config_manager.group_train)
-        response = await process_chat(event, send_messages)
+        response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
         group_data["memory"]["messages"].append(
@@ -135,7 +135,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 "content": str(response),
             }
         )
-        await send_response(event, response)
+        await send_response(event, response)  # type: ignore
 
         # 写入记忆数据
         write_memory_data(event, group_data)
@@ -198,13 +198,13 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
 
         # 控制记忆长度和 token 限制
         enforce_memory_limit(private_data, memory_length_limit)
-        await enforce_token_limit(private_data, config_manager.private_train)
+        tokens = await enforce_token_limit(private_data, config_manager.private_train)
 
         # 准备发送给模型的消息
         send_messages = prepare_send_messages(
             private_data, config_manager.private_train
         )
-        response = await process_chat(event, send_messages)
+        response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
         private_data["memory"]["messages"].append(
@@ -213,7 +213,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 "content": str(response),
             }
         )
-        await send_response(event, response)
+        await send_response(event, response)  # type: ignore
 
         # 写入记忆数据
         write_memory_data(event, private_data)
@@ -264,7 +264,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 data["timestamp"] = time.time()
                 write_memory_data(event, data)
                 chated = await matcher.send(
-                    f'如果想和我继续用刚刚的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
+                    f'如果想和我继续用之前的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
                 )
                 session_clear_list.append(
                     {
@@ -358,24 +358,39 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         ) and len(data["memory"]["messages"]) > 0:
             del data["memory"]["messages"][0]
 
-    async def enforce_token_limit(data: dict, train: dict):
+    async def enforce_token_limit(data: dict, train: dict) -> int:
         """
-        控制 token 数量，删除超出限制的旧消息。
+        控制 token 数量，删除超出限制的旧消息，返回处理后的Tokens。
         """
-        if not config_manager.config.enable_tokens_limit:
-            return
+
         memory_l = [train.copy(), *data["memory"]["messages"].copy()]
-        full_string = "".join(st["content"] for st in memory_l)
+        full_string = ""
+        for st in memory_l:
+            full_string += (
+                st["content"]
+                if isinstance(st["content"], str)
+                else "".join(
+                    s["content"]["input_text"]
+                    for s in st["content"]
+                    if s["type"] == "input_text"
+                )
+            )
         tokens = hybrid_token_count(
             full_string, config_manager.config.tokens_count_mode
         )
+        if not config_manager.config.enable_tokens_limit:
+            return tokens
         while tokens > config_manager.config.session_max_tokens:
             try:
-                del data["memory"]["messages"][0]
+                if len(data["memory"]["messages"]) > 0:
+                    del data["memory"]["messages"][0]
+                else:
+                    logger.warning(
+                        f"提示词大小过大！为{hybrid_token_count(train['content'])}>{config_manager.config.session_max_tokens}！"
+                    )
+                    break
             except Exception:
-                await send_to_admin_as_error(
-                    "上下文限制清理出现异常！请调整提示词长度或增大会话tokens限制！"
-                )
+                await send_to_admin_as_error("上下文限制清理出现异常！")
 
                 exc_type, exc_value, exc_traceback = sys.exc_info()
 
@@ -391,17 +406,25 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                     f"Detailed exception info:\n{''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))}"
                 )
                 break
-            full_string = "".join(
-                st["content"]
-                for st in [train.copy(), *data["memory"]["messages"].copy()]
-            )
+            full_string = ""
+            for st in memory_l:
+                full_string += (
+                    st["content"]
+                    if isinstance(st["content"], str)
+                    else "".join(
+                        s["content"]["input_text"]
+                        for s in st["content"]
+                        if s["type"] == "input_text"
+                    )
+                )
             tokens = hybrid_token_count(
                 full_string, config_manager.config.tokens_count_mode
             )
+        return tokens
 
     def prepare_send_messages(data: dict, train: dict) -> list:
         """
-        准备发送给聊天模型的消息列表，包括训练数据和上下文。
+        准备发送给聊天模型的消息列表，包括系统提示词数据和上下文。
         """
         train["content"] += (
             f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{data.get('prompt', '无')}"
@@ -410,7 +433,9 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         send_messages.insert(0, train)
         return send_messages
 
-    async def process_chat(event: MessageEvent, send_messages: list) -> str:
+    async def process_chat(
+        event: MessageEvent, send_messages: list, tokens: int
+    ) -> str:
         """
         调用聊天模型生成回复，并触发相关事件。
         """
@@ -425,7 +450,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             await eventMatcher.trigger_event(chat_event, eventMatcher)
             send_messages = chat_event.get_send_message()
 
-        response = await get_chat(send_messages)
+        response = await get_chat(send_messages, tokens=tokens)
 
         if config_manager.config.matcher_function:
             eventMatcher = SuggarMatcher(event_type=EventType().chat())
@@ -499,7 +524,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             group_data = get_memory_data(event)
             await handle_group_message(
                 event, matcher, bot, group_data, memory_length_limit, Date
-            )
+            )  # type: ignore
         elif isinstance(event, PrivateMessageEvent):
             private_data = get_memory_data(event)
             await handle_private_message(

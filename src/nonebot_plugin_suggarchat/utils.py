@@ -27,6 +27,61 @@ from .chatmanager import chat_manager
 from .config import Config, config_manager
 
 
+class Tokenizer:
+    def __init__(self, max_tokens=2048, mode="bpe", truncate_mode="head"):
+        """
+        通用文本分词器
+
+        :param max_tokens: 最大token限制，默认2048（仅在Word模式下生效）
+        :param mode: 分词模式 ['char'(字符级), 'word'(词语级), 'bpe'(混合模式)]，默认bpe
+        :param truncate_mode: 截断模式 ['head'(头部截断), 'tail'(尾部截断), 'middle'(中间截断)]，默认head
+        """
+        self.max_tokens = max_tokens
+        self.mode = mode
+        self.truncate_mode = truncate_mode
+        self._word_pattern = re.compile(r"\w+|[^\w\s]")  # 匹配单词或标点符号
+
+    def tokenize(self, text):
+        """执行分词操作，返回token列表"""
+        if self.mode == "char":
+            return list(text)
+
+        # 中英文混合分词策略
+        tokens = []
+        for chunk in re.findall(self._word_pattern, text):
+            if chunk.strip() == "":
+                continue
+
+            if self._is_english(chunk):
+                tokens.extend(chunk.split())
+            else:
+                tokens.extend(jieba.lcut(chunk))
+
+        return tokens[: self.max_tokens] if self.mode == "word" else tokens
+
+    def truncate(self, tokens):
+        """执行token截断操作"""
+        if len(tokens) <= self.max_tokens:
+            return tokens
+
+        if self.truncate_mode == "head":
+            return tokens[-self.max_tokens :]
+        elif self.truncate_mode == "tail":
+            return tokens[: self.max_tokens]
+        else:  # middle模式保留首尾
+            head_len = self.max_tokens // 2
+            tail_len = self.max_tokens - head_len
+            return tokens[:head_len] + tokens[-tail_len:]
+
+    def count_tokens(self, text):
+        """统计文本token数量"""
+        return len(self.tokenize(text))
+
+    def _is_english(self, text):
+        """判断是否为英文文本"""
+        return all(ord(c) < 128 for c in text)
+
+
 async def send_to_admin_as_error(msg: str, bot: Bot | None = None) -> None:
     logger.error(msg)
     await send_to_admin(msg, bot)
@@ -85,6 +140,7 @@ def remove_think_tag(text: str) -> str:
 async def get_chat(
     messages: list,
     bot: Bot | None = None,
+    tokens: int = 0,
 ) -> str:
     """获取聊天响应"""
     # 获取最大token数量
@@ -109,6 +165,7 @@ async def get_chat(
     logger.debug(f"密钥：{preset.api_key[:7]}...")
     logger.debug(f"协议：{preset.protocol}")
     logger.debug(f"API地址：{preset.base_url}")
+    logger.debug(f"当前对话Tokens:{tokens}")
     # 调用适配器获取聊天响应
     response = await func(
         preset.base_url,
@@ -211,33 +268,12 @@ def format_datetime_timestamp(time: int) -> str:
     return f"[{formatted_date} {formatted_weekday} {formatted_time}]"
 
 
-def hybrid_token_count(text: str, mode: str = "word") -> int:
+def hybrid_token_count(text: str, mode: str = "word", truncate_mode="head") -> int:
     """
     计算中英文混合文本的 Token 数量，支持词、子词、字符模式
     """
-    tokens = []
 
-    # 使用正则表达式一次性分割中英文
-    parts = re.split(r"([\u4e00-\u9fff]+)", text)
-
-    for part in parts:
-        if not part.strip():
-            continue
-
-        # 判断是否为中文部分
-        if re.match(r"^[\u4e00-\u9fff]+$", part):
-            # 处理中文部分
-            tokens.extend(list(jieba.cut(part, cut_all=False)))
-        elif mode == "bpe":
-            tokens.extend([part[i : i + 2] for i in range(0, len(part), 2)])
-        elif mode == "char":
-            tokens.extend(list(part))
-        elif mode == "word":
-            tokens.extend(re.findall(r"\b\w+\b|\S", part))
-        else:
-            raise ValueError("Invalid tokens-counting mode")
-
-    return len(tokens)
+    return Tokenizer(mode=mode, truncate_mode=truncate_mode).count_tokens(text=text)
 
 
 # 在文件顶部预编译正则表达式
