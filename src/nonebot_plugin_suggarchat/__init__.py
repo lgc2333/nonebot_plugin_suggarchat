@@ -1,15 +1,16 @@
 from nonebot.plugin import PluginMetadata, require
 
 require("nonebot_plugin_localstore")
-from . import API, config, connection, event, matcher_manager, resources
+
+from . import matcher_manager
+from . import config
+from . import connection
+
 
 __all__ = [
-    "API",
+    "matcher_manager",
     "config",
     "connection",
-    "event",
-    "matcher_manager",
-    "resources",
 ]
 
 __plugin_meta__ = PluginMetadata(
