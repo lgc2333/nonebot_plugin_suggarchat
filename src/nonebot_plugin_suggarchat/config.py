@@ -416,7 +416,6 @@ class ConfigManager:
         """获取群聊提示词"""
         return deepcopy(self._group_train)
 
-    @property
     def load_prompt(self):
         """加载提示词，匹配预设"""
         for prompt in self.prompts.group:
