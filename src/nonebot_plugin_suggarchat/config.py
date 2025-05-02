@@ -2,6 +2,7 @@ import copy
 import json
 import os
 import re
+from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -219,8 +220,8 @@ class ConfigManager:
     private_prompts: Path = config_dir / "private_prompts"
     group_prompts: Path = config_dir / "group_prompts"
     custom_models_dir: Path = config_dir / "models"
-    private_train: dict = field(default_factory=dict)
-    group_train: dict = field(default_factory=dict)
+    _private_train: dict = field(default_factory=dict)
+    _group_train: dict = field(default_factory=dict)
     # config: Config = field(default_factory=Config)
     ins_config: Config = field(default_factory=Config)
     models: list[tuple[ModelPreset, str]] = field(default_factory=list)
@@ -405,11 +406,22 @@ class ConfigManager:
 
         return self.prompts
 
+    @property
+    def private_train(self) -> dict[str, str]:
+        """获取私聊提示词"""
+        return deepcopy(self._private_train)
+
+    @property
+    def group_train(self) -> dict[str, str]:
+        """获取群聊提示词"""
+        return deepcopy(self._group_train)
+
+    @property
     def load_prompt(self):
         """加载提示词，匹配预设"""
         for prompt in self.prompts.group:
             if prompt.name == self.ins_config.group_prompt_character:
-                self.group_train = {"role": "system", "content": prompt.text}
+                self._group_train = {"role": "system", "content": prompt.text}
                 break
         else:
             raise ValueError(
@@ -417,7 +429,7 @@ class ConfigManager:
             )
         for prompt in self.prompts.private:
             if prompt.name == self.ins_config.private_prompt_character:
-                self.private_train = {"role": "system", "content": prompt.text}
+                self._private_train = {"role": "system", "content": prompt.text}
                 break
         else:
             raise ValueError(
