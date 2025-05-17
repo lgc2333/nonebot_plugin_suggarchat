@@ -122,19 +122,25 @@ def remove_think_tag(text: str) -> str:
     Returns:
         str: 处理后的文本
     """
+
     start_tag = "<think>"
     end_tag = "</think>"
 
-    start_pos = text.find(start_tag)
-    if start_pos == -1:  # 没找到开始标签
-        return text
+    # 查找第一个起始标签的位置
+    start_idx = text.find(start_tag)
+    if start_idx == -1:
+        return text  # 没有找到起始标签，直接返回原文本
 
-    end_pos = text.find(end_tag, start_pos + len(start_tag))
-    if end_pos == -1:  # 没找到结束标签
-        return text
+    # 在起始标签之后查找结束标签的位置
+    end_idx = text.find(end_tag, start_idx + len(start_tag))
+    if end_idx == -1:
+        return text  # 没有找到对应的结束标签，返回原文本
 
-    # 移除内容
-    return text[:start_pos] + text[end_pos + len(end_tag) :]
+    # 计算结束标签的结束位置
+    end_of_end_tag = end_idx + len(end_tag)
+
+    # 拼接移除标签后的文本
+    return text[:start_idx] + text[end_of_end_tag:]
 
 
 async def get_chat(

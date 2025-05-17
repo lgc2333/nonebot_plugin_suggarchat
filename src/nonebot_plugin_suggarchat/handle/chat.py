@@ -32,6 +32,7 @@ from ..utils import (
     get_friend_info,
     get_memory_data,
     hybrid_token_count,
+    remove_think_tag,
     send_to_admin,
     send_to_admin_as_error,
     split_message_into_chats,
@@ -462,7 +463,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             )
             await eventMatcher.trigger_event(chat_event, eventMatcher)
             response = chat_event.model_response
-
+        if config_manager.get_preset(config_manager.config.preset).thought_chain_model:
+            response = remove_think_tag(response)
         return response
 
     async def send_response(event: MessageEvent, response: str):
