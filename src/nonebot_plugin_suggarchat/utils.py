@@ -140,7 +140,10 @@ def remove_think_tag(text: str) -> str:
     end_of_end_tag = end_idx + len(end_tag)
 
     # 拼接移除标签后的文本
-    return text[:start_idx] + text[end_of_end_tag:]
+    text_new = text[:start_idx] + text[end_of_end_tag:]
+    while text_new.startswith("\n"):
+        text_new = text_new[1:]
+    return text_new
 
 
 async def get_chat(
