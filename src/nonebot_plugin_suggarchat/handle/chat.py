@@ -115,10 +115,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         else:
             text = event.message.extract_plain_text()
 
-        group_data["memory"]["messages"].append({
-            "role": "user",
-            "content": text,
-        })
+        group_data["memory"]["messages"].append(
+            {
+                "role": "user",
+                "content": text,
+            }
+        )
         if chat_manager.debug:
             logger.debug(f"当前群组提示词：\n{config_manager.group_train}")
         # 控制记忆长度和 token 限制
@@ -134,10 +136,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
-        group_data["memory"]["messages"].append({
-            "role": "assistant",
-            "content": str(response),
-        })
+        group_data["memory"]["messages"].append(
+            {
+                "role": "assistant",
+                "content": str(response),
+            }
+        )
         await send_response(event, response)  # type: ignore
 
         # 写入记忆数据
@@ -213,10 +217,12 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
-        private_data["memory"]["messages"].append({
-            "role": "assistant",
-            "content": str(response),
-        })
+        private_data["memory"]["messages"].append(
+            {
+                "role": "assistant",
+                "content": str(response),
+            }
+        )
         await send_response(event, response)  # type: ignore
 
         # 写入记忆数据
@@ -238,67 +244,80 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             data["timestamp"] = time.time()
 
         if config_manager.config.session_control:
-            for session in session_clear_list:
-                if session["id"] == (
-                    event.group_id
-                    if isinstance(event, GroupMessageEvent)
-                    else event.user_id
-                ):
-                    if not event.reply:
-                        session_clear_list.remove(session)
-                        return
-                    break
-
-            # 检查会话超时
-            if (time.time() - data["timestamp"]) >= (
-                config_manager.config.session_control_time * 60
-            ):
-                data["sessions"].append({
-                    "messages": data["memory"]["messages"],
-                    "time": time.time(),
-                })
-                while (
-                    len(data["sessions"])
-                    > config_manager.config.session_control_history
-                ):
-                    data["sessions"].remove(data["sessions"][0])
-                data["memory"]["messages"] = []
-                data["timestamp"] = time.time()
-                write_memory_data(event, data)
-                chated = await matcher.send(
-                    f'如果想和我继续用之前的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
-                )
-                session_clear_list.append({
-                    "id": (
+            try:
+                for session in session_clear_list:
+                    if session["id"] == (
                         event.group_id
                         if isinstance(event, GroupMessageEvent)
                         else event.user_id
-                    ),
-                    "message_id": chated["message_id"],
-                    "timestamp": time.time(),
-                })
-                raise CancelException()
-            elif event.reply:
-                for session in session_clear_list:
-                    if (
-                        session["id"]
-                        == (
-                            event.group_id
-                            if isinstance(event, GroupMessageEvent)
-                            else event.user_id
-                        )
-                        and "继续" in event.reply.message.extract_plain_text()
                     ):
-                        with contextlib.suppress(Exception):
-                            if time.time() - session["timestamp"] < 100:
-                                await bot.delete_msg(message_id=session["message_id"])
-                        session_clear_list.remove(session)
-                        data["memory"]["messages"] = data["sessions"][-1]["messages"]
-                        data["sessions"].pop()
-                        await matcher.send("让我们继续聊天吧～")
-                        write_memory_data(event, data)
+                        if not event.reply:
+                            session_clear_list.remove(session)
+                            return
+                        break
+
+                # 检查会话超时
+                if (time.time() - data["timestamp"]) >= (
+                    config_manager.config.session_control_time * 60
+                ):
+                    data["sessions"].append(
+                        {
+                            "messages": data["memory"]["messages"],
+                            "time": time.time(),
+                        }
+                    )
+                    while (
+                        len(data["sessions"])
+                        > config_manager.config.session_control_history
+                    ):
+                        data["sessions"].remove(data["sessions"][0])
+                    data["memory"]["messages"] = []
+                    data["timestamp"] = time.time()
+                    write_memory_data(event, data)
+                    if (time.time() - data["timestamp"]) <= (
+                        config_manager.config.session_control_time * 60 * 2
+                    ):
+                        chated = await matcher.send(
+                            f'如果想和我继续用之前的上下文聊天，快回复我✨"继续"✨吧！\n（超过{config_manager.config.session_control_time}分钟没理我我就会被系统抱走存档哦！）'
+                        )
+                        session_clear_list.append(
+                            {
+                                "id": (
+                                    event.group_id
+                                    if isinstance(event, GroupMessageEvent)
+                                    else event.user_id
+                                ),
+                                "message_id": chated["message_id"],
+                                "timestamp": time.time(),
+                            }
+                        )
                         raise CancelException()
-            else:
+                else:
+                    for session in session_clear_list:
+                        if (
+                            session["id"]
+                            == (
+                                event.group_id
+                                if isinstance(event, GroupMessageEvent)
+                                else event.user_id
+                            )
+                            and "继续" in event.message.extract_plain_text()
+                        ):
+                            with contextlib.suppress(Exception):
+                                if time.time() - session["timestamp"] < 100:
+                                    await bot.delete_msg(
+                                        message_id=session["message_id"]
+                                    )
+                            session_clear_list.remove(session)
+                            data["memory"]["messages"] = data["sessions"][-1][
+                                "messages"
+                            ]
+                            data["sessions"].pop()
+                            await matcher.send("让我们继续聊天吧～")
+                            write_memory_data(event, data)
+                            raise CancelException()
+
+            finally:
                 data["timestamp"] = time.time()
 
     async def handle_reply(
