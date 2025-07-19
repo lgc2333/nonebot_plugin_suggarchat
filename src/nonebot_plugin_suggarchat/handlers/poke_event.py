@@ -10,15 +10,15 @@ from nonebot.matcher import Matcher
 
 from ..chatmanager import chat_manager
 from ..config import config_manager
-from ..event import EventType, PokeEvent  # 自定义事件类型
-from ..matcher import SuggarMatcher  # 自定义匹配器
-from ..utils import (
-    get_chat,
-    get_friend_info,
-    get_memory_data,
-    send_to_admin,
+from ..event import PokeEvent  # 自定义事件类型
+from ..matcher import MatcherManager  # 自定义匹配器
+from ..utils.admin import send_to_admin
+from ..utils.functions import (
+    get_friend_name,
     split_message_into_chats,
 )
+from ..utils.libchat import get_chat
+from ..utils.memory import get_memory_data
 
 
 async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
@@ -64,7 +64,7 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
 
     async def handle_private_poke(event: PokeNotifyEvent, bot: Bot):
         """处理私聊中的戳一戳事件"""
-        name = await get_friend_info(event.user_id, bot)  # 获取好友信息
+        name = await get_friend_name(event.user_id, bot)  # 获取好友信息
         send_messages = [
             {"role": "system", "content": f"{config_manager.private_train}"},
             {
@@ -84,14 +84,14 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
         """处理戳一戳事件的核心逻辑"""
         if config_manager.config.matcher_function:
             # 触发自定义事件前置处理
-            eventMatcher = SuggarMatcher(event_type=EventType().before_poke())
+
             poke_event = PokeEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[""],
                 user_id=event.user_id,
             )
-            await eventMatcher.trigger_event(poke_event, eventMatcher)
+            await MatcherManager.trigger_event(poke_event, event, bot)
             send_messages = poke_event.get_send_message()
 
         # 获取聊天模型的回复
@@ -99,14 +99,13 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
 
         if config_manager.config.matcher_function:
             # 触发自定义事件后置处理
-            eventMatcher = SuggarMatcher(event_type=EventType().poke())
             poke_event = PokeEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[response],
                 user_id=event.user_id,
             )
-            await eventMatcher.trigger_event(poke_event, eventMatcher)
+            await MatcherManager.trigger_event(poke_event, event, bot)
             response = poke_event.model_response
 
         # 如果开启调试模式，发送调试信息给管理员

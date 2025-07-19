@@ -6,6 +6,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
+from typing import Any
 
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import (
@@ -23,22 +24,23 @@ from nonebot.matcher import Matcher
 
 from ..chatmanager import chat_manager
 from ..config import config_manager
-from ..event import ChatEvent, EventType
+from ..event import ChatEvent
 from ..exception import CancelException
-from ..matcher import SuggarMatcher
-from ..utils import (
-    get_chat,
-    get_current_datetime_timestamp,
-    get_friend_info,
-    get_memory_data,
-    hybrid_token_count,
-    remove_think_tag,
+from ..matcher import MatcherManager
+from ..utils.admin import (
     send_to_admin,
     send_to_admin_as_error,
+)
+from ..utils.functions import (
+    get_current_datetime_timestamp,
+    get_friend_name,
+    remove_think_tag,
     split_message_into_chats,
     synthesize_message,
-    write_memory_data,
 )
+from ..utils.libchat import get_chat
+from ..utils.memory import MemoryModel, get_memory_data, write_memory_data
+from ..utils.tokenizer import hybrid_token_count
 
 
 async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
@@ -50,7 +52,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         event: GroupMessageEvent,
         matcher: Matcher,
         bot: Bot,
-        group_data: dict,
+        group_data: MemoryModel,
         memory_length_limit: int,
         Date: str,
     ):
@@ -65,7 +67,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         if not config_manager.config.enable_group_chat:
             matcher.skip()
 
-        if not group_data["enable"]:
+        if not group_data.enable:
             await matcher.send("聊天没有启用")
             return
 
@@ -92,9 +94,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, group_id, content)
 
         # 记录用户消息
-        is_multimodal: bool = (
-            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
-        ).multimodal
+        is_multimodal: bool = all(
+            [
+                (await config_manager.get_preset(preset=preset)).multimodal
+                for preset in [
+                    config_manager.config.preset,
+                    *config_manager.config.preset_extension.backup_preset_list,
+                ]
+            ]
+        )
 
         if config_manager.config.parse_segments:
             text = (
@@ -115,7 +123,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         else:
             text = event.message.extract_plain_text()
 
-        group_data["memory"]["messages"].append(
+        group_data.memory.messages.append(
             {
                 "role": "user",
                 "content": text,
@@ -124,7 +132,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         if chat_manager.debug:
             logger.debug(f"当前群组提示词：\n{config_manager.group_train}")
         # 控制记忆长度和 token 限制
-        enforce_memory_limit(group_data, memory_length_limit)
+        await enforce_memory_limit(group_data, memory_length_limit)
         tokens = await enforce_token_limit(
             group_data, copy.deepcopy(config_manager.group_train)
         )
@@ -136,13 +144,13 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
-        group_data["memory"]["messages"].append(
+        group_data.memory.messages.append(
             {
                 "role": "assistant",
                 "content": str(response),
             }
         )
-        await send_response(event, response)  # type: ignore
+        await send_response(event, response)
 
         # 写入记忆数据
         await write_memory_data(event, group_data)
@@ -151,7 +159,7 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         event: PrivateMessageEvent,
         matcher: Matcher,
         bot: Bot,
-        private_data: dict,
+        private_data: MemoryModel,
         memory_length_limit: int,
         Date: str,
     ):
@@ -179,16 +187,22 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             content = await handle_reply(event.reply, bot, None, content)
 
         # 记录用户消息
-        is_multimodal: bool = (
-            config_manager.get_preset(preset=config_manager.config.preset, fix=True)
-        ).multimodal
+        is_multimodal: bool = all(
+            [
+                (await config_manager.get_preset(preset=preset)).multimodal
+                for preset in [
+                    config_manager.config.preset,
+                    *config_manager.config.preset_extension.backup_preset_list,
+                ]
+            ]
+        )
 
         if config_manager.config.parse_segments:
             text = (
                 [
                     {
                         "type": "text",
-                        "text": f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}",
+                        "text": f"{Date}{await get_friend_name(event.user_id, bot=bot)}（{event.user_id}）： {content!s}",
                     },
                 ]
                 + [
@@ -197,15 +211,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                     if seg.data.get("type") == "image"
                 ]
                 if is_multimodal
-                else f"{Date}{await get_friend_info(event.user_id, bot=bot)}（{event.user_id}）： {content!s}"
+                else f"{Date}{await get_friend_name(event.user_id, bot=bot)}（{event.user_id}）： {content!s}"
             )
         else:
             text = event.message.extract_plain_text()
-        private_data["memory"]["messages"].append({"role": "user", "content": text})
+        private_data.memory.messages.append({"role": "user", "content": text})
         if chat_manager.debug:
             logger.debug(f"当前私聊提示词：\n{config_manager.private_train}")
         # 控制记忆长度和 token 限制
-        enforce_memory_limit(private_data, memory_length_limit)
+        await enforce_memory_limit(private_data, memory_length_limit)
         tokens = await enforce_token_limit(
             private_data, copy.deepcopy(config_manager.private_train)
         )
@@ -217,20 +231,20 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         response = await process_chat(event, send_messages, tokens)
 
         # 记录模型回复
-        private_data["memory"]["messages"].append(
+        private_data.memory.messages.append(
             {
                 "role": "assistant",
                 "content": str(response),
             }
         )
-        await send_response(event, response)  # type: ignore
+        await send_response(event, response)
 
         # 写入记忆数据
         await write_memory_data(event, private_data)
 
     async def manage_sessions(
         event: GroupMessageEvent | PrivateMessageEvent,
-        data: dict,
+        data: MemoryModel,
         session_clear_list: list,
     ):
         """
@@ -252,25 +266,25 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                         break
 
                 # 检查会话超时
-                if (time.time() - data["timestamp"]) >= (
+                if (time.time() - data.timestamp) >= (
                     float(config_manager.config.session_control_time * 60)
                 ):
-                    data["sessions"].append(
+                    data.sessions.append(
                         {
-                            "messages": data["memory"]["messages"],
+                            "messages": data.memory.messages,
                             "time": time.time(),
                         }
                     )
                     while (
-                        len(data["sessions"])
+                        len(data.sessions)
                         > config_manager.config.session_control_history
                     ):
-                        data["sessions"].remove(data["sessions"][0])
-                    data["memory"]["messages"] = []
-                    data["timestamp"] = time.time()
+                        data.sessions.remove(data.sessions[0])
+                    data.memory.messages = []
+                    data.timestamp = time.time()
                     await write_memory_data(event, data)
                     if not (
-                        (time.time() - data["timestamp"])
+                        (time.time() - data.timestamp)
                         > float(config_manager.config.session_control_time * 60 * 2)
                     ):
                         chated = await matcher.send(
@@ -305,16 +319,14 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                                         message_id=session["message_id"]
                                     )
                             session_clear_list.remove(session)
-                            data["memory"]["messages"] = data["sessions"][-1][
-                                "messages"
-                            ]
-                            data["sessions"].pop()
+                            data.memory.messages = data.sessions[-1]["messages"]
+                            data.sessions.pop()
                             await matcher.send("让我们继续聊天吧～")
                             await write_memory_data(event, data)
                             raise CancelException()
 
             finally:
-                data["timestamp"] = time.time()
+                data.timestamp = time.time()
 
     async def handle_reply(
         reply: Reply, bot: Bot, group_id: int | None, content: str
@@ -346,15 +358,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             role, "[获取身份失败]"
         )
 
-    def enforce_memory_limit(data: dict, memory_length_limit: int):
+    async def enforce_memory_limit(data: MemoryModel, memory_length_limit: int):
         """
         控制记忆长度，删除超出限制的旧消息，移除不支持的消息。
         """
-        is_multimodal = config_manager.get_preset(
-            config_manager.config.preset, fix=True
-        )
+        is_multimodal = (
+            await config_manager.get_preset(config_manager.config.preset)
+        ).multimodal
         # Process multimodal messages when needed
-        for message in data["memory"]["messages"]:
+        for message in data.memory.messages:
             if (
                 isinstance(message["content"], dict)
                 and not is_multimodal
@@ -367,18 +379,19 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
                 message["content"] = message_text
 
         # Enforce memory length limit
-        while (
-            len(data["memory"]["messages"]) > memory_length_limit
-            or (data["memory"]["messages"][0]["role"] != "user")
-        ) and len(data["memory"]["messages"]) > 0:
-            del data["memory"]["messages"][0]
+        while len(data.memory.messages) > 0:
+            if (
+                len(data.memory.messages) > memory_length_limit
+                or data.memory.messages[0]["role"] != "user"
+            ):
+                del data.memory.messages[0]
 
-    async def enforce_token_limit(data: dict, train: dict) -> int:
+    async def enforce_token_limit(data: MemoryModel, train: dict[str, Any]) -> int:
         """
         控制 token 数量，删除超出限制的旧消息，返回处理后的Tokens。
         """
         train = copy.deepcopy(train)
-        memory_l = [train, *copy.deepcopy(data["memory"]["messages"].copy())]  # type: list[dict]
+        memory_l = [train, *copy.deepcopy(data.memory.messages.copy())]  # type: list[dict]
         full_string = ""
         for st in memory_l:
             if not st.get("content"):
@@ -398,8 +411,8 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             return tokens
         while tokens > config_manager.config.session_max_tokens:
             try:
-                if len(data["memory"]["messages"]) > 0:
-                    del data["memory"]["messages"][0]
+                if len(data.memory.messages) > 0:
+                    del data.memory.messages[0]
                 else:
                     logger.warning(
                         f"提示词大小过大！为{hybrid_token_count(train['content'])}>{config_manager.config.session_max_tokens}！"
@@ -438,15 +451,15 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
             )
         return tokens
 
-    def prepare_send_messages(data: dict, train: dict) -> list:
+    def prepare_send_messages(data: MemoryModel, train: dict[str, Any]) -> list:
         """
         准备发送给聊天模型的消息列表，包括系统提示词数据和上下文。
         """
         train = copy.deepcopy(train)
         train["content"] += (
-            f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{data.get('prompt', '无')}"
+            f"\n以下是一些补充内容，如果与上面任何一条有冲突请忽略。\n{data.prompt}"
         )
-        send_messages = data["memory"]["messages"].copy()
+        send_messages = data.memory.messages.copy()
         send_messages.insert(0, train)
         return send_messages
 
@@ -457,29 +470,29 @@ async def chat(event: MessageEvent, matcher: Matcher, bot: Bot):
         调用聊天模型生成回复，并触发相关事件。
         """
         if config_manager.config.matcher_function:
-            eventMatcher = SuggarMatcher(event_type=EventType().before_chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[""],
                 user_id=event.user_id,
             )
-            await eventMatcher.trigger_event(chat_event, eventMatcher)
+            await MatcherManager.trigger_event(chat_event, event, bot)
             send_messages = chat_event.get_send_message()
 
         response = await get_chat(send_messages, tokens=tokens)
 
         if config_manager.config.matcher_function:
-            eventMatcher = SuggarMatcher(event_type=EventType().chat())
             chat_event = ChatEvent(
                 nbevent=event,
                 send_message=send_messages,
                 model_response=[response],
                 user_id=event.user_id,
             )
-            await eventMatcher.trigger_event(chat_event, eventMatcher)
+            await MatcherManager.trigger_event(chat_event, event, bot)
             response = chat_event.model_response
-        if config_manager.get_preset(config_manager.config.preset).thought_chain_model:
+        if (
+            await config_manager.get_preset(config_manager.config.preset)
+        ).thought_chain_model:
             response = remove_think_tag(response)
         return response
 

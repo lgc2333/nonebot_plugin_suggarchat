@@ -10,8 +10,8 @@ from typing import Any
 import nonebot_plugin_localstore as store
 import tomli
 import tomli_w
-from dotenv import load_dotenv
-from nonebot import logger
+from aiofiles import open
+from nonebot import get_driver
 from pydantic import BaseModel
 
 __KERNEL_VERSION__ = "unknow"
@@ -21,9 +21,7 @@ __KERNEL_VERSION__ = "unknow"
 # 配置目录
 CONFIG_DIR: Path = store.get_plugin_config_dir()
 DATA_DIR: Path = store.get_plugin_data_dir()
-
-# 加载Dotenv
-load_dotenv()
+nb_config = get_driver().config
 
 
 def replace_env_vars(data: dict | list | str) -> dict | list | str:
@@ -77,8 +75,74 @@ class ModelPreset(BaseModel, extra="allow"):
         )
 
 
+class ToolsConfig(BaseModel):
+    enable_tools: bool = True
+    enable_report: bool = True
+    require_tools: bool = False
+
+
+class PresetSwitch(BaseModel):
+    backup_preset_list: list[str] = []
+
+
+class CookieModel(BaseModel):
+    cookie: str = ""
+    enable_cookie: bool = False
+    block_msg: list[str] = [
+        "喵呜～这个问题有点超出Suggar的理解范围啦(歪头)",
+        "（耳朵耷拉）这个...Suggar暂时回答不了呢＞﹏＜",
+        "喵？这个话题好像不太适合讨论呢～",
+        "（玩手指）突然有点不知道该怎么回答喵...",
+        "唔...这个方向Suggar还没学会呢(脸红)",
+        "喵～我们聊点别的开心事好不好？",
+        "（眨眨眼）这个话题好像被魔法封印了喵！",
+        "啊啦～Suggar的知识库这里刚好是空白页呢",
+        "（竖起尾巴）检测到未知领域警报喵！",
+        "喵呜...这个问题让Suggar的CPU过热啦(＞﹏＜)",
+        "（躲到主人身后）这个...好难回答喵...",
+        "叮！话题转换卡生效～我们聊点别的喵？",
+        "（猫耳抖动）信号接收不良喵...换个频道好吗？",
+        "Suggar的喵星语翻译器好像故障了...",
+        "（转圈圈）这个问题转晕Suggar啦～",
+        "喵？刚才风太大没听清...主人再说点别的？",
+        "（翻书状）Suggar的百科全书缺了这一页喵...",
+        "啊呀～这个话题被猫毛盖住了看不见喵！",
+        "（举起爪子投降）这个领域Suggar认输喵～",
+        "检测到话题黑洞...紧急逃离喵！(＞人＜)",
+        "（尾巴打结）这个问题好复杂喵...解不开啦",
+        "喵呜～Suggar的小脑袋暂时处理不了这个呢",
+        "（捂耳朵）不听不听～换话题喵！",
+        "这个...Suggar的猫娘执照没覆盖这个领域喵",
+        "叮咚！您的话题已进入Suggar的认知盲区～",
+        "（装傻）喵？Suggar突然失忆了...",
+        "警报！话题超出Suggar的可爱范围～",
+        "（数爪子）1、2、3...啊数错了！换个话题喵？",
+        "这个方向...Suggar的导航仪失灵了喵(´･_･`)",
+        "喵～话题防火墙启动！我们聊点安全的？",
+        "（转笔状）这个问题...考试不考喵！跳过～",
+        "啊啦～Suggar的答案库正在升级中...",
+        "（做鬼脸）略略略～不回答这个喵！",
+        "检测到超纲内容...启动保护模式喵！",
+        "（抱头蹲防）问题太难了喵！投降～",
+        "喵呜...这个秘密要等Suggar升级才能解锁",
+        "（举白旗）这个话题Suggar放弃思考～",
+        "叮！触发Suggar的防宕机保护机制喵",
+        "（装睡）Zzz...突然好困喵...",
+        "喵？Suggar的思维天线接收不良...",
+        "（画圈圈）这个问题在Suggar的知识圈外...",
+        "啊呀～话题偏离主轨道喵！紧急修正～",
+        "（翻跟头）问题太难度把Suggar绊倒了喵！",
+        "这个...需要猫娘高级权限才能解锁喵～",
+        "（擦汗）Suggar的处理器过载了...",
+        "喵呜～问题太深奥会卡住Suggar的猫脑",
+        "（变魔术状）看！话题消失魔术成功喵～",
+    ]
+
+
 class Config(BaseModel, extra="allow"):
-    preset: str = ModelPreset().name
+    preset: str = "default"
+    preset_extension: PresetSwitch = PresetSwitch()
+    tools: ToolsConfig = ToolsConfig()
     model: str = ""
     base_url: str = ""
     api_key: str = ""
@@ -115,6 +179,7 @@ class Config(BaseModel, extra="allow"):
     session_control: bool = False
     session_control_time: int = 60
     session_control_history: int = 10
+    cookies: CookieModel = CookieModel()
     group_prompt_character: str = "default"
     private_prompt_character: str = "default"
     after_deleted_say_what: list[str] = [
@@ -133,7 +198,6 @@ class Config(BaseModel, extra="allow"):
         "希望我能继续为你提供帮助，不要太在意我的小错误哦！",
     ]
 
-
     @classmethod
     def load_from_toml(cls, path: Path) -> "Config":
         """从 TOML 文件加载配置"""
@@ -145,10 +209,10 @@ class Config(BaseModel, extra="allow"):
         current_config = cls().model_dump()
         updated_config = {**current_config, **data}
         config_instance = cls(**updated_config)
-        config_instance.validate()  # 校验配置
+        config_instance.validate_value()  # 校验配置
         return config_instance
 
-    def validate(self):
+    def validate_value(self):
         """校验配置"""
         if self.max_tokens <= 0:
             raise ValueError("max_tokens必须大于零!")
@@ -212,8 +276,6 @@ class Prompts:
 class ConfigManager:
     config_dir: Path = CONFIG_DIR
     data_dir: Path = DATA_DIR
-    bot_config_dir: Path | None = None
-    bot_data_dir: Path | None = None
     group_memory: Path = data_dir / "group"
     private_memory: Path = data_dir / "private"
     json_config: Path = config_dir / "config.json"  # 兼容旧版本
@@ -229,6 +291,12 @@ class ConfigManager:
     ins_config: Config = field(default_factory=Config)
     models: list[tuple[ModelPreset, str]] = field(default_factory=list)
     prompts: Prompts = field(default_factory=Prompts)
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     @property
     def config(self) -> Config:
@@ -238,31 +306,14 @@ class ConfigManager:
             raise TypeError("Expected replace_env_vars to return a dict")
         return Config(**result)
 
-    def load(self, bot_id: str):
-        """_初始化配置目录_
-
-        Args:
-            bot_id (str): _Bot的qq号_
-        """
-        self.bot_config_dir = self.config_dir / bot_id
-        self.bot_data_dir = self.data_dir / bot_id
-        os.makedirs(self.bot_config_dir, exist_ok=True)
-        os.makedirs(self.bot_data_dir, exist_ok=True)
-
-        self.group_memory = self.bot_data_dir / "group"
-        self.private_memory = self.bot_data_dir / "private"
+    async def load(self):
+        """_初始化配置目录_"""
+        os.makedirs(self.config_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.group_memory, exist_ok=True)
         os.makedirs(self.private_memory, exist_ok=True)
-
-        self.json_config = self.bot_config_dir / "config.json"
-        self.toml_config = self.bot_config_dir / "config.toml"
-        self.group_prompt = self.bot_config_dir / "prompt_group.txt"
-        self.private_prompt = self.bot_config_dir / "prompt_private.txt"
-        self.private_prompts = self.bot_config_dir / "private_prompts"
-        self.group_prompts = self.bot_config_dir / "group_prompts"
         os.makedirs(self.private_prompts, exist_ok=True)
         os.makedirs(self.group_prompts, exist_ok=True)
-        self.custom_models_dir = self.bot_config_dir / "models"
         os.makedirs(self.custom_models_dir, exist_ok=True)
 
         prompt_private_temp: str = ""
@@ -270,25 +321,25 @@ class ConfigManager:
 
         # 处理配置文件转换
         if self.json_config.exists():
-            with self.json_config.open("r", encoding="utf-8") as f:
-                data: dict = json.load(f)
+            async with open(str(self.json_config), encoding="utf-8") as f:
+                data: dict = json.loads(await f.read())
 
             # 判断是否有抛弃的字段需要转移
             if "private_train" in data:
                 prompt_old = data["private_train"]["content"]
                 if not (self.private_prompts / "default.txt").is_file():
-                    with (self.private_prompts / "default.txt").open(
-                        "w", encoding="utf-8"
+                    async with open(
+                        str(self.private_prompts / "default.txt"), "w", encoding="utf-8"
                     ) as f:
-                        f.write(prompt_old)
+                        await f.write(prompt_old)
                 del data["private_train"]
             if "group_train" in data:
                 prompt_old = data["group_train"]["content"]
                 if not (self.group_prompts / "default.txt").is_file():
-                    with (self.group_prompts / "default.txt").open(
-                        "w", encoding="utf-8"
+                    async with open(
+                        str(self.group_prompts / "default.txt"), "w", encoding="utf-8"
                     ) as f:
-                        f.write(prompt_old)
+                        await f.write(prompt_old)
                 del data["group_train"]
 
             Config(**data).save_to_toml(self.toml_config)
@@ -311,7 +362,7 @@ class ConfigManager:
                 data["api_key"] = data["open_ai_api_key"]
                 del data["open_ai_api_key"]
             if config.preset == "__main__":
-                data["preset"] = "default"
+                config.preset = "default"
             return Config(**data)
 
         self.ins_config = config_fix(self.ins_config)
@@ -319,29 +370,31 @@ class ConfigManager:
 
         # private_train
         if self.private_prompt.is_file():
-            with self.private_prompt.open("r", encoding="utf-8") as f:
-                prompt_private_temp = f.read()
+            async with open(self.private_prompt, encoding="utf-8") as f:
+                prompt_private_temp = await f.read()
             os.rename(self.private_prompt, self.private_prompt.with_suffix(".old"))
         if not (self.private_prompts / "default.txt").is_file():
-            with (self.private_prompts / "default.txt").open(
-                "w", encoding="utf-8"
+            async with open(
+                str(self.private_prompts / "default.txt"), "w", encoding="utf-8"
             ) as f:
-                f.write(prompt_private_temp)
+                await f.write(prompt_private_temp)
 
         # group_train
         if self.group_prompt.is_file():
-            with self.group_prompt.open("r", encoding="utf-8") as f:
-                prompt_group_temp = f.read()
+            async with open(str(self.group_prompt), encoding="utf-8") as f:
+                prompt_group_temp = await f.read()
             os.rename(self.group_prompt, self.group_prompt.with_suffix(".old"))
         if not (self.group_prompts / "default.txt").is_file():
-            with (self.group_prompts / "default.txt").open("w", encoding="utf-8") as f:
-                f.write(prompt_group_temp)
+            async with open(
+                str(self.group_prompts / "default.txt"), "w", encoding="utf-8"
+            ) as f:
+                await f.write(prompt_group_temp)
 
-        self.get_models(cache=False)
-        self.get_prompts(cache=False)
-        self.load_prompt()
+        await self.get_models(cache=False)
+        await self.get_prompts(cache=False)
+        await self.load_prompt()
 
-    def get_models(self, cache: bool = False) -> list[ModelPreset]:
+    async def get_models(self, cache: bool = False) -> list[ModelPreset]:
         """获取模型列表"""
         if cache and self.models:
             return [model[0] for model in self.models]
@@ -357,7 +410,7 @@ class ConfigManager:
 
         return [model[0] for model in self.models]
 
-    def get_preset(
+    async def get_preset(
         self, preset: str, fix: bool = False, cache: bool = False
     ) -> ModelPreset:
         """_获取预设配置_
@@ -377,27 +430,23 @@ class ConfigManager:
                     p_dict[k] = v
 
             return ModelPreset(**p_dict)
-        for model in self.get_models():
+        for model in await self.get_models():
             if model.name == preset:
                 return model
-        if fix:
-            logger.error(f"预设 {self.ins_config.preset} 未找到，重置为主配置")
-            self.ins_config.preset = "default"
-            self.save_config()
-        return self.get_preset("default", fix, cache)
+        return await self.get_preset("default", fix, cache)
 
-    def get_prompts(self, cache: bool = False) -> Prompts:
+    async def get_prompts(self, cache: bool = False) -> Prompts:
         """获取提示词"""
         if cache and self.prompts:
             return self.prompts
         self.prompts = Prompts()
         for file in self.private_prompts.glob("*.txt"):
-            with file.open("r", encoding="utf-8") as f:
-                prompt = f.read()
+            async with open(str(file), encoding="utf-8") as f:
+                prompt = await f.read()
             self.prompts.private.append(Prompt(prompt, file.stem))
         for file in self.group_prompts.glob("*.txt"):
-            with file.open("r", encoding="utf-8") as f:
-                prompt = f.read()
+            async with open(str(file), encoding="utf-8") as f:
+                prompt = await f.read()
             self.prompts.group.append(Prompt(prompt, file.stem))
         if not self.prompts.private:
             self.prompts.private.append(Prompt("", "default"))
@@ -419,7 +468,7 @@ class ConfigManager:
         """获取群聊提示词"""
         return deepcopy(self._group_train)
 
-    def load_prompt(self):
+    async def load_prompt(self):
         """加载提示词，匹配预设"""
         for prompt in self.prompts.group:
             if prompt.name == self.ins_config.group_prompt_character:
@@ -438,19 +487,17 @@ class ConfigManager:
                 f"没有找到名称为 {self.ins_config.private_prompt_character} 的私聊提示词"
             )
 
-    def reload_config(self):
+    async def reload_config(self):
         """重加载配置"""
-        if self.bot_config_dir:
-            self.load(self.bot_config_dir.name)
-        else:
-            raise RuntimeWarning("未初始化 Bot 配置")
 
-    def save_config(self):
+        await self.load()
+
+    async def save_config(self):
         """保存配置"""
         if self.ins_config:
             self.ins_config.save_to_toml(self.toml_config)
 
-    def set_config(self, key: str, value: str):
+    async def set_config(self, key: str, value: str):
         """
         设置配置
 
@@ -461,11 +508,11 @@ class ConfigManager:
         """
         if hasattr(self.ins_config, key):
             setattr(self.ins_config, key, value)
-            self.save_config()
+            await self.save_config()
         else:
             raise KeyError(f"配置项 {key} 不存在")
 
-    def register_config(self, key: str, default_value=None):
+    async def register_config(self, key: str, default_value=None):
         """
         注册配置项
 
@@ -476,7 +523,7 @@ class ConfigManager:
             default_value = "null"
         if not hasattr(self.ins_config, key):
             setattr(self.ins_config, key, default_value)
-        self.save_config()
+        await self.save_config()
 
     def reg_config(self, key: str, default_value=None):
         """
