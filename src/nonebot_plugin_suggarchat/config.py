@@ -5,13 +5,13 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import nonebot_plugin_localstore as store
 import tomli
 import tomli_w
 from aiofiles import open
-from nonebot import get_driver
+from nonebot import get_driver, logger
 from pydantic import BaseModel
 
 __KERNEL_VERSION__ = "unknow"
@@ -167,7 +167,7 @@ class Config(BaseModel, extra="allow"):
     admins: list[int] = []
     stream: bool = False
     max_tokens: int = 100
-    tokens_count_mode: str = "bpe"
+    tokens_count_mode: Literal["word", "bpe", "char"] = "bpe"
     session_max_tokens: int = 5000
     enable_tokens_limit: bool = True
     llm_timeout: int = 60
@@ -291,12 +291,6 @@ class ConfigManager:
     ins_config: Config = field(default_factory=Config)
     models: list[tuple[ModelPreset, str]] = field(default_factory=list)
     prompts: Prompts = field(default_factory=Prompts)
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
 
     @property
     def config(self) -> Config:
@@ -308,6 +302,9 @@ class ConfigManager:
 
     async def load(self):
         """_初始化配置目录_"""
+        logger.info("正在初始化存储目录...")
+        logger.debug(f"配置目录: {self.config_dir}")
+        logger.debug(f"数据目录：{self.data_dir}")
         os.makedirs(self.config_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.group_memory, exist_ok=True)
