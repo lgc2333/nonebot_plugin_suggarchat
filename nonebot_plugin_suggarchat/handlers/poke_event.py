@@ -18,6 +18,7 @@ from ..utils.functions import (
     split_message_into_chats,
 )
 from ..utils.libchat import get_chat
+from ..utils.lock import get_group_lock, get_private_lock
 from ..utils.memory import get_memory_data
 
 
@@ -149,15 +150,16 @@ async def poke_event(event: PokeNotifyEvent, bot: Bot, matcher: Matcher):
         or not config_manager.config.function.poke_reply
     ):
         matcher.skip()  # 如果功能未启用或未配置戳一戳回复，跳过处理
-        return
 
     if event.target_id != event.self_id:  # 如果目标不是机器人本身，直接返回
         return
 
     try:
         if event.group_id is not None:  # 判断是群聊还是私聊
-            await handle_group_poke(event, bot)
+            async with get_group_lock(event.group_id):
+                await handle_group_poke(event, bot)
         else:
-            await handle_private_poke(event, bot)
+            async with get_private_lock(event.user_id):
+                await handle_private_poke(event, bot)
     except Exception:
         await handle_poke_exception()  # 异常处理
