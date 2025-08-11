@@ -1,4 +1,5 @@
 import time
+from copy import deepcopy
 from datetime import datetime
 
 from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent
@@ -8,7 +9,7 @@ from nonebot.params import CommandArg
 
 from ..check_rule import is_group_admin_if_is_in_group
 from ..config import config_manager
-from ..utils.memory import MemoryModel, get_memory_data, write_memory_data
+from ..utils.memory import Memory, MemoryModel, get_memory_data, write_memory_data
 
 
 async def sessions(
@@ -24,7 +25,8 @@ async def sessions(
             await matcher.finish("没有历史会话")
         message_content = "历史会话\n"
         for index, msg in enumerate(data.sessions):
-            message_content += f"编号：{index}) ：{msg['messages'][0]['content'][9:]}... 时间：{datetime.fromtimestamp(msg['time']).strftime('%Y-%m-%d %I:%M:%S %p')}\n"
+            if msg.messages:
+                message_content += f"编号：{index}) ：{msg.messages[0].content[63:68]}... 时间：{datetime.fromtimestamp(msg.time).strftime('%Y-%m-%d %I:%M:%S %p')}\n"
         await matcher.finish(message_content)
 
     async def set_session(
@@ -33,7 +35,7 @@ async def sessions(
         """将当前会话覆盖为指定编号的会话"""
         try:
             if len(arg_list) >= 2:
-                data.memory.messages = data.sessions[int(arg_list[1])]["messages"]
+                data.memory.messages = deepcopy(data.sessions[int(arg_list[1])].messages)
                 data.timestamp = time.time()
                 await write_memory_data(event, data)
                 await matcher.send("完成记忆覆盖。")
@@ -64,10 +66,7 @@ async def sessions(
         try:
             if data.memory.messages:
                 data.sessions.append(
-                    {
-                        "messages": data.memory.messages,
-                        "time": time.time(),
-                    }
+                    Memory(messages=data.memory.messages, time=time.time())
                 )
                 data.memory.messages = []
                 data.timestamp = time.time()
@@ -107,18 +106,18 @@ async def sessions(
         await display_sessions(data)
 
     # 根据命令执行对应操作
-    command = arg_list[0]
-    if command == "set":
-        await set_session(data, arg_list, event)
-    elif command == "del":
-        await delete_session(data, arg_list, event)
-    elif command == "archive":
-        await archive_session(data, event)
-    elif command == "clear":
-        await clear_sessions(data, event)
-    elif command == "help":
-        await matcher.finish(
-            "Sessions指令帮助：\nset：覆盖当前会话为指定编号的会话\ndel：删除指定编号的会话\narchive：归档当前会话\nclear：清空所有会话\n"
-        )
-    else:
-        await matcher.finish("未知命令，请输入/help查看帮助。")
+    match arg_list[0]:
+        case "set":
+            await set_session(data, arg_list, event)
+        case "del":
+            await delete_session(data, arg_list, event)
+        case "archive":
+            await archive_session(data, event)
+        case "clear":
+            await clear_sessions(data, event)
+        case "help":
+            await matcher.finish(
+                "Sessions指令帮助：\nset：覆盖当前会话为指定编号的会话\ndel：删除指定编号的会话\narchive：归档当前会话\nclear：清空所有会话\n"
+            )
+        case _:
+            await matcher.finish("未知命令，请输入/help查看帮助。")
